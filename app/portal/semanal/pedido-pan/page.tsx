@@ -39,7 +39,7 @@ export default function PedidoPanPage() {
     });
 
     const watchAll = form.watch();
-    const sumaSemanal = watchAll.lunes + watchAll.martes + watchAll.miercoles + watchAll.jueves + watchAll.viernes + watchAll.sabado + watchAll.domingo;
+    const sumaSemanal = (watchAll.lunes || 0) + (watchAll.martes || 0) + (watchAll.miercoles || 0) + (watchAll.jueves || 0) + (watchAll.viernes || 0) + (watchAll.sabado || 0) + (watchAll.domingo || 0);
 
     if (loading) return null;
 
@@ -47,18 +47,54 @@ export default function PedidoPanPage() {
         if (!comedorId) return;
         setIsSubmitting(true);
         try {
-            const { error } = await supabase.from('pedido_pan').upsert({
-                comedor_id: comedorId,
-                semana_inicio: data.semana,
-                lunes: data.lunes,
-                martes: data.martes,
-                miercoles: data.miercoles,
-                jueves: data.jueves,
-                viernes: data.viernes,
-                sabado: data.sabado,
-                domingo: data.domingo,
-                total: sumaSemanal
-            }, { onConflict: 'comedor_id,semana_inicio' });
+            // 1. Ensure semana exists
+            let semanaId;
+            const weekStart = new Date(data.semana);
+            const weekEnd = new Date(weekStart);
+            weekEnd.setDate(weekEnd.getDate() + 6);
+
+            const { data: semData, error: semErr } = await supabase
+                .from('semanas')
+                .select('id')
+                .eq('comedor_id', comedorId)
+                .eq('fecha_inicio', weekStart.toISOString().split('T')[0])
+                .single();
+
+            if (semErr && semErr.code !== 'PGRST116') throw semErr;
+
+            if (semData) {
+                semanaId = semData.id;
+            } else {
+                const { data: newSem, error: insErr } = await supabase
+                    .from('semanas')
+                    .insert({
+                        comedor_id: comedorId,
+                        fecha_inicio: weekStart.toISOString().split('T')[0],
+                        fecha_fin: weekEnd.toISOString().split('T')[0]
+                    } as any)
+                    .select()
+                    .single();
+                if (insErr) throw insErr;
+                semanaId = newSem.id;
+            }
+
+            // 2. Map days to records
+            const days = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'];
+            const inserts = days.map((day, idx) => {
+                const date = new Date(weekStart);
+                date.setDate(date.getDate() + idx);
+                const qty = (data as any)[day] || 0;
+
+                return {
+                    semana_id: semanaId,
+                    comedor_id: comedorId,
+                    fecha: date.toISOString().split('T')[0],
+                    producto: 'PAN', // Standard for this form
+                    cantidad_pedido: qty
+                };
+            });
+
+            const { error } = await supabase.from('pedido_pan').upsert(inserts as any, { onConflict: 'semana_id, fecha, producto' });
 
             if (error) throw error;
             toast.success('Pedido de pan guardado correctamente');
@@ -70,7 +106,7 @@ export default function PedidoPanPage() {
         }
     }
 
-    const days = [
+    const daysList = [
         { key: 'lunes', label: 'Lunes' },
         { key: 'martes', label: 'Martes' },
         { key: 'miercoles', label: 'Miércoles' },
@@ -99,7 +135,7 @@ export default function PedidoPanPage() {
                         </div>
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 pt-4">
-                            {days.map(d => (
+                            {daysList.map(d => (
                                 <div key={d.key} className="space-y-2">
                                     <label className="text-sm font-medium">{d.label}</label>
                                     <Input type="number" min="0" {...form.register(d.key as any, { valueAsNumber: true })} />
@@ -120,5 +156,5 @@ export default function PedidoPanPage() {
                 </Card>
             </form>
         </div>
-    )
+    );
 }

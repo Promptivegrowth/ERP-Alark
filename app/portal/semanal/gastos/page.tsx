@@ -13,12 +13,14 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Plus, Trash2 } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const gastosSchema = z.object({
+    semana: z.string().min(1, 'Requerido'),
     gastos: z.array(z.object({
         fecha: z.string().min(1, 'Requerido'),
-        num_documento: z.string().min(1, 'Requerido'),
-        proveedor: z.string().min(1, 'Requerido'),
+        categoria: z.enum(['INSUMOS', 'TRANSPORTE', 'MANTENIMIENTO', 'PERSONAL', 'LIMPIEZA', 'OTRO']),
+        descripcion: z.string().min(1, 'Requerido'),
         monto: z.number().min(0.01, 'Mínimo S/ 0.01'),
         observacion: z.string().optional()
     })).min(1, 'Agrega al menos un gasto')
@@ -34,10 +36,11 @@ export default function GastosPage() {
     const form = useForm<GastosForm>({
         resolver: zodResolver(gastosSchema),
         defaultValues: {
+            semana: new Date().toISOString().split('T')[0],
             gastos: [{
                 fecha: new Date().toISOString().split('T')[0],
-                num_documento: '',
-                proveedor: '',
+                categoria: 'INSUMOS',
+                descripcion: '',
                 monto: 0,
                 observacion: ''
             }]
@@ -58,26 +61,59 @@ export default function GastosPage() {
         if (!comedorId) return;
         setIsSubmitting(true);
         try {
+            // 1. Ensure semana exists
+            let semanaId;
+            const weekStart = new Date(data.semana);
+            const weekEnd = new Date(weekStart);
+            weekEnd.setDate(weekEnd.getDate() + 6);
+
+            const { data: semData, error: semErr } = await supabase
+                .from('semanas')
+                .select('id')
+                .eq('comedor_id', comedorId)
+                .eq('fecha_inicio', weekStart.toISOString().split('T')[0])
+                .single();
+
+            if (semErr && semErr.code !== 'PGRST116') throw semErr;
+
+            if (semData) {
+                semanaId = semData.id;
+            } else {
+                const { data: newSem, error: insErr } = await supabase
+                    .from('semanas')
+                    .insert({
+                        comedor_id: comedorId,
+                        fecha_inicio: weekStart.toISOString().split('T')[0],
+                        fecha_fin: weekEnd.toISOString().split('T')[0]
+                    } as any)
+                    .select()
+                    .single();
+                if (insErr) throw insErr;
+                semanaId = newSem.id;
+            }
+
+            // 2. Insert gastos
             const inserts = data.gastos.map(g => ({
+                semana_id: semanaId,
                 comedor_id: comedorId,
                 fecha: g.fecha,
-                num_documento: g.num_documento,
-                proveedor: g.proveedor,
+                categoria: g.categoria,
+                descripcion: g.descripcion,
                 monto: g.monto,
-                observacion: g.observacion || null
+                autorizado_por: g.observacion || null
             }));
 
-            const { error } = await supabase.from('gastos').insert(inserts);
+            const { error } = await supabase.from('gastos_operativos').insert(inserts as any);
 
             if (error) throw error;
             toast.success('Gastos registrados correctamente');
 
-            // Reset after success
             form.reset({
+                semana: data.semana,
                 gastos: [{
                     fecha: new Date().toISOString().split('T')[0],
-                    num_documento: '',
-                    proveedor: '',
+                    categoria: 'INSUMOS',
+                    descripcion: '',
                     monto: 0,
                     observacion: ''
                 }]
@@ -91,9 +127,9 @@ export default function GastosPage() {
     }
 
     return (
-        <div className="max-w-5xl mx-auto space-y-6 pb-24">
+        <div className="max-w-6xl mx-auto space-y-6 pb-24">
             <div className="flex items-center justify-between">
-                <h2 className="text-2xl font-bold tracking-tight">Registro de Gastos Parciales</h2>
+                <h2 className="text-2xl font-bold tracking-tight">Registro de Gastos</h2>
             </div>
 
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -102,6 +138,10 @@ export default function GastosPage() {
                         <div>
                             <CardTitle>Gastos de Caja Chica / Efectivo</CardTitle>
                             <CardDescription>Añade los tickets, boletas y facturas pagadas esta semana.</CardDescription>
+                            <div className="mt-4 flex items-center gap-4">
+                                <label className="text-sm font-medium">Semana:</label>
+                                <Input type="date" className="w-48" {...form.register('semana')} required />
+                            </div>
                         </div>
                         <Button
                             type="button"
@@ -109,7 +149,7 @@ export default function GastosPage() {
                             size="sm"
                             onClick={() => append({
                                 fecha: new Date().toISOString().split('T')[0],
-                                num_documento: '', proveedor: '', monto: 0, observacion: ''
+                                categoria: 'INSUMOS', descripcion: '', monto: 0, observacion: ''
                             })}
                             className="flex items-center gap-2"
                         >
@@ -117,14 +157,14 @@ export default function GastosPage() {
                         </Button>
                     </CardHeader>
                     <CardContent className="overflow-x-auto">
-                        <Table className="min-w-[800px]">
+                        <Table className="min-w-[900px]">
                             <TableHeader>
                                 <TableRow>
                                     <TableHead className="w-40">Fecha</TableHead>
-                                    <TableHead className="w-48">N° Documento</TableHead>
-                                    <TableHead>Proveedor / Concepto</TableHead>
-                                    <TableHead className="w-40">Monto (S/.)</TableHead>
-                                    <TableHead>Observación</TableHead>
+                                    <TableHead className="w-44">Categoría</TableHead>
+                                    <TableHead>Descripción / Concepto</TableHead>
+                                    <TableHead className="w-32">Monto (S/.)</TableHead>
+                                    <TableHead>Obs / Autorizado</TableHead>
                                     <TableHead className="w-16"></TableHead>
                                 </TableRow>
                             </TableHeader>
@@ -135,10 +175,20 @@ export default function GastosPage() {
                                             <Input type="date" {...form.register(`gastos.${idx}.fecha`)} required />
                                         </TableCell>
                                         <TableCell>
-                                            <Input placeholder="B001-443" {...form.register(`gastos.${idx}.num_documento`)} required />
+                                            <select
+                                                className="flex h-10 w-full rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-950 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-800 dark:bg-zinc-950 dark:ring-offset-zinc-950 dark:focus-visible:ring-zinc-300"
+                                                {...form.register(`gastos.${idx}.categoria`)}
+                                            >
+                                                <option value="INSUMOS">INSUMOS</option>
+                                                <option value="TRANSPORTE">TRANSPORTE</option>
+                                                <option value="MANTENIMIENTO">MANTENIMIENTO</option>
+                                                <option value="PERSONAL">PERSONAL</option>
+                                                <option value="LIMPIEZA">LIMPIEZA</option>
+                                                <option value="OTRO">OTRO</option>
+                                            </select>
                                         </TableCell>
                                         <TableCell>
-                                            <Input placeholder="Comercial XYZ" {...form.register(`gastos.${idx}.proveedor`)} required />
+                                            <Input placeholder="Ej: Compra de verduras" {...form.register(`gastos.${idx}.descripcion`)} required />
                                         </TableCell>
                                         <TableCell>
                                             <Input type="number" step="0.01" min="0" {...form.register(`gastos.${idx}.monto`, { valueAsNumber: true })} required />
@@ -177,5 +227,5 @@ export default function GastosPage() {
                 </div>
             </form>
         </div>
-    )
+    );
 }

@@ -12,14 +12,14 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Plus, Trash2 } from 'lucide-react';
 
 const especialesSchema = z.object({
+    semana: z.string().min(1, 'Requerido'),
     servicios: z.array(z.object({
         fecha: z.string().min(1, 'Requerido'),
         solicitante: z.string().min(1, 'Requerido'),
-        tipo: z.string().min(1, 'Requerido'),
+        tipo: z.enum(['CUMPLEAÑOS', 'COFFE_BREAK', 'EVENTO_CORPORATIVO', 'SPORADE_STAG', 'OTRO']),
         descripcion: z.string().min(1, 'Requerido'),
         cantidad: z.number().min(1, 'Min 1'),
         precio_unit: z.number().min(0, 'Mínimo S/ 0'),
@@ -37,10 +37,11 @@ export default function CoffeOtrosPage() {
     const form = useForm<EspecialesForm>({
         resolver: zodResolver(especialesSchema),
         defaultValues: {
+            semana: new Date().toISOString().split('T')[0],
             servicios: [{
                 fecha: new Date().toISOString().split('T')[0],
                 solicitante: '',
-                tipo: 'COFFE BREAK',
+                tipo: 'COFFE_BREAK',
                 descripcion: '',
                 cantidad: 1,
                 precio_unit: 0,
@@ -63,26 +64,60 @@ export default function CoffeOtrosPage() {
         if (!comedorId) return;
         setIsSubmitting(true);
         try {
+            // 1. Ensure semana exists
+            let semanaId;
+            const weekStart = new Date(data.semana);
+            const weekEnd = new Date(weekStart);
+            weekEnd.setDate(weekEnd.getDate() + 6);
+
+            const { data: semData, error: semErr } = await supabase
+                .from('semanas')
+                .select('id')
+                .eq('comedor_id', comedorId)
+                .eq('fecha_inicio', weekStart.toISOString().split('T')[0])
+                .single();
+
+            if (semErr && semErr.code !== 'PGRST116') throw semErr;
+
+            if (semData) {
+                semanaId = semData.id;
+            } else {
+                const { data: newSem, error: insErr } = await supabase
+                    .from('semanas')
+                    .insert({
+                        comedor_id: comedorId,
+                        fecha_inicio: weekStart.toISOString().split('T')[0],
+                        fecha_fin: weekEnd.toISOString().split('T')[0]
+                    } as any)
+                    .select()
+                    .single();
+                if (insErr) throw insErr;
+                semanaId = newSem.id;
+            }
+
+            // 2. Prepare inserts
             const inserts = data.servicios.map(s => ({
+                semana_id: semanaId,
                 comedor_id: comedorId,
                 fecha: s.fecha,
-                solicitante: s.solicitante,
+                solicitado_por: s.solicitante,
                 tipo: s.tipo,
                 descripcion: s.descripcion,
                 cantidad: s.cantidad,
-                precio_unit: s.precio_unit,
-                observacion: s.observacion || null
+                valor_unit: s.precio_unit,
+                total: s.cantidad * s.precio_unit
             }));
 
-            const { error } = await supabase.from('especial_servicios').insert(inserts);
+            const { error } = await supabase.from('coffe_otros').insert(inserts as any);
 
             if (error) throw error;
             toast.success('Servicios especiales guardados correctamente');
 
             form.reset({
+                semana: data.semana,
                 servicios: [{
                     fecha: new Date().toISOString().split('T')[0],
-                    solicitante: '', tipo: 'COFFE BREAK', descripcion: '', cantidad: 1, precio_unit: 0, observacion: ''
+                    solicitante: '', tipo: 'COFFE_BREAK', descripcion: '', cantidad: 1, precio_unit: 0, observacion: ''
                 }]
             });
         } catch (error) {
@@ -104,7 +139,11 @@ export default function CoffeOtrosPage() {
                     <CardHeader className="flex flex-row items-center justify-between">
                         <div>
                             <CardTitle>Registro de Servicios Extra</CardTitle>
-                            <CardDescription>Añade servicios que no corresponden al flujo diario normal (Cumpleaños, atenciones especiales).</CardDescription>
+                            <CardDescription>Añade servicios que no corresponden al flujo diario normal.</CardDescription>
+                            <div className="mt-4 flex items-center gap-4">
+                                <label className="text-sm font-medium">Semana:</label>
+                                <Input type="date" className="w-48" {...form.register('semana')} required />
+                            </div>
                         </div>
                         <Button
                             type="button"
@@ -112,7 +151,7 @@ export default function CoffeOtrosPage() {
                             size="sm"
                             onClick={() => append({
                                 fecha: new Date().toISOString().split('T')[0],
-                                solicitante: '', tipo: 'COFFE BREAK', descripcion: '', cantidad: 1, precio_unit: 0, observacion: ''
+                                solicitante: '', tipo: 'COFFE_BREAK', descripcion: '', cantidad: 1, precio_unit: 0, observacion: ''
                             })}
                             className="flex items-center gap-2"
                         >
@@ -130,7 +169,6 @@ export default function CoffeOtrosPage() {
                                     <TableHead className="w-24">Cant.</TableHead>
                                     <TableHead className="w-32">Prec. Unit (S/.)</TableHead>
                                     <TableHead className="w-32">Total</TableHead>
-                                    <TableHead className="w-[150px]">Observación</TableHead>
                                     <TableHead className="w-16"></TableHead>
                                 </TableRow>
                             </TableHeader>
@@ -145,15 +183,14 @@ export default function CoffeOtrosPage() {
                                         </TableCell>
                                         <TableCell>
                                             <select
-                                                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                                                className="flex h-10 w-full rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-950 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-800 dark:bg-zinc-950 dark:ring-offset-zinc-950 dark:focus-visible:ring-zinc-300"
                                                 {...form.register(`servicios.${idx}.tipo`)}
                                                 required
                                             >
-                                                <option value="COFFE BREAK">Coffe Break</option>
+                                                <option value="COFFE_BREAK">Coffe Break</option>
                                                 <option value="CUMPLEANOS">Cumpleaños</option>
-                                                <option value="REFRIGERIO">Refrigerio</option>
-                                                <option value="STAG">STAG / Staff</option>
-                                                <option value="SOPORTE">Soporte</option>
+                                                <option value="EVENTO_CORPORATIVO">Evento Corp.</option>
+                                                <option value="SPORADE_STAG">Staff / Stag</option>
                                                 <option value="OTRO">Otro</option>
                                             </select>
                                         </TableCell>
@@ -168,9 +205,6 @@ export default function CoffeOtrosPage() {
                                         </TableCell>
                                         <TableCell className="font-semibold bg-zinc-50 dark:bg-zinc-900">
                                             S/. {((watchAll.servicios?.[idx]?.cantidad || 0) * (watchAll.servicios?.[idx]?.precio_unit || 0)).toFixed(2)}
-                                        </TableCell>
-                                        <TableCell>
-                                            <Input placeholder="Opcional..." {...form.register(`servicios.${idx}.observacion`)} />
                                         </TableCell>
                                         <TableCell>
                                             <Button
@@ -189,7 +223,7 @@ export default function CoffeOtrosPage() {
                                 <TableRow>
                                     <TableCell colSpan={6} className="text-right font-semibold">Gran Total:</TableCell>
                                     <TableCell className="font-bold text-lg text-emerald-600">S/. {totalMonto.toFixed(2)}</TableCell>
-                                    <TableCell colSpan={2}></TableCell>
+                                    <TableCell colSpan={1}></TableCell>
                                 </TableRow>
                             </TableBody>
                         </Table>
@@ -203,5 +237,5 @@ export default function CoffeOtrosPage() {
                 </div>
             </form>
         </div>
-    )
+    );
 }

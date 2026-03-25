@@ -55,7 +55,7 @@ export default function KardexSnacksPage() {
                 .order('nombre');
 
             if (snacks) {
-                form.setValue('items', snacks.map(s => ({
+                form.setValue('items', (snacks as any[]).map(s => ({
                     producto_id: s.id,
                     nombre: s.nombre,
                     ingreso_semanal: 0,
@@ -77,26 +77,53 @@ export default function KardexSnacksPage() {
         if (!comedorId) return;
         setIsSubmitting(true);
         try {
-            const inserts = data.items.map(item => {
-                const saldo = item.ingreso_semanal + item.stock_anterior;
-                const totalVentas = item.ventas_credito + item.ventas_contado;
-                const diferencia = item.stock_fisico - (saldo - totalVentas);
+            // 1. Ensure semana exists
+            let semanaId;
+            const weekStart = new Date(data.semana);
+            const weekEnd = new Date(weekStart);
+            weekEnd.setDate(weekEnd.getDate() + 6);
 
+            const { data: semData, error: semErr } = await supabase
+                .from('semanas')
+                .select('id')
+                .eq('comedor_id', comedorId)
+                .eq('fecha_inicio', weekStart.toISOString().split('T')[0])
+                .single();
+
+            if (semErr && semErr.code !== 'PGRST116') throw semErr;
+
+            if (semData) {
+                semanaId = semData.id;
+            } else {
+                const { data: newSem, error: insErr } = await supabase
+                    .from('semanas')
+                    .insert({
+                        comedor_id: comedorId,
+                        fecha_inicio: weekStart.toISOString().split('T')[0],
+                        fecha_fin: weekEnd.toISOString().split('T')[0]
+                    } as any)
+                    .select()
+                    .single();
+                if (insErr) throw insErr;
+                semanaId = newSem.id;
+            }
+
+            // 2. Prepare inserts for snacks
+            const inserts = data.items.map(item => {
                 return {
+                    semana_id: semanaId,
                     comedor_id: comedorId,
                     producto_id: item.producto_id,
-                    semana_inicio: data.semana, // using the selected date as semantic week marker
-                    ingreso_semanal: item.ingreso_semanal,
-                    stock_anterior: item.stock_anterior,
-                    ventas_credito: item.ventas_credito,
-                    ventas_contado: item.ventas_contado,
-                    stock_fisico: item.stock_fisico,
-                    diferencia,
-                    observacion: item.observacion
+                    stock_inicial_qty: item.stock_anterior,
+                    pedido_qty: item.ingreso_semanal,
+                    venta_credito: item.ventas_credito,
+                    venta_contado_yape: item.ventas_contado,
+                    merma: 0,
+                    stock_final_valor: 0
                 };
             });
 
-            const { error } = await supabase.from('kardex_semanal').insert(inserts);
+            const { error } = await supabase.from('kardex_snack_ventas').upsert(inserts as any, { onConflict: 'semana_id, producto_id' });
             if (error) throw error;
 
             toast.success('Kardex guardado correctamente');
@@ -197,5 +224,5 @@ export default function KardexSnacksPage() {
                 </Button>
             </div>
         </form>
-    )
+    );
 }
