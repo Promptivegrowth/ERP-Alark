@@ -128,7 +128,7 @@ export default function HistorialPage() {
 
                 <TabsContent value="snacks">
                     <HistoryTable
-                        headers={['Fecha Reg.', 'Semana', 'Producto', 'St. Inicial', 'Pedido', 'V. Crédito', 'V. Contado', 'St. Final']}
+                        headers={['Fecha Reg.', 'Semana', 'Producto', 'St. Inicial', 'Pedido', 'Ventas', 'St. Final', 'Dif.']}
                         data={snacks}
                         renderRow={(s) => (
                             <TableRow key={s.id}>
@@ -137,9 +137,9 @@ export default function HistorialPage() {
                                 <TableCell>{s.kardex_productos?.nombre}</TableCell>
                                 <TableCell className="text-right">{s.stock_inicial_qty}</TableCell>
                                 <TableCell className="text-right">{s.pedido_qty}</TableCell>
-                                <TableCell className="text-right text-blue-600 font-medium">{s.venta_credito}</TableCell>
-                                <TableCell className="text-right text-green-600 font-medium">{s.venta_contado_yape}</TableCell>
+                                <TableCell className="text-right text-zinc-600 font-medium">{Number(s.venta_credito || 0) + Number(s.venta_contado_yape || 0)}</TableCell>
                                 <TableCell className="text-right font-bold bg-zinc-50">{s.stock_final_qty}</TableCell>
+                                <TableCell className={`text-right font-medium ${Number(s.merma || 0) > 0 ? 'text-amber-600' : 'text-zinc-400'}`}>{s.merma || 0}</TableCell>
                             </TableRow>
                         )}
                     />
@@ -147,7 +147,7 @@ export default function HistorialPage() {
 
                 <TabsContent value="pasteles">
                     <HistoryTable
-                        headers={['Fecha Reg.', 'Semana', 'Producto', 'St. Inicial', 'Pedido', 'V. Crédito', 'V. Contado', 'St. Final']}
+                        headers={['Fecha Reg.', 'Semana', 'Producto', 'St. Inicial', 'Pedido', 'Ventas', 'St. Final', 'Dif.']}
                         data={pasteles}
                         renderRow={(p) => (
                             <TableRow key={p.id}>
@@ -156,9 +156,9 @@ export default function HistorialPage() {
                                 <TableCell>{p.kardex_productos?.nombre}</TableCell>
                                 <TableCell className="text-right">{p.stock_inicial_qty}</TableCell>
                                 <TableCell className="text-right">{p.pedido_qty}</TableCell>
-                                <TableCell className="text-right text-blue-600 font-medium">{p.venta_credito_yapes}</TableCell>
-                                <TableCell className="text-right text-green-600 font-medium">{p.venta_contado}</TableCell>
+                                <TableCell className="text-right text-zinc-600 font-medium">{Number(p.venta_credito_yapes || 0) + Number(p.venta_contado || 0)}</TableCell>
                                 <TableCell className="text-right font-bold bg-zinc-50">{p.stock_final_qty}</TableCell>
+                                <TableCell className={`text-right font-medium ${Number(p.merma || 0) > 0 ? 'text-amber-600' : 'text-zinc-400'}`}>{p.merma || 0}</TableCell>
                             </TableRow>
                         )}
                     />

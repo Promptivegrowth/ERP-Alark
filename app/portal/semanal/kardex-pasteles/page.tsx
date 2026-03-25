@@ -110,6 +110,9 @@ export default function KardexPastelesPage() {
 
             // 2. Prepare inserts for pasteles
             const inserts = data.items.map(item => {
+                const theoretical = Number(item.stock_anterior || 0) + Number(item.ingreso_semanal || 0) - (Number(item.ventas_credito || 0) + Number(item.ventas_contado || 0));
+                const diff = theoretical - Number(item.stock_fisico || 0);
+
                 return {
                     semana_id: semanaId,
                     comedor_id: comedorId,
@@ -118,8 +121,7 @@ export default function KardexPastelesPage() {
                     pedido_qty: item.ingreso_semanal,
                     venta_credito_yapes: item.ventas_credito,
                     venta_contado: item.ventas_contado,
-                    stock_final_qty: item.stock_fisico,
-                    merma: 0,
+                    merma: diff,
                     stock_final_valor: 0
                 };
             });

@@ -189,8 +189,8 @@ export default function ComedorDetallePage() {
                                                 <TableCell className="text-right text-blue-600">{Number(k.venta_credito || k.venta_credito_yapes || 0) + Number(k.venta_contado || k.venta_contado_yape || 0)}</TableCell>
                                                 <TableCell className="text-right font-bold">{k.stock_final_qty || 0}</TableCell>
                                                 <TableCell className="text-right">
-                                                    <span className="px-2 py-1 rounded font-semibold text-xs bg-zinc-100 text-zinc-700">
-                                                        S/. {(k.stock_final_valor || 0).toFixed(2)}
+                                                    <span className={`px-2 py-1 rounded font-semibold text-xs ${Number(k.merma || 0) > 0 ? 'bg-amber-100 text-amber-700' : 'bg-green-100 text-emerald-700'}`}>
+                                                        {k.merma || 0}
                                                     </span>
                                                 </TableCell>
                                             </TableRow>

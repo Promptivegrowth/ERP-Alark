@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useUser } from '@/hooks/useAuth';
 import { createClient } from '@/lib/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Legend } from 'recharts';
 import { CheckCircle2, AlertCircle, FileText, Users, DollarSign, Activity } from 'lucide-react';
 import { format, startOfWeek, endOfWeek } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -178,14 +178,15 @@ export default function PortalDashboard() {
                             </div>
                         ) : (
                             <ResponsiveContainer width="100%" height="100%">
-                                <LineChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                                <BarChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
                                     <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12 }} />
                                     <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12 }} tickFormatter={(val) => `S/${val}`} />
-                                    <RechartsTooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
-                                    <Line type="monotone" dataKey="credito" stroke="#1A56DB" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} name="Crédito" />
-                                    <Line type="monotone" dataKey="contado" stroke="#10b981" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} name="Contado" />
-                                </LineChart>
+                                    <RechartsTooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                                    <Legend />
+                                    <Bar dataKey="credito" fill="#1A56DB" radius={[4, 4, 0, 0]} name="Crédito" />
+                                    <Bar dataKey="contado" fill="#10b981" radius={[4, 4, 0, 0]} name="Contado" />
+                                </BarChart>
                             </ResponsiveContainer>
                         )}
                     </CardContent>
