@@ -118,6 +118,7 @@ export default function KardexPastelesPage() {
                     pedido_qty: item.ingreso_semanal,
                     venta_credito_yapes: item.ventas_credito,
                     venta_contado: item.ventas_contado,
+                    stock_final_qty: item.stock_fisico,
                     merma: 0,
                     stock_final_valor: 0
                 };

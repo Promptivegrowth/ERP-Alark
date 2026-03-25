@@ -30,7 +30,7 @@ export default function HistorialPage() {
             const { data: liqData } = await supabase
                 .from('liquidacion_diaria')
                 .select('*')
-                .eq('comedor_id', comedorId)
+                .eq('comedor_id', comedorId as any)
                 .order('fecha', { ascending: false })
                 .limit(50);
             if (liqData) setLiquidaciones(liqData);
@@ -39,7 +39,7 @@ export default function HistorialPage() {
             const { data: snackData } = await supabase
                 .from('kardex_snack_ventas')
                 .select(`*, semanas(fecha_inicio), kardex_productos(nombre)`)
-                .eq('comedor_id', comedorId)
+                .eq('comedor_id', comedorId as any)
                 .order('created_at', { ascending: false })
                 .limit(50);
             if (snackData) setSnacks(snackData);
@@ -48,7 +48,7 @@ export default function HistorialPage() {
             const { data: pastaData } = await supabase
                 .from('kardex_pasteles')
                 .select(`*, semanas(fecha_inicio), kardex_productos(nombre)`)
-                .eq('comedor_id', comedorId)
+                .eq('comedor_id', comedorId as any)
                 .order('created_at', { ascending: false })
                 .limit(50);
             if (pastaData) setPasteles(pastaData);
@@ -57,7 +57,7 @@ export default function HistorialPage() {
             const { data: panData } = await supabase
                 .from('pedido_pan')
                 .select(`*, semanas(fecha_inicio)`)
-                .eq('comedor_id', comedorId)
+                .eq('comedor_id', comedorId as any)
                 .order('fecha', { ascending: false })
                 .limit(50);
             if (panData) setPan(panData);
@@ -66,7 +66,7 @@ export default function HistorialPage() {
             const { data: gasData } = await supabase
                 .from('gastos_operativos')
                 .select(`*, semanas(fecha_inicio)`)
-                .eq('comedor_id', comedorId)
+                .eq('comedor_id', comedorId as any)
                 .order('fecha', { ascending: false })
                 .limit(50);
             if (gasData) setGastos(gasData);
@@ -75,7 +75,7 @@ export default function HistorialPage() {
             const { data: coffeData } = await supabase
                 .from('coffe_otros')
                 .select(`*, semanas(fecha_inicio)`)
-                .eq('comedor_id', comedorId)
+                .eq('comedor_id', comedorId as any)
                 .order('fecha', { ascending: false })
                 .limit(50);
             if (coffeData) setCoffe(coffeData);
@@ -128,16 +128,18 @@ export default function HistorialPage() {
 
                 <TabsContent value="snacks">
                     <HistoryTable
-                        headers={['Semana', 'Producto', 'St. Inicial', 'Pedido', 'V. Crédito', 'V. Contado']}
+                        headers={['Fecha Reg.', 'Semana', 'Producto', 'St. Inicial', 'Pedido', 'V. Crédito', 'V. Contado', 'St. Final']}
                         data={snacks}
                         renderRow={(s) => (
                             <TableRow key={s.id}>
+                                <TableCell className="text-[10px] text-zinc-400">{format(new Date(s.created_at), 'dd MMM HH:mm')}</TableCell>
                                 <TableCell className="font-medium">{formatDateStr(s.semanas?.fecha_inicio)}</TableCell>
                                 <TableCell>{s.kardex_productos?.nombre}</TableCell>
                                 <TableCell className="text-right">{s.stock_inicial_qty}</TableCell>
                                 <TableCell className="text-right">{s.pedido_qty}</TableCell>
                                 <TableCell className="text-right text-blue-600 font-medium">{s.venta_credito}</TableCell>
                                 <TableCell className="text-right text-green-600 font-medium">{s.venta_contado_yape}</TableCell>
+                                <TableCell className="text-right font-bold bg-zinc-50">{s.stock_final_qty}</TableCell>
                             </TableRow>
                         )}
                     />
@@ -145,16 +147,18 @@ export default function HistorialPage() {
 
                 <TabsContent value="pasteles">
                     <HistoryTable
-                        headers={['Semana', 'Producto', 'St. Inicial', 'Pedido', 'V. Crédito', 'V. Contado']}
+                        headers={['Fecha Reg.', 'Semana', 'Producto', 'St. Inicial', 'Pedido', 'V. Crédito', 'V. Contado', 'St. Final']}
                         data={pasteles}
                         renderRow={(p) => (
                             <TableRow key={p.id}>
+                                <TableCell className="text-[10px] text-zinc-400">{format(new Date(p.created_at), 'dd MMM HH:mm')}</TableCell>
                                 <TableCell className="font-medium">{formatDateStr(p.semanas?.fecha_inicio)}</TableCell>
                                 <TableCell>{p.kardex_productos?.nombre}</TableCell>
                                 <TableCell className="text-right">{p.stock_inicial_qty}</TableCell>
                                 <TableCell className="text-right">{p.pedido_qty}</TableCell>
                                 <TableCell className="text-right text-blue-600 font-medium">{p.venta_credito_yapes}</TableCell>
                                 <TableCell className="text-right text-green-600 font-medium">{p.venta_contado}</TableCell>
+                                <TableCell className="text-right font-bold bg-zinc-50">{p.stock_final_qty}</TableCell>
                             </TableRow>
                         )}
                     />

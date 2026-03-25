@@ -118,6 +118,7 @@ export default function KardexSnacksPage() {
                     pedido_qty: item.ingreso_semanal,
                     venta_credito: item.ventas_credito,
                     venta_contado_yape: item.ventas_contado,
+                    stock_final_qty: item.stock_fisico,
                     merma: 0,
                     stock_final_valor: 0
                 };
