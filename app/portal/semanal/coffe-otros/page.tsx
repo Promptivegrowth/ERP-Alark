@@ -80,19 +80,19 @@ export default function CoffeOtrosPage() {
             if (semErr && semErr.code !== 'PGRST116') throw semErr;
 
             if (semData) {
-                semanaId = semData.id;
+                semanaId = (semData as any).id;
             } else {
                 const { data: newSem, error: insErr } = await supabase
                     .from('semanas')
                     .insert({
-                        comedor_id: comedorId,
+                        comedor_id: comedorId as any,
                         fecha_inicio: weekStart.toISOString().split('T')[0],
                         fecha_fin: weekEnd.toISOString().split('T')[0]
                     } as any)
                     .select()
                     .single();
                 if (insErr) throw insErr;
-                semanaId = newSem.id;
+                semanaId = (newSem as any).id;
             }
 
             // 2. Prepare inserts
@@ -188,7 +188,7 @@ export default function CoffeOtrosPage() {
                                                 required
                                             >
                                                 <option value="COFFE_BREAK">Coffe Break</option>
-                                                <option value="CUMPLEANOS">Cumpleaños</option>
+                                                <option value="CUMPLEAÑOS">Cumpleaños</option>
                                                 <option value="EVENTO_CORPORATIVO">Evento Corp.</option>
                                                 <option value="SPORADE_STAG">Staff / Stag</option>
                                                 <option value="OTRO">Otro</option>

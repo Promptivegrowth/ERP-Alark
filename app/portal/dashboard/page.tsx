@@ -8,6 +8,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsToolti
 import { CheckCircle2, AlertCircle, FileText, Users, DollarSign, Activity } from 'lucide-react';
 import { format, startOfWeek, endOfWeek } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { Button } from '@/components/ui/button';
 
 export default function PortalDashboard() {
     const { comedorId, loading } = useUser();
@@ -38,12 +39,12 @@ export default function PortalDashboard() {
             const { data: liqData } = await supabase
                 .from('liquidacion_diaria')
                 .select('*')
-                .eq('comedor_id', comedorId)
+                .eq('comedor_id', comedorId as any)
                 .eq('fecha', today);
 
             if (liqData && liqData.length > 0) {
                 setHasLiquidationToday(true);
-                const total = liqData.reduce((acc, curr) => acc + (Number(curr.cantidad) * Number(curr.precio_unit)), 0);
+                const total = (liqData as any[]).reduce((acc, curr) => acc + (Number(curr.cantidad) * Number(curr.precio_unit)), 0);
                 setSalesToday(total);
             }
 
@@ -51,7 +52,7 @@ export default function PortalDashboard() {
             const { data: incData } = await supabase
                 .from('incidencias')
                 .select('*')
-                .eq('comedor_id', comedorId)
+                .eq('comedor_id', comedorId as any)
                 .order('created_at', { ascending: false })
                 .limit(3);
             if (incData) setIncidents(incData);
@@ -60,7 +61,7 @@ export default function PortalDashboard() {
             const { count } = await supabase
                 .from('logistica_alertas')
                 .select('*', { count: 'exact', head: true })
-                .eq('comedor_id', comedorId)
+                .eq('comedor_id', comedorId as any)
                 .eq('atendido', false);
             if (count) setActiveAlerts(count);
 
@@ -70,7 +71,7 @@ export default function PortalDashboard() {
                 const { data: stockData } = await supabase
                     .from('vw_stock_actual' as any)
                     .select('*')
-                    .eq('comedor_id', comedorId)
+                    .eq('comedor_id', comedorId as any)
                     .lt('dias_cobertura', 3)
                     .limit(5);
                 if (stockData) setCriticalStock(stockData);

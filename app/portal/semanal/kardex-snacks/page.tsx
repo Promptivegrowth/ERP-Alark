@@ -86,26 +86,26 @@ export default function KardexSnacksPage() {
             const { data: semData, error: semErr } = await supabase
                 .from('semanas')
                 .select('id')
-                .eq('comedor_id', comedorId)
+                .eq('comedor_id', comedorId as any)
                 .eq('fecha_inicio', weekStart.toISOString().split('T')[0])
                 .single();
 
             if (semErr && semErr.code !== 'PGRST116') throw semErr;
 
             if (semData) {
-                semanaId = semData.id;
+                semanaId = (semData as any).id;
             } else {
                 const { data: newSem, error: insErr } = await supabase
                     .from('semanas')
                     .insert({
-                        comedor_id: comedorId,
+                        comedor_id: comedorId as any,
                         fecha_inicio: weekStart.toISOString().split('T')[0],
                         fecha_fin: weekEnd.toISOString().split('T')[0]
                     } as any)
                     .select()
                     .single();
                 if (insErr) throw insErr;
-                semanaId = newSem.id;
+                semanaId = (newSem as any).id;
             }
 
             // 2. Prepare inserts for snacks
