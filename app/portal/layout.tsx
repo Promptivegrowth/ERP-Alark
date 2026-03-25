@@ -113,12 +113,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
                             )}
                         </li>
 
-                        <li>
-                            <Link href="/portal/reporte-sistema" className={`flex items-center gap-3 px-3 py-2 rounded-md transition-colors ${pathname === '/portal/reporte-sistema' ? 'bg-blue-600' : 'hover:bg-blue-700'}`}>
-                                <Upload size={20} />
-                                {!collapsed && <span>Reporte Sistema</span>}
-                            </Link>
-                        </li>
+
                         <li>
                             <Link href="/portal/historial" className={`flex items-center gap-3 px-3 py-2 rounded-md transition-colors ${pathname === '/portal/historial' ? 'bg-blue-600' : 'hover:bg-blue-700'}`}>
                                 <History size={20} />

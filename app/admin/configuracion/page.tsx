@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useUser } from '@/hooks/useAuth';
 import { toast } from 'sonner';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -54,12 +56,12 @@ export default function ConfiguracionPage() {
             // but Supabase might fail depending on specific schema constraints.
             // Assuming table accepts basic inserts.
             const { error } = await supabase.from('comedores').insert({
-                id: `CMD-${Math.floor(Math.random() * 10000)}`, // Basic mock uuid simulation if trigger handles it
                 nombre: newComedor.nombre.toUpperCase(),
                 cliente_empresa: newComedor.cliente.toUpperCase(),
                 responsable: newComedor.responsable.toUpperCase(),
-                activo: true
-            });
+                activo: true,
+                codigo: `CMD-${Math.floor(Math.random() * 10000)}`
+            } as any);
 
             if (error) throw error;
             toast.success('Comedor registrado exitosamente');
@@ -90,7 +92,7 @@ export default function ConfiguracionPage() {
                 email: newUser.email,
                 rol: newUser.rol,
                 comedor_id: newUser.rol === 'ADMIN' ? null : newUser.comedor_id
-            });
+            } as any);
 
             if (error) throw error;
             toast.success('Perfil de usuario registrado');
@@ -255,7 +257,7 @@ export default function ConfiguracionPage() {
                                             </TableCell>
                                             <TableCell>{u.comedores?.nombre || <span className="text-zinc-400 italic">No Aplica (Admin)</span>}</TableCell>
                                             <TableCell className="text-xs text-zinc-500">
-                                                {format(new Date(u.created_at || new Date()), 'dd MMM yyyy')}
+                                                {format(new Date(u.created_at || new Date()), 'dd MMM yyyy', { locale: es })}
                                             </TableCell>
                                         </TableRow>
                                     ))}
