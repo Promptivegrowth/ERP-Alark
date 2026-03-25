@@ -34,16 +34,24 @@ export default function ComedorDetallePage() {
             const { data: cData } = await supabase.from('comedores').select('*').eq('id', id).single();
             if (cData) setComedor(cData);
 
-            const [liqRes, karRes, panRes, gasRes, espRes] = await Promise.all([
+            const [liqRes, snackRes, pastRes, panRes, gasRes, espRes] = await Promise.all([
                 supabase.from('liquidacion_diaria').select('*').eq('comedor_id', id).order('fecha', { ascending: false }).limit(50),
-                supabase.from('kardex_semanal').select('*, kardex_productos(nombre)').eq('comedor_id', id).order('semana_inicio', { ascending: false }).limit(50),
-                supabase.from('pedido_pan').select('*').eq('comedor_id', id).order('semana_inicio', { ascending: false }).limit(20),
-                supabase.from('gastos').select('*').eq('comedor_id', id).order('fecha', { ascending: false }).limit(50),
-                supabase.from('especial_servicios').select('*').eq('comedor_id', id).order('fecha', { ascending: false }).limit(50)
+                supabase.from('kardex_snack_ventas').select('*, kardex_productos(nombre)').eq('comedor_id', id).order('created_at', { ascending: false }).limit(20),
+                supabase.from('kardex_pasteles').select('*, kardex_productos(nombre)').eq('comedor_id', id).order('created_at', { ascending: false }).limit(20),
+                supabase.from('pedido_pan').select('*').eq('comedor_id', id).order('fecha', { ascending: false }).limit(50),
+                supabase.from('gastos_operativos').select('*').eq('comedor_id', id).order('fecha', { ascending: false }).limit(50),
+                supabase.from('coffe_otros').select('*').eq('comedor_id', id).order('fecha', { ascending: false }).limit(50)
             ]);
 
             if (liqRes.data) setLiquidaciones(liqRes.data);
-            if (karRes.data) setKardex(karRes.data);
+
+            // Merge snacks and pasteles for the Kardex tab
+            const mergedKardex = [
+                ...((snackRes.data || []) as any[]).map(k => ({ ...k, tipo: 'SNACK' })),
+                ...((pastRes.data || []) as any[]).map(k => ({ ...k, tipo: 'PASTEL' }))
+            ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+            setKardex(mergedKardex);
             if (panRes.data) setPedidosPan(panRes.data);
             if (gasRes.data) setGastos(gasRes.data);
             if (espRes.data) setEspeciales(espRes.data);
@@ -166,16 +174,23 @@ export default function ComedorDetallePage() {
                                 </TableHeader>
                                 <TableBody>
                                     {kardex.length === 0 ? <TableRow><TableCell colSpan={6} className="text-center py-6 text-zinc-500">Sin datos</TableCell></TableRow> :
-                                        kardex.map((k) => (
-                                            <TableRow key={k.id}>
-                                                <TableCell className="font-medium">{format(new Date(k.semana_inicio), 'dd MMM yyyy')}</TableCell>
-                                                <TableCell>{k.kardex_productos?.nombre || 'Producto'}</TableCell>
-                                                <TableCell className="text-right">{k.ingreso_semanal}</TableCell>
-                                                <TableCell className="text-right text-blue-600">{Number(k.ventas_credito) + Number(k.ventas_contado)}</TableCell>
-                                                <TableCell className="text-right font-bold">{k.stock_fisico}</TableCell>
+                                        kardex.map((k, idx) => (
+                                            <TableRow key={idx}>
+                                                <TableCell className="font-medium text-xs">
+                                                    {k.semana_id ? 'Semanal' : format(new Date(k.created_at), 'dd MMM yyyy')}
+                                                </TableCell>
+                                                <TableCell>
+                                                    <div className="flex flex-col">
+                                                        <span className="font-medium">{k.kardex_productos?.nombre || 'Producto'}</span>
+                                                        <span className="text-[10px] text-zinc-400">{k.tipo}</span>
+                                                    </div>
+                                                </TableCell>
+                                                <TableCell className="text-right">{k.pedido_qty || 0}</TableCell>
+                                                <TableCell className="text-right text-blue-600">{Number(k.venta_credito || k.venta_credito_yapes || 0) + Number(k.venta_contado || k.venta_contado_yape || 0)}</TableCell>
+                                                <TableCell className="text-right font-bold">{k.stock_final_qty || 0}</TableCell>
                                                 <TableCell className="text-right">
-                                                    <span className={`px-2 py-1 rounded font-semibold text-xs ${k.diferencia < 0 ? 'bg-red-100 text-red-700' : k.diferencia > 0 ? 'bg-amber-100 text-amber-700' : 'text-emerald-700'}`}>
-                                                        {k.diferencia}
+                                                    <span className="px-2 py-1 rounded font-semibold text-xs bg-zinc-100 text-zinc-700">
+                                                        S/. {(k.stock_final_valor || 0).toFixed(2)}
                                                     </span>
                                                 </TableCell>
                                             </TableRow>
@@ -210,15 +225,10 @@ export default function ComedorDetallePage() {
                                     {pedidosPan.length === 0 ? <TableRow><TableCell colSpan={9} className="text-center py-6 text-zinc-500">Sin datos</TableCell></TableRow> :
                                         pedidosPan.map((p) => (
                                             <TableRow key={p.id}>
-                                                <TableCell className="font-medium">{format(new Date(p.semana_inicio), 'dd MMM yyyy')}</TableCell>
-                                                <TableCell className="text-right">{p.lunes}</TableCell>
-                                                <TableCell className="text-right">{p.martes}</TableCell>
-                                                <TableCell className="text-right">{p.miercoles}</TableCell>
-                                                <TableCell className="text-right">{p.jueves}</TableCell>
-                                                <TableCell className="text-right">{p.viernes}</TableCell>
-                                                <TableCell className="text-right">{p.sabado}</TableCell>
-                                                <TableCell className="text-right">{p.domingo}</TableCell>
-                                                <TableCell className="text-right font-bold text-amber-600">{p.total}</TableCell>
+                                                <TableCell className="font-medium">{format(new Date(p.fecha), 'dd MMM yyyy')}</TableCell>
+                                                <TableCell className="text-right">{p.producto}</TableCell>
+                                                <TableCell className="text-right font-bold text-amber-600">{p.cantidad_pedido}</TableCell>
+                                                <TableCell className="text-right" colSpan={6}></TableCell>
                                             </TableRow>
                                         ))}
                                 </TableBody>
@@ -247,8 +257,8 @@ export default function ComedorDetallePage() {
                                         gastos.map((g) => (
                                             <TableRow key={g.id}>
                                                 <TableCell className="font-medium">{format(new Date(g.fecha), 'dd MMM yyyy')}</TableCell>
-                                                <TableCell>{g.num_documento}</TableCell>
-                                                <TableCell>{g.proveedor} {g.observacion && <span className="text-zinc-400 text-xs ml-2">({g.observacion})</span>}</TableCell>
+                                                <TableCell><Badge variant="outline">{g.categoria}</Badge></TableCell>
+                                                <TableCell>{g.descripcion} {g.autorizado_por && <span className="text-zinc-400 text-xs ml-2">({g.autorizado_por})</span>}</TableCell>
                                                 <TableCell className="text-right font-bold text-red-600">- S/. {(g.monto || 0).toFixed(2)}</TableCell>
                                             </TableRow>
                                         ))}
@@ -284,7 +294,7 @@ export default function ComedorDetallePage() {
                                                 <TableCell>{e.solicitante}</TableCell>
                                                 <TableCell>{e.descripcion}</TableCell>
                                                 <TableCell className="text-right">{e.cantidad}</TableCell>
-                                                <TableCell className="text-right font-bold text-indigo-600">S/. {((e.cantidad || 0) * (e.precio_unit || 0)).toFixed(2)}</TableCell>
+                                                <TableCell className="text-right font-bold text-indigo-600">S/. {(e.total || (e.cantidad * e.valor_unit) || 0).toFixed(2)}</TableCell>
                                             </TableRow>
                                         ))}
                                 </TableBody>

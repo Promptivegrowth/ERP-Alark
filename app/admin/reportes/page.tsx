@@ -14,6 +14,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { FileText, Download, Filter } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 
 export default function ReportesPage() {
     const { loading } = useUser();
@@ -59,18 +60,18 @@ export default function ReportesPage() {
         const agg: Record<string, any> = {};
 
         if (liqData) {
-            liqData.forEach(l => {
-                const cName = l.comedores?.nombre || 'General';
+            (liqData as any[]).forEach(l => {
+                const cName = (l.comedores as any)?.nombre || 'General';
                 if (!agg[cName]) agg[cName] = { comedor: cName, liquidadoTotal: 0, consolidadoTotal: 0 };
-                agg[cName].liquidadoTotal += l.cantidad * (l.precio_unit || 0);
+                agg[cName].liquidadoTotal += Number(l.cantidad || 0) * (Number(l.precio_unit) || 0);
             });
         }
 
         if (repData) {
-            repData.forEach(r => {
-                const cName = r.comedores?.nombre || 'General';
+            (repData as any[]).forEach(r => {
+                const cName = (r.comedores as any)?.nombre || 'General';
                 if (!agg[cName]) agg[cName] = { comedor: cName, liquidadoTotal: 0, consolidadoTotal: 0 };
-                agg[cName].consolidadoTotal += r.total_valor || 0;
+                agg[cName].consolidadoTotal += (Number(r.valor_empresa) || 0) + (Number(r.valor_empleado) || 0);
             });
         }
 
@@ -168,7 +169,7 @@ export default function ReportesPage() {
                     <div className="flex flex-col md:flex-row gap-4 items-end">
                         <div className="space-y-2 w-full md:w-1/3">
                             <label className="text-sm font-medium">Comedor</label>
-                            <Select value={selectedComedor} onValueChange={setSelectedComedor}>
+                            <Select value={selectedComedor} onValueChange={(val) => setSelectedComedor(val || 'all')}>
                                 <SelectTrigger>
                                     <SelectValue placeholder="Todos los comedores" />
                                 </SelectTrigger>
@@ -182,7 +183,7 @@ export default function ReportesPage() {
                         </div>
                         <div className="space-y-2 w-full md:w-1/4">
                             <label className="text-sm font-medium">Mes</label>
-                            <Select value={month} onValueChange={setMonth}>
+                            <Select value={month} onValueChange={(val) => setMonth(val || '0')}>
                                 <SelectTrigger>
                                     <SelectValue placeholder="Mes actual" />
                                 </SelectTrigger>

@@ -78,6 +78,23 @@ export default function PortalDashboard() {
             } catch (e) {
                 console.warn("View vw_stock_actual not found or accessible");
             }
+
+            // 5. Load Chart Data (Last 4 weeks)
+            const { data: vData } = await supabase
+                .from('vw_ventas_semanales' as any)
+                .select('*')
+                .eq('comedor_id', comedorId as any)
+                .order('fecha_inicio', { ascending: true })
+                .limit(4);
+
+            if (vData && vData.length > 0) {
+                const formatted = (vData as any[]).map(v => ({
+                    name: format(new Date(v.fecha_inicio), 'dd MMM', { locale: es }),
+                    credito: Number(v.ventas_credito || 0),
+                    contado: Number(v.ventas_contado || 0)
+                }));
+                setChartData(formatted);
+            }
         }
 
         loadDashboardData();
@@ -150,20 +167,27 @@ export default function PortalDashboard() {
                 {/* Chart Area */}
                 <Card className="col-span-1 lg:col-span-2">
                     <CardHeader>
-                        <CardTitle>Ventas Últimas Semanas (Demo)</CardTitle>
-                        <CardDescription>Visualización de ingresos por tipo de pago</CardDescription>
+                        <CardTitle>Ventas Últimas Semanas</CardTitle>
+                        <CardDescription>Resumen de ingresos por tipo de pago (Crédito vs Contado)</CardDescription>
                     </CardHeader>
                     <CardContent className="h-[300px] mt-4">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <LineChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
-                                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12 }} />
-                                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12 }} tickFormatter={(val) => `S/${val}`} />
-                                <RechartsTooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
-                                <Line type="monotone" dataKey="credito" stroke="#1A56DB" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} name="Crédito" />
-                                <Line type="monotone" dataKey="contado" stroke="#10b981" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} name="Contado" />
-                            </LineChart>
-                        </ResponsiveContainer>
+                        {chartData.length === 0 || chartData.every(d => d.credito === 0 && d.contado === 0) ? (
+                            <div className="h-full flex flex-col items-center justify-center text-zinc-400 space-y-2">
+                                <Activity size={40} className="opacity-20" />
+                                <p className="text-sm">Sin datos históricos suficientes para mostrar el gráfico</p>
+                            </div>
+                        ) : (
+                            <ResponsiveContainer width="100%" height="100%">
+                                <LineChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
+                                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12 }} />
+                                    <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12 }} tickFormatter={(val) => `S/${val}`} />
+                                    <RechartsTooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                                    <Line type="monotone" dataKey="credito" stroke="#1A56DB" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} name="Crédito" />
+                                    <Line type="monotone" dataKey="contado" stroke="#10b981" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} name="Contado" />
+                                </LineChart>
+                            </ResponsiveContainer>
+                        )}
                     </CardContent>
                 </Card>
 
