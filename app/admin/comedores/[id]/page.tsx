@@ -10,7 +10,7 @@ import { es } from 'date-fns/locale';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { MapPin, User as UserIcon, Building, Phone, Calendar } from 'lucide-react';
+import { MapPin, User as UserIcon, Building, Phone, Calendar, AlertTriangle, TrendingUp, CheckCircle2, AlertCircle, HelpCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
 export default function ComedorDetallePage() {
@@ -26,6 +26,7 @@ export default function ComedorDetallePage() {
     const [pedidosPan, setPedidosPan] = useState<any[]>([]);
     const [gastos, setGastos] = useState<any[]>([]);
     const [especiales, setEspeciales] = useState<any[]>([]);
+    const [cruceData, setCruceData] = useState<any[]>([]);
 
     useEffect(() => {
         if (!id) return;
@@ -34,13 +35,14 @@ export default function ComedorDetallePage() {
             const { data: cData } = await supabase.from('comedores').select('*').eq('id', id).single();
             if (cData) setComedor(cData);
 
-            const [liqRes, snackRes, pastRes, panRes, gasRes, espRes] = await Promise.all([
-                supabase.from('liquidacion_diaria').select('*').eq('comedor_id', id).order('fecha', { ascending: false }).limit(50),
+            const [liqRes, snackRes, pastRes, panRes, gasRes, espRes, cruceRes] = await Promise.all([
+                supabase.from('reporte_diario').select('*').eq('comedor_id', id).order('fecha', { ascending: false }).limit(50),
                 supabase.from('kardex_snack_ventas').select('*, kardex_productos(nombre)').eq('comedor_id', id).order('created_at', { ascending: false }).limit(20),
                 supabase.from('kardex_pasteles').select('*, kardex_productos(nombre)').eq('comedor_id', id).order('created_at', { ascending: false }).limit(20),
                 supabase.from('pedido_pan').select('*').eq('comedor_id', id).order('fecha', { ascending: false }).limit(50),
                 supabase.from('gastos_operativos').select('*').eq('comedor_id', id).order('fecha', { ascending: false }).limit(50),
-                supabase.from('coffe_otros').select('*').eq('comedor_id', id).order('fecha', { ascending: false }).limit(50)
+                supabase.from('coffe_otros').select('*').eq('comedor_id', id).order('fecha', { ascending: false }).limit(50),
+                supabase.from('reporte_cruce_semanal').select('*').eq('comedor_id', id).order('updated_at', { ascending: false }).limit(30)
             ]);
 
             if (liqRes.data) setLiquidaciones(liqRes.data);
@@ -55,6 +57,7 @@ export default function ComedorDetallePage() {
             if (panRes.data) setPedidosPan(panRes.data);
             if (gasRes.data) setGastos(gasRes.data);
             if (espRes.data) setEspeciales(espRes.data);
+            if (cruceRes.data) setCruceData(cruceRes.data);
 
             setDataLoaded(true);
         }
@@ -68,7 +71,7 @@ export default function ComedorDetallePage() {
         <div className="space-y-6">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h2 className="text-3xl font-bold tracking-tight text-indigo-900 dark:text-indigo-100 flex items-center gap-3">
+                    <h2 className="text-3xl font-bold tracking-tight text-[#1B4332] flex items-center gap-3">
                         {comedor.nombre}
                         {comedor.activo ? (
                             <Badge className="bg-emerald-100 text-emerald-800 hover:bg-emerald-100 border-emerald-200">Activo</Badge>
@@ -112,44 +115,105 @@ export default function ComedorDetallePage() {
             </div>
 
             <Tabs defaultValue="diario" className="w-full">
-                <TabsList className="grid grid-cols-2 md:grid-cols-5 h-auto md:h-12 bg-zinc-100 dark:bg-zinc-900">
-                    <TabsTrigger value="diario" className="data-[state=active]:bg-white dark:data-[state=active]:bg-zinc-800">Liquidaciones Diarias</TabsTrigger>
-                    <TabsTrigger value="kardex" className="data-[state=active]:bg-white dark:data-[state=active]:bg-zinc-800">Kardex de Inventario</TabsTrigger>
-                    <TabsTrigger value="pan" className="data-[state=active]:bg-white dark:data-[state=active]:bg-zinc-800">Pedidos de Pan</TabsTrigger>
-                    <TabsTrigger value="gastos" className="data-[state=active]:bg-white dark:data-[state=active]:bg-zinc-800">Gastos Caja Chica</TabsTrigger>
-                    <TabsTrigger value="especiales" className="data-[state=active]:bg-white dark:data-[state=active]:bg-zinc-800">Servs. Especiales</TabsTrigger>
+                <TabsList className="grid grid-cols-2 md:grid-cols-6 h-auto md:h-12 bg-zinc-100">
+                    <TabsTrigger value="diario" className="data-[state=active]:bg-[#2D6A4F] data-[state=active]:text-white">Reportes Diarios</TabsTrigger>
+                    <TabsTrigger value="cruce" className="data-[state=active]:bg-[#2D6A4F] data-[state=active]:text-white">
+                        Cruce Diario/Sem.
+                        {cruceData.some(c => c.tiene_discrepancia) && <span className="ml-1.5 w-2 h-2 rounded-full bg-red-500 inline-block" />}
+                    </TabsTrigger>
+                    <TabsTrigger value="kardex" className="data-[state=active]:bg-[#2D6A4F] data-[state=active]:text-white">Kardex</TabsTrigger>
+                    <TabsTrigger value="pan" className="data-[state=active]:bg-[#2D6A4F] data-[state=active]:text-white">Pedidos Pan</TabsTrigger>
+                    <TabsTrigger value="gastos" className="data-[state=active]:bg-[#2D6A4F] data-[state=active]:text-white">Gastos</TabsTrigger>
+                    <TabsTrigger value="especiales" className="data-[state=active]:bg-[#2D6A4F] data-[state=active]:text-white">Serv. Especiales</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="diario" className="mt-6">
                     <Card>
                         <CardHeader>
-                            <CardTitle>Liquidaciones Diarias Recientes</CardTitle>
-                            <CardDescription>Registro del ingreso al crédito y contado reportado por el comedor.</CardDescription>
+                            <CardTitle>Reportes Diarios</CardTitle>
+                            <CardDescription>Registros diarios enviados por el comedor (nuevo módulo).</CardDescription>
                         </CardHeader>
                         <CardContent>
                             <Table>
                                 <TableHeader>
                                     <TableRow>
                                         <TableHead>Fecha</TableHead>
-                                        <TableHead>Servicio</TableHead>
-                                        <TableHead>Tipo de Pago</TableHead>
-                                        <TableHead className="text-right">Cantidad</TableHead>
-                                        <TableHead className="text-right">Total (S/.)</TableHead>
+                                        <TableHead>Total Servicios (S/.)</TableHead>
+                                        <TableHead>Coffe Break</TableHead>
+                                        <TableHead>Observaciones</TableHead>
+                                        <TableHead className="text-center">Estado</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {liquidaciones.length === 0 ? <TableRow><TableCell colSpan={5} className="text-center py-6 text-zinc-500">Sin datos</TableCell></TableRow> :
+                                    {liquidaciones.length === 0 ? <TableRow><TableCell colSpan={5} className="text-center py-6 text-zinc-500">Sin reportes diarios</TableCell></TableRow> :
                                         liquidaciones.map((l) => (
                                             <TableRow key={l.id}>
-                                                <TableCell className="font-medium">{format(new Date(l.fecha), 'dd MMM yyyy')}</TableCell>
-                                                <TableCell>{l.servicio}</TableCell>
-                                                <TableCell><Badge variant="outline" className={l.tipo_pago === 'CREDITO_RANSA' ? 'text-indigo-600' : 'text-emerald-600'}>{l.tipo_pago}</Badge></TableCell>
-                                                <TableCell className="text-right">{l.cantidad}</TableCell>
-                                                <TableCell className="text-right font-bold text-emerald-600">S/. {(l.monto || (l.cantidad * l.precio_unit)).toFixed(2)}</TableCell>
+                                                <TableCell className="font-medium">{format(new Date(l.fecha + 'T12:00:00'), 'dd MMM yyyy')}</TableCell>
+                                                <TableCell className="font-bold text-[#2D6A4F]">S/. {Number(l.subtotal || 0).toFixed(2)}</TableCell>
+                                                <TableCell>{l.tiene_coffe_break ? <Badge className="bg-amber-100 text-amber-800">Sí</Badge> : <span className="text-zinc-400 text-xs">No</span>}</TableCell>
+                                                <TableCell className="text-xs text-zinc-500 max-w-[200px] truncate">{l.observaciones || '-'}</TableCell>
+                                                <TableCell className="text-center">
+                                                    <Badge className={l.bloqueado ? 'bg-zinc-200 text-zinc-600' : 'bg-emerald-100 text-emerald-800'}>
+                                                        {l.bloqueado ? 'Cerrado' : 'Activo'}
+                                                    </Badge>
+                                                </TableCell>
                                             </TableRow>
                                         ))}
                                 </TableBody>
                             </Table>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+
+                <TabsContent value="cruce" className="mt-6">
+                    <Card className="border-2 border-[#2D6A4F]/20">
+                        <CardHeader className="bg-[#1B4332]/5 border-b">
+                            <div className="flex items-center gap-2">
+                                <TrendingUp size={16} className="text-[#2D6A4F]" />
+                                <CardTitle className="text-base text-[#1B4332]">Cruce Diario vs Semanal</CardTitle>
+                            </div>
+                            <CardDescription>Diferencias detectadas entre los reportes diarios acumulados y los reportes semanales.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="p-0">
+                            {cruceData.length === 0 ? (
+                                <div className="text-center py-12 text-zinc-500">Sin datos de cruce aún. Se generan automáticamente al guardar reportes.</div>
+                            ) : (
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-sm">
+                                        <thead>
+                                            <tr className="bg-zinc-50 border-b">
+                                                <th className="text-left px-4 py-2 font-semibold text-zinc-600">Categoría</th>
+                                                <th className="text-right px-4 py-2 font-semibold text-zinc-600">Acumulado Diario</th>
+                                                <th className="text-right px-4 py-2 font-semibold text-zinc-600">Total Semanal</th>
+                                                <th className="text-right px-4 py-2 font-semibold text-zinc-600">Diferencia</th>
+                                                <th className="text-center px-4 py-2 font-semibold text-zinc-600">Estado</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y">
+                                            {cruceData.map((row: any) => {
+                                                const dif = Number(row.diferencia || 0);
+                                                const pct = Number(row.diferencia_pct || 0);
+                                                const estado = row.tiene_discrepancia ? (pct > 15 ? 'CRITICO' : 'ALERTA') : 'OK';
+                                                return (
+                                                    <TableRow key={row.id}>
+                                                        <TableCell className="font-medium">{row.categoria}</TableCell>
+                                                        <TableCell className="text-right">S/ {Number(row.total_diario_acumulado).toFixed(2)}</TableCell>
+                                                        <TableCell className="text-right">S/ {Number(row.total_semanal).toFixed(2)}</TableCell>
+                                                        <TableCell className={`text-right font-bold ${dif < 0 ? 'text-red-600' : dif > 0 ? 'text-amber-600' : 'text-emerald-600'}`}>
+                                                            {dif > 0 ? '+' : ''}{dif.toFixed(2)} ({pct.toFixed(1)}%)
+                                                        </TableCell>
+                                                        <TableCell className="text-center">
+                                                            <Badge className={estado === 'CRITICO' ? 'bg-red-100 text-red-800' : estado === 'ALERTA' ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'}>
+                                                                {estado === 'CRITICO' ? '⚠ Crítico' : estado === 'ALERTA' ? '⚡ Alerta' : '✓ OK'}
+                                                            </Badge>
+                                                        </TableCell>
+                                                    </TableRow>
+                                                );
+                                            })}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
                         </CardContent>
                     </Card>
                 </TabsContent>

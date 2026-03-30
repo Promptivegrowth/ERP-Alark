@@ -1,0 +1,491 @@
+'use client';
+
+import { useState, useEffect, useCallback } from 'react';
+import { createClient } from '@/lib/supabase/client';
+import { useUser } from '@/hooks/useAuth';
+import { toast } from 'sonner';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
+import { Save, Coffee, ChevronDown, ChevronUp } from 'lucide-react';
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+interface Campo {
+    id: string;
+    nombre_campo: string;
+    categoria: string;
+    orden: number;
+    activo: boolean;
+    es_readonly: boolean;
+    formula: string | null;
+}
+
+interface FieldValue {
+    campo_id: string;
+    cantidad: number;
+    monto: number;
+}
+
+interface ReporteData {
+    id?: string;
+    fecha: string;
+    tiene_coffe_break: boolean;
+    descripcion_coffe: string;
+    monto_coffe: number;
+    observaciones: string;
+    valores: Record<string, FieldValue>;
+}
+
+// ─── Category styles ──────────────────────────────────────────────────────────
+const CATEGORIA_CONFIG: Record<string, { label: string; color: string; border: string; bg: string }> = {
+    DESAYUNO: { label: '🍳 Desayunos', color: 'text-amber-800', border: 'border-amber-300', bg: 'bg-amber-50' },
+    ALMUERZO: { label: '🍽️ Almuerzos', color: 'text-emerald-800', border: 'border-emerald-300', bg: 'bg-emerald-50' },
+    CENA: { label: '🌙 Cenas', color: 'text-indigo-800', border: 'border-indigo-300', bg: 'bg-indigo-50' },
+    AMANECIDA: { label: '🌅 Amanecidas', color: 'text-purple-800', border: 'border-purple-300', bg: 'bg-purple-50' },
+    LONCHE: { label: '🥐 Lonches', color: 'text-orange-800', border: 'border-orange-300', bg: 'bg-orange-50' },
+    PAN: { label: '🍞 Pan', color: 'text-yellow-800', border: 'border-yellow-300', bg: 'bg-yellow-50' },
+    BEBIDA: { label: '🥤 Bebidas', color: 'text-cyan-800', border: 'border-cyan-300', bg: 'bg-cyan-50' },
+    EXTRA: { label: '⭐ Extra / Combos', color: 'text-rose-800', border: 'border-rose-300', bg: 'bg-rose-50' },
+    OTRO: { label: '📋 Otros', color: 'text-zinc-800', border: 'border-zinc-300', bg: 'bg-zinc-50' },
+};
+
+const VOLCAN_FAUCETT = ['ALMUERZOS FAUCETT', 'CENA FAUCETT', 'AMANECIDA FAUCETT'];
+const PAMOLSA_TOTTUS = ['PANES TOTTUS', 'BEBIDAS TOTTUS', 'ALMUERZOS TOTTUS', 'CENAS TOTTUS'];
+
+// ─── Component ────────────────────────────────────────────────────────────────
+export default function ReporteDiario() {
+    const { comedorId, loading } = useUser();
+    const supabase = createClient();
+
+    const [campos, setCampos] = useState<Campo[]>([]);
+    const [comedorNombre, setComedorNombre] = useState('');
+    const [reporte, setReporte] = useState<ReporteData>({
+        fecha: format(new Date(), 'yyyy-MM-dd'),
+        tiene_coffe_break: false,
+        descripcion_coffe: '',
+        monto_coffe: 0,
+        observaciones: '',
+        valores: {},
+    });
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [dataLoaded, setDataLoaded] = useState(false);
+
+    // Load fields
+    useEffect(() => {
+        if (!comedorId) return;
+        async function load() {
+            const { data: c } = await supabase.from('comedores').select('nombre').eq('id', comedorId as any).single();
+            if (c) setComedorNombre((c as any).nombre);
+
+            const { data: camposData } = await supabase
+                .from('comedor_campos_reporte')
+                .select('*')
+                .eq('comedor_id', comedorId as any)
+                .eq('activo', true)
+                .order('orden');
+
+            if (camposData) setCampos(camposData as Campo[]);
+            setDataLoaded(true);
+        }
+        load();
+    }, [comedorId, supabase]);
+
+    // Load existing report for date
+    useEffect(() => {
+        if (!comedorId || !reporte.fecha || !dataLoaded) return;
+        async function loadExisting() {
+            const { data: rd } = await supabase
+                .from('reporte_diario')
+                .select('*, reporte_diario_valores(*)')
+                .eq('comedor_id', comedorId as any)
+                .eq('fecha', reporte.fecha)
+                .maybeSingle();
+
+            if (rd) {
+                const valores: Record<string, FieldValue> = {};
+                ((rd as any).reporte_diario_valores || []).forEach((v: any) => {
+                    valores[v.campo_id] = { campo_id: v.campo_id, cantidad: v.cantidad, monto: v.monto };
+                });
+                setReporte(prev => ({
+                    ...prev,
+                    id: (rd as any).id,
+                    tiene_coffe_break: (rd as any).tiene_coffe_break,
+                    descripcion_coffe: (rd as any).descripcion_coffe || '',
+                    monto_coffe: (rd as any).monto_coffe || 0,
+                    observaciones: (rd as any).observaciones || '',
+                    valores,
+                }));
+            } else {
+                setReporte(prev => ({
+                    ...prev,
+                    id: undefined,
+                    tiene_coffe_break: false,
+                    descripcion_coffe: '',
+                    monto_coffe: 0,
+                    observaciones: '',
+                    valores: {},
+                }));
+            }
+        }
+        loadExisting();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [comedorId, reporte.fecha, dataLoaded]);
+
+    // Handle value change
+    const handleCantidad = useCallback((campoId: string, val: number) => {
+        setReporte(prev => ({
+            ...prev,
+            valores: {
+                ...prev.valores,
+                [campoId]: { ...prev.valores[campoId], campo_id: campoId, cantidad: val, monto: prev.valores[campoId]?.monto || 0 },
+            },
+        }));
+    }, []);
+
+    const handleMonto = useCallback((campoId: string, val: number) => {
+        setReporte(prev => ({
+            ...prev,
+            valores: {
+                ...prev.valores,
+                [campoId]: { ...prev.valores[campoId], campo_id: campoId, monto: val, cantidad: prev.valores[campoId]?.cantidad || 0 },
+            },
+        }));
+    }, []);
+
+    // Computed readonly (e.g. QUEBRADO = SOLICITADOS - CONSUMIDOS)
+    function getReadonlyCantidad(campo: Campo): number {
+        if (!campo.es_readonly || !campo.formula) return reporte.valores[campo.id]?.cantidad || 0;
+        const cat = campo.categoria;
+        const camposCat = campos.filter(c => c.categoria === cat && !c.es_readonly);
+        const prefix = campo.nombre_campo.split(' ')[0]; // ALMUERZOS / CENAS
+        const solicitado = camposCat.find(c => c.nombre_campo.includes(prefix) && c.nombre_campo.includes('SOLICITADOS'));
+        const consumido = camposCat.find(c => c.nombre_campo.includes(prefix) && c.nombre_campo.includes('CONSUMIDOS'));
+        const s = solicitado ? (reporte.valores[solicitado.id]?.cantidad || 0) : 0;
+        const c = consumido ? (reporte.valores[consumido.id]?.cantidad || 0) : 0;
+        return s - c;
+    }
+
+    // Group by category
+    const categorias = Array.from(new Set(campos.map(c => c.categoria)));
+
+    // Subtotals per category
+    function subtotalCat(cat: string) {
+        return campos
+            .filter(c => c.categoria === cat)
+            .reduce((acc, c) => {
+                const qty = c.es_readonly ? getReadonlyCantidad(c) : (reporte.valores[c.id]?.cantidad || 0);
+                return acc + qty;
+            }, 0);
+    }
+
+    function subtotalMontoCat(cat: string) {
+        return campos
+            .filter(c => c.categoria === cat)
+            .reduce((acc, c) => acc + (reporte.valores[c.id]?.monto || 0), 0);
+    }
+
+    function grandTotal() {
+        return {
+            cantidad: categorias.reduce((acc, cat) => acc + subtotalCat(cat), 0),
+            monto: categorias.reduce((acc, cat) => acc + subtotalMontoCat(cat), 0) + reporte.monto_coffe,
+        };
+    }
+
+    // Submit
+    async function handleSubmit() {
+        if (!comedorId) return;
+        setIsSubmitting(true);
+        try {
+            let reporteId = reporte.id;
+
+            // Upsert header
+            const headerData = {
+                comedor_id: comedorId,
+                fecha: reporte.fecha,
+                tiene_coffe_break: reporte.tiene_coffe_break,
+                descripcion_coffe: reporte.descripcion_coffe,
+                monto_coffe: reporte.monto_coffe,
+                observaciones: reporte.observaciones,
+                subtotal: grandTotal().monto,
+                updated_at: new Date().toISOString(),
+            };
+
+            if (reporteId) {
+                const { error } = await supabase.from('reporte_diario').update(headerData as any).eq('id', reporteId as string);
+                if (error) throw error;
+            } else {
+                const { data, error } = await supabase.from('reporte_diario').insert(headerData as any).select('id').single();
+                if (error) throw error;
+                reporteId = (data as any).id;
+                setReporte(prev => ({ ...prev, id: reporteId }));
+            }
+
+            // Upsert values
+            const valoresInserts = campos.map(campo => ({
+                reporte_id: reporteId,
+                campo_id: campo.id,
+                cantidad: campo.es_readonly ? getReadonlyCantidad(campo) : (reporte.valores[campo.id]?.cantidad || 0),
+                monto: reporte.valores[campo.id]?.monto || 0,
+            }));
+
+            const { error: vErr } = await supabase.from('reporte_diario_valores').upsert(valoresInserts as any, { onConflict: 'reporte_id,campo_id' });
+            if (vErr) throw vErr;
+
+            // Upsert totals per category
+            const totalesInserts = categorias.map(cat => ({
+                reporte_id: reporteId,
+                categoria: cat,
+                label_total: `TOTAL ${cat}`,
+                total_cantidad: subtotalCat(cat),
+                total_monto: subtotalMontoCat(cat),
+            }));
+
+            await supabase.from('reporte_diario_totales').upsert(totalesInserts as any, { onConflict: 'reporte_id,categoria' });
+
+            toast.success('Reporte diario guardado ✓');
+        } catch (err: any) {
+            console.error(err);
+            toast.error(`Error al guardar: ${err.message || 'Intenta nuevamente'}`);
+        } finally {
+            setIsSubmitting(false);
+        }
+    }
+
+    if (loading || !dataLoaded) {
+        return (
+            <div className="flex items-center justify-center h-64">
+                <div className="text-center">
+                    <div className="w-8 h-8 border-2 border-green-700 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+                    <p className="text-sm text-zinc-500">Cargando formulario...</p>
+                </div>
+            </div>
+        );
+    }
+
+    if (campos.length === 0) {
+        return (
+            <div className="flex items-center justify-center h-64">
+                <div className="text-center p-8 border-2 border-dashed border-zinc-200 rounded-xl">
+                    <p className="text-zinc-500 font-medium">No hay campos configurados para este comedor.</p>
+                    <p className="text-xs text-zinc-400 mt-1">Contacta al administrador para configurarlos.</p>
+                </div>
+            </div>
+        );
+    }
+
+    const totales = grandTotal();
+
+    return (
+        <div className="space-y-5 pb-40">
+            {/* Header */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <h2 className="text-2xl font-bold text-[#1B4332]">Reporte Diario</h2>
+                    <p className="text-sm text-zinc-500">{comedorNombre}</p>
+                </div>
+                <div className="flex items-center gap-3">
+                    <label className="text-sm font-medium text-zinc-600">Fecha:</label>
+                    <Input
+                        type="date"
+                        className="w-44 border-[#2D6A4F] focus:ring-[#2D6A4F]"
+                        value={reporte.fecha}
+                        onChange={e => setReporte(prev => ({ ...prev, fecha: e.target.value }))}
+                    />
+                    {reporte.id && <Badge className="bg-emerald-100 text-emerald-800 text-xs">Reporte guardado</Badge>}
+                </div>
+            </div>
+
+            {/* Field Cards by Category */}
+            {categorias.map(cat => {
+                const config = CATEGORIA_CONFIG[cat] || CATEGORIA_CONFIG.OTRO;
+                const camposCat = campos.filter(c => c.categoria === cat);
+                const isVolcan = comedorNombre === 'VOLCAN';
+                const isPamolsaOrTottus = ['PAMOLSA', 'TOTTUS-CDF', 'TOTTUS-CDS', 'TOTTUS-PPA'].includes(comedorNombre);
+
+                return (
+                    <Card key={cat} className={`border-2 ${config.border} overflow-hidden`}>
+                        <CardHeader className={`${config.bg} py-3 px-4 border-b ${config.border}`}>
+                            <CardTitle className={`text-base font-bold ${config.color}`}>
+                                {config.label}
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="p-0">
+                            <div className="divide-y divide-zinc-100">
+                                {camposCat.map((campo, idx) => {
+                                    const isReadonly = campo.es_readonly;
+                                    const cantidadVal = isReadonly ? getReadonlyCantidad(campo) : (reporte.valores[campo.id]?.cantidad || 0);
+                                    const montoVal = reporte.valores[campo.id]?.monto || 0;
+
+                                    // Visual separators
+                                    const showVolcanFaucettSep = isVolcan && idx > 0 && VOLCAN_FAUCETT.includes(campo.nombre_campo) && !VOLCAN_FAUCETT.includes(camposCat[idx - 1].nombre_campo);
+                                    const showVolcanGambettaSep = isVolcan && idx > 0 && !VOLCAN_FAUCETT.includes(campo.nombre_campo) && VOLCAN_FAUCETT.includes(camposCat[idx - 1].nombre_campo);
+                                    const showTottusSep = isPamolsaOrTottus && PAMOLSA_TOTTUS.includes(campo.nombre_campo) && !PAMOLSA_TOTTUS.includes(camposCat[idx - 1]?.nombre_campo || '');
+
+                                    return (
+                                        <div key={campo.id}>
+                                            {(showVolcanFaucettSep || showVolcanGambettaSep) && (
+                                                <div className="px-4 py-1 bg-zinc-100 text-xs font-bold text-zinc-500 uppercase tracking-wide">
+                                                    {VOLCAN_FAUCETT.includes(campo.nombre_campo) ? '📍 Sede Faucett' : '📍 Sede Gambetta'}
+                                                </div>
+                                            )}
+                                            {showTottusSep && (
+                                                <div className="px-4 py-1 bg-blue-50 text-xs font-bold text-blue-700 uppercase tracking-wide border-y border-blue-100">
+                                                    🏪 Sección TOTTUS
+                                                </div>
+                                            )}
+                                            {isPamolsaOrTottus && idx === 0 && (
+                                                <div className="px-4 py-1 bg-green-50 text-xs font-bold text-green-700 uppercase tracking-wide border-b border-green-100">
+                                                    🟢 Sección ALMARK
+                                                </div>
+                                            )}
+                                            <div className={`flex items-center gap-3 px-4 py-2.5 ${isReadonly ? 'bg-zinc-50' : 'hover:bg-zinc-50/50'} transition-colors`}>
+                                                <div className="flex-1 min-w-0">
+                                                    <span className={`text-sm font-medium ${isReadonly ? 'text-zinc-400 italic' : 'text-zinc-800'}`}>
+                                                        {campo.nombre_campo}
+                                                        {isReadonly && <span className="ml-2 text-[10px] bg-zinc-200 text-zinc-500 px-1.5 py-0.5 rounded">auto</span>}
+                                                    </span>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-24">
+                                                        <label className="text-[10px] text-zinc-400 block text-center mb-0.5">Cantidad</label>
+                                                        <Input
+                                                            type="number"
+                                                            min="0"
+                                                            value={cantidadVal || ''}
+                                                            readOnly={isReadonly}
+                                                            onChange={e => !isReadonly && handleCantidad(campo.id, Number(e.target.value))}
+                                                            className={`text-center text-sm h-8 ${isReadonly ? 'bg-zinc-100 text-zinc-500 cursor-default' : 'border-[#2D6A4F] focus:ring-[#2D6A4F]'}`}
+                                                            placeholder="0"
+                                                        />
+                                                    </div>
+                                                    <div className="w-28">
+                                                        <label className="text-[10px] text-zinc-400 block text-center mb-0.5">Monto S/.</label>
+                                                        <div className="relative">
+                                                            <span className="absolute left-2 top-1.5 text-zinc-400 text-xs">S/</span>
+                                                            <Input
+                                                                type="number"
+                                                                min="0"
+                                                                step="0.01"
+                                                                value={montoVal || ''}
+                                                                onChange={e => handleMonto(campo.id, Number(e.target.value))}
+                                                                className="pl-6 text-sm h-8 border-[#2D6A4F] focus:ring-[#2D6A4F]"
+                                                                placeholder="0.00"
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                            {/* Category subtotal */}
+                            <div className={`flex justify-between items-center px-4 py-2 ${config.bg} border-t ${config.border}`}>
+                                <span className={`text-xs font-bold uppercase ${config.color}`}>TOTAL {cat}</span>
+                                <div className="flex gap-4 text-right">
+                                    <span className={`text-sm font-bold ${config.color}`}>{subtotalCat(cat)} pax</span>
+                                    <span className={`text-sm font-bold ${config.color}`}>S/ {subtotalMontoCat(cat).toFixed(2)}</span>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                );
+            })}
+
+            {/* Coffee Break Section */}
+            <Card className={`border-2 ${reporte.tiene_coffe_break ? 'border-amber-300' : 'border-zinc-200'} transition-colors`}>
+                <CardHeader className={`py-3 px-4 flex flex-row items-center justify-between ${reporte.tiene_coffe_break ? 'bg-amber-50 border-b border-amber-200' : 'bg-zinc-50'}`}>
+                    <CardTitle className="text-base font-bold text-zinc-700 flex items-center gap-2">
+                        <Coffee size={16} />
+                        Coffe Break / Servicios Adicionales
+                    </CardTitle>
+                    <button
+                        type="button"
+                        onClick={() => setReporte(prev => ({ ...prev, tiene_coffe_break: !prev.tiene_coffe_break }))}
+                        className={`text-xs px-3 py-1 rounded-full font-semibold transition-all ${reporte.tiene_coffe_break ? 'bg-amber-500 text-white' : 'bg-zinc-200 text-zinc-600 hover:bg-zinc-300'}`}
+                    >
+                        {reporte.tiene_coffe_break ? 'SÍ — incluido' : 'NO — clic para agregar'}
+                    </button>
+                </CardHeader>
+                {reporte.tiene_coffe_break && (
+                    <CardContent className="pt-4 space-y-3">
+                        <Textarea
+                            placeholder="Describe el servicio de coffe break..."
+                            value={reporte.descripcion_coffe}
+                            onChange={e => setReporte(prev => ({ ...prev, descripcion_coffe: e.target.value }))}
+                            className="resize-none text-sm border-amber-300 focus:ring-amber-400"
+                            rows={2}
+                        />
+                        <div className="flex items-center gap-3">
+                            <label className="text-sm font-medium text-zinc-600">Monto:</label>
+                            <div className="relative w-36">
+                                <span className="absolute left-2 top-2 text-zinc-400 text-xs">S/</span>
+                                <Input
+                                    type="number"
+                                    min="0"
+                                    step="0.01"
+                                    value={reporte.monto_coffe || ''}
+                                    onChange={e => setReporte(prev => ({ ...prev, monto_coffe: Number(e.target.value) }))}
+                                    className="pl-6 text-sm border-amber-300"
+                                    placeholder="0.00"
+                                />
+                            </div>
+                        </div>
+                    </CardContent>
+                )}
+            </Card>
+
+            {/* Observaciones */}
+            <Card>
+                <CardHeader className="py-3 px-4 bg-zinc-50 border-b">
+                    <CardTitle className="text-sm font-semibold text-zinc-600">📝 Observaciones del día</CardTitle>
+                </CardHeader>
+                <CardContent className="pt-3">
+                    <Textarea
+                        placeholder="Incidentes, novedades, comentarios del día..."
+                        value={reporte.observaciones}
+                        onChange={e => setReporte(prev => ({ ...prev, observaciones: e.target.value }))}
+                        className="resize-none text-sm"
+                        rows={3}
+                    />
+                </CardContent>
+            </Card>
+
+            {/* Sticky Save Bar */}
+            <div className="fixed bottom-0 left-0 lg:left-64 right-0 z-30 bg-white border-t-2 border-[#2D6A4F] px-6 py-3 shadow-2xl">
+                <div className="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
+                    <div className="flex gap-6 text-sm">
+                        {categorias.map(cat => {
+                            const config = CATEGORIA_CONFIG[cat] || CATEGORIA_CONFIG.OTRO;
+                            const qty = subtotalCat(cat);
+                            if (qty === 0) return null;
+                            return (
+                                <div key={cat} className="flex flex-col items-center">
+                                    <span className={`font-bold text-lg ${config.color}`}>{qty}</span>
+                                    <span className="text-[10px] text-zinc-400 uppercase">{cat}</span>
+                                </div>
+                            );
+                        })}
+                        <div className="flex flex-col items-center border-l pl-4 ml-2">
+                            <span className="font-bold text-lg text-[#1B4332]">S/ {totales.monto.toFixed(2)}</span>
+                            <span className="text-[10px] text-zinc-400 uppercase">Total</span>
+                        </div>
+                    </div>
+                    <Button
+                        onClick={handleSubmit}
+                        disabled={isSubmitting}
+                        size="lg"
+                        className="bg-[#2D6A4F] hover:bg-[#1B4332] text-white gap-2 w-full sm:w-auto font-semibold shadow-lg"
+                    >
+                        <Save size={18} />
+                        {isSubmitting ? 'Guardando...' : 'Guardar Reporte'}
+                    </Button>
+                </div>
+            </div>
+        </div>
+    );
+}

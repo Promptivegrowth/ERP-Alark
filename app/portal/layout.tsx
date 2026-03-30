@@ -40,7 +40,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
 
     const menuItems = [
         { name: 'Dashboard', href: '/portal/dashboard', icon: Home },
-        { name: 'Liquidación del día', href: '/portal/diario', icon: Calendar },
+        { name: 'Reporte del día', href: '/portal/diario', icon: Calendar },
     ];
 
     const semanalItems = [
@@ -56,11 +56,11 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
             {/* Sidebar */}
             <aside
                 className={`${collapsed ? 'w-16' : 'w-64'
-                    } bg-[#1A56DB] text-white transition-all duration-300 flex flex-col hidden sm:flex`}
+                    } bg-[#1B4332] text-white transition-all duration-300 flex flex-col hidden sm:flex`}
             >
-                <div className="h-16 flex items-center justify-between px-4 border-b border-blue-600">
+                <div className="h-16 flex items-center justify-between px-4 border-b border-[#2D6A4F]">
                     {!collapsed && <span className="font-bold text-lg truncate">Comedores</span>}
-                    <button onClick={() => setCollapsed(!collapsed)} className="text-white hover:bg-blue-600 p-1 rounded">
+                    <button onClick={() => setCollapsed(!collapsed)} className="text-white hover:bg-[#2D6A4F] p-1 rounded">
                         <Menu size={20} />
                     </button>
                 </div>
@@ -73,7 +73,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
                                 <li key={item.name}>
                                     <Link
                                         href={item.href}
-                                        className={`flex items-center gap-3 px-3 py-2 rounded-md transition-colors ${isActive ? 'bg-blue-600' : 'hover:bg-blue-700'
+                                        className={`flex items-center gap-3 px-3 py-2 rounded-md transition-colors ${isActive ? 'bg-[#2D6A4F]' : 'hover:bg-[#2D6A4F]/70'
                                             }`}
                                     >
                                         <item.icon size={20} />
@@ -86,7 +86,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
                         <li>
                             <button
                                 onClick={() => setSemanalOpen(!semanalOpen)}
-                                className={`w-full flex items-center justify-between px-3 py-2 rounded-md transition-colors hover:bg-blue-700`}
+                                className={`w-full flex items-center justify-between px-3 py-2 rounded-md transition-colors hover:bg-[#2D6A4F]/70`}
                             >
                                 <div className="flex items-center gap-3">
                                     <TableProperties size={20} />
@@ -101,7 +101,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
                                         <li key={sub.name}>
                                             <Link
                                                 href={sub.href}
-                                                className={`flex items-center gap-2 px-3 py-2 text-sm rounded-md transition-colors ${pathname === sub.href ? 'bg-blue-600' : 'hover:bg-blue-700'
+                                                className={`flex items-center gap-2 px-3 py-2 text-sm rounded-md transition-colors ${pathname === sub.href ? 'bg-[#2D6A4F]' : 'hover:bg-[#2D6A4F]/70'
                                                     }`}
                                             >
                                                 <sub.icon size={16} />
@@ -115,13 +115,13 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
 
 
                         <li>
-                            <Link href="/portal/historial" className={`flex items-center gap-3 px-3 py-2 rounded-md transition-colors ${pathname === '/portal/historial' ? 'bg-blue-600' : 'hover:bg-blue-700'}`}>
+                            <Link href="/portal/historial" className={`flex items-center gap-3 px-3 py-2 rounded-md transition-colors ${pathname === '/portal/historial' ? 'bg-[#2D6A4F]' : 'hover:bg-[#2D6A4F]/70'}`}>
                                 <History size={20} />
                                 {!collapsed && <span>Historial</span>}
                             </Link>
                         </li>
                         <li>
-                            <Link href="/portal/perfil" className={`flex items-center gap-3 px-3 py-2 rounded-md transition-colors ${pathname === '/portal/perfil' ? 'bg-blue-600' : 'hover:bg-blue-700'}`}>
+                            <Link href="/portal/perfil" className={`flex items-center gap-3 px-3 py-2 rounded-md transition-colors ${pathname === '/portal/perfil' ? 'bg-[#2D6A4F]' : 'hover:bg-[#2D6A4F]/70'}`}>
                                 <User size={20} />
                                 {!collapsed && <span>Perfil</span>}
                             </Link>
@@ -141,7 +141,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
                         <h1 className="text-xl font-bold text-zinc-800 dark:text-zinc-100">
                             {comedorNombre || 'Cargando Comedor...'}
                         </h1>
-                        <span className="px-2 py-1 text-xs font-semibold bg-blue-100 text-blue-800 rounded-full">
+                        <span className="px-2 py-1 text-xs font-semibold bg-emerald-100 text-emerald-800 rounded-full">
                             Comedor
                         </span>
                     </div>

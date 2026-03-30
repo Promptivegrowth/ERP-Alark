@@ -1,256 +1,136 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useForm, useFieldArray } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
 import { createClient } from '@/lib/supabase/client';
 import { useUser } from '@/hooks/useAuth';
-import { toast } from 'sonner';
-import { format } from 'date-fns';
+import { format, startOfWeek, endOfWeek } from 'date-fns';
+import { es } from 'date-fns/locale';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { AlertTriangle, CheckCircle2, AlertCircle, HelpCircle, TrendingUp } from 'lucide-react';
+import ReporteDiario from '@/components/portal/ReporteDiario';
+import { getCruceResumen, type CruceCategoria } from '@/lib/calculations/cruce-semanal';
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-
-const diarioSchema = z.object({
-    fecha: z.string(),
-    credito: z.array(z.object({
-        servicio: z.string(),
-        precio_unit: z.number(),
-        cantidad: z.number().min(0)
-    })),
-    contado: z.array(z.object({
-        servicio: z.string(),
-        precio_unit: z.number(),
-        cantidad: z.number().min(0)
-    })),
-    depositos: z.object({
-        bancario: z.number().min(0),
-        yape: z.number().min(0),
-        efectivo: z.number().min(0),
-    }),
-});
-
-type DiarioForm = z.infer<typeof diarioSchema>;
+const ESTADO_CONFIG = {
+    OK: { label: 'Correcto', icon: CheckCircle2, cls: 'bg-emerald-100 text-emerald-800 border-emerald-200' },
+    ALERTA: { label: 'Alerta ±15%', icon: AlertCircle, cls: 'bg-amber-100 text-amber-800 border-amber-200' },
+    CRITICO: { label: 'Crítico >15%', icon: AlertTriangle, cls: 'bg-red-100 text-red-800 border-red-200' },
+    SIN_DATOS: { label: 'Sin semanal', icon: HelpCircle, cls: 'bg-zinc-100 text-zinc-600 border-zinc-200' },
+};
 
 export default function DiarioPage() {
     const { comedorId, loading } = useUser();
     const supabase = createClient();
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const [dataLoaded, setDataLoaded] = useState(false);
-
-    const form = useForm<DiarioForm>({
-        resolver: zodResolver(diarioSchema),
-        defaultValues: {
-            fecha: format(new Date(), 'yyyy-MM-dd'),
-            credito: [],
-            contado: [],
-            depositos: { bancario: 0, yape: 0, efectivo: 0 },
-        }
-    });
-
-    const { fields: creditoFields } = useFieldArray({ control: form.control, name: 'credito' });
-    const { fields: contadoFields } = useFieldArray({ control: form.control, name: 'contado' });
-
-    const watchAll = form.watch();
+    const [semanaActual, setSemanaActual] = useState<any>(null);
+    const [cruceData, setCruceData] = useState<CruceCategoria[]>([]);
+    const [hayCritico, setHayCritico] = useState(false);
 
     useEffect(() => {
         if (!comedorId) return;
+        async function loadSemana() {
+            const hoy = format(new Date(), 'yyyy-MM-dd');
+            const inicioSemana = format(startOfWeek(new Date(), { weekStartsOn: 1 }), 'yyyy-MM-dd');
+            const finSemana = format(endOfWeek(new Date(), { weekStartsOn: 1 }), 'yyyy-MM-dd');
 
-        async function loadCatalogs() {
-            const { data: precios } = await supabase.from('precios_servicios').select('*').eq('activo', true);
+            // Get or create current semana
+            const { data: sem } = await supabase
+                .from('semanas')
+                .select('*')
+                .eq('comedor_id', comedorId as any)
+                .gte('fecha_inicio', inicioSemana)
+                .lte('fecha_fin', finSemana)
+                .maybeSingle();
 
-            if (precios && precios.length > 0) {
-                const cred = precios.filter(p => ['ALMUERZO RANSA', 'CENA RANSA', 'AMANECIDA'].includes(p.nombre));
-                const cont = precios.filter(p => !['ALMUERZO RANSA', 'CENA RANSA', 'AMANECIDA'].includes(p.nombre));
-
-                form.setValue('credito', cred.map(p => ({ servicio: p.nombre, precio_unit: p.precio, cantidad: 0 })));
-                form.setValue('contado', cont.map(p => ({ servicio: p.nombre, precio_unit: p.precio, cantidad: 0 })));
+            if (sem) {
+                setSemanaActual(sem);
+                // Load cross-reference summary for the current week
+                const cruce = await getCruceResumen(comedorId as string, (sem as any).id as string);
+                setCruceData(cruce);
+                setHayCritico(cruce.some(c => c.estado === 'CRITICO'));
             }
-
-            setDataLoaded(true);
         }
-        loadCatalogs();
-    }, [comedorId, supabase, form]);
+        loadSemana();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [comedorId]);
 
-    if (loading || !dataLoaded) return <div className="p-8 text-center text-zinc-500">Cargando formulario...</div>;
-
-    const totalCredito = watchAll.credito?.reduce((acc, curr) => acc + (curr.cantidad * curr.precio_unit), 0) || 0;
-    const totalContado = watchAll.contado?.reduce((acc, curr) => acc + (curr.cantidad * curr.precio_unit), 0) || 0;
-    const totalDepositos = Number(watchAll.depositos?.bancario || 0) + Number(watchAll.depositos?.yape || 0) + Number(watchAll.depositos?.efectivo || 0);
-    const balance = (totalCredito + totalContado) - totalDepositos;
-
-    async function onSubmit(data: DiarioForm) {
-        if (!comedorId) return;
-        setIsSubmitting(true);
-        try {
-            const liqInserts: any[] = [];
-            data.credito.forEach(c => {
-                if (c.cantidad > 0) {
-                    liqInserts.push({
-                        comedor_id: comedorId, fecha: data.fecha, servicio: c.servicio,
-                        tipo_pago: 'CREDITO_RANSA', precio_unit: c.precio_unit, cantidad: c.cantidad
-                    });
-                }
-            });
-            data.contado.forEach(c => {
-                if (c.cantidad > 0) {
-                    liqInserts.push({
-                        comedor_id: comedorId, fecha: data.fecha, servicio: c.servicio,
-                        tipo_pago: 'CONTADO', precio_unit: c.precio_unit, cantidad: c.cantidad
-                    });
-                }
-            });
-
-            if (liqInserts.length > 0) {
-                const { error: liqErr } = await supabase.from('liquidacion_diaria').upsert(liqInserts, { onConflict: 'comedor_id,fecha,servicio,tipo_pago' });
-                if (liqErr) throw liqErr;
-            }
-
-            const depInserts = [];
-            if (data.depositos.bancario > 0) depInserts.push({ comedor_id: comedorId, fecha: data.fecha, tipo: 'DEPOSITO', monto: data.depositos.bancario });
-            if (data.depositos.yape > 0) depInserts.push({ comedor_id: comedorId, fecha: data.fecha, tipo: 'YAPE', monto: data.depositos.yape });
-            if (data.depositos.efectivo > 0) depInserts.push({ comedor_id: comedorId, fecha: data.fecha, tipo: 'EFECTIVO', monto: data.depositos.efectivo });
-
-            if (depInserts.length > 0) {
-                const { error: depErr } = await supabase.from('depositos_diarios').upsert(depInserts, { onConflict: 'comedor_id,fecha,tipo' });
-                if (depErr) throw depErr;
-            }
-
-            toast.success('Liquidación diaria guardada correctamente');
-        } catch (error) {
-            console.error(error);
-            toast.error('Error al guardar la liquidación');
-        } finally {
-            setIsSubmitting(false);
-        }
-    }
+    if (loading) return <div className="p-8 text-center text-zinc-500">Cargando...</div>;
 
     return (
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 pb-32">
-            <div className="flex items-center justify-between">
-                <h2 className="text-2xl font-bold tracking-tight">Liquidación Diaria</h2>
-                <Input
-                    type="date"
-                    className="w-48"
-                    {...form.register('fecha')}
-                />
+        <div className="space-y-6">
+            {/* Header */}
+            <div>
+                <h2 className="text-2xl font-bold tracking-tight text-[#1B4332]">Reporte Diario</h2>
+                <p className="text-sm text-zinc-500 mt-1">
+                    Semana: {semanaActual
+                        ? `${format(new Date((semanaActual as any).fecha_inicio + 'T12:00:00'), 'dd MMM', { locale: es })} – ${format(new Date((semanaActual as any).fecha_fin + 'T12:00:00'), 'dd MMM yyyy', { locale: es })}`
+                        : 'Sin semana activa configurada'}
+                </p>
             </div>
 
-            <Card>
-                <CardHeader><CardTitle className="text-lg text-blue-700">Crédito Ransa</CardTitle></CardHeader>
-                <CardContent>
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Servicio</TableHead>
-                                <TableHead>Precio (S/.)</TableHead>
-                                <TableHead className="w-32">Cantidad</TableHead>
-                                <TableHead className="text-right">Total</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {creditoFields.map((field, index) => (
-                                <TableRow key={field.id}>
-                                    <TableCell className="font-medium">{field.servicio}</TableCell>
-                                    <TableCell>{field.precio_unit.toFixed(2)}</TableCell>
-                                    <TableCell>
-                                        <Input
-                                            type="number" min="0"
-                                            {...form.register(`credito.${index}.cantidad`, { valueAsNumber: true })}
-                                            disabled={isSubmitting}
-                                        />
-                                    </TableCell>
-                                    <TableCell className="text-right font-semibold">
-                                        S/. {(watchAll.credito?.[index]?.cantidad * field.precio_unit || 0).toFixed(2)}
-                                    </TableCell>
-                                </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
-                </CardContent>
-            </Card>
-
-            <Card>
-                <CardHeader><CardTitle className="text-lg text-emerald-700">Contado / Yape</CardTitle></CardHeader>
-                <CardContent>
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Servicio</TableHead>
-                                <TableHead>Precio (S/.)</TableHead>
-                                <TableHead className="w-32">Cantidad</TableHead>
-                                <TableHead className="text-right">Total</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {contadoFields.map((field, index) => (
-                                <TableRow key={field.id}>
-                                    <TableCell className="font-medium">{field.servicio}</TableCell>
-                                    <TableCell>{field.precio_unit.toFixed(2)}</TableCell>
-                                    <TableCell>
-                                        <Input
-                                            type="number" min="0"
-                                            {...form.register(`contado.${index}.cantidad`, { valueAsNumber: true })}
-                                            disabled={isSubmitting}
-                                        />
-                                    </TableCell>
-                                    <TableCell className="text-right font-semibold">
-                                        S/. {(watchAll.contado?.[index]?.cantidad * field.precio_unit || 0).toFixed(2)}
-                                    </TableCell>
-                                </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
-                </CardContent>
-            </Card>
-
-            <Card>
-                <CardHeader><CardTitle className="text-lg text-purple-700">Depósitos del Día</CardTitle></CardHeader>
-                <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Critical discrepancy alert */}
+            {hayCritico && (
+                <div className="flex items-start gap-3 p-4 bg-red-50 border-2 border-red-300 rounded-xl">
+                    <AlertTriangle className="text-red-600 shrink-0 mt-0.5" size={20} />
                     <div>
-                        <label className="text-sm font-medium mb-2 block">Depósito Bancario</label>
-                        <div className="relative">
-                            <span className="absolute left-3 top-2.5 text-zinc-500">S/.</span>
-                            <Input type="number" step="0.01" className="pl-8" {...form.register('depositos.bancario', { valueAsNumber: true })} />
-                        </div>
-                    </div>
-                    <div>
-                        <label className="text-sm font-medium mb-2 block">Yape</label>
-                        <div className="relative">
-                            <span className="absolute left-3 top-2.5 text-zinc-500">S/.</span>
-                            <Input type="number" step="0.01" className="pl-8" {...form.register('depositos.yape', { valueAsNumber: true })} />
-                        </div>
-                    </div>
-                    <div>
-                        <label className="text-sm font-medium mb-2 block">Efectivo</label>
-                        <div className="relative">
-                            <span className="absolute left-3 top-2.5 text-zinc-500">S/.</span>
-                            <Input type="number" step="0.01" className="pl-8" {...form.register('depositos.efectivo', { valueAsNumber: true })} />
-                        </div>
-                    </div>
-                </CardContent>
-            </Card>
-
-            <div className="fixed bottom-0 left-0 lg:left-64 right-0 bg-white dark:bg-zinc-950 border-t p-4 px-6 flex flex-col md:flex-row justify-between items-center shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] z-10 transition-all">
-                <div className="flex gap-6 mb-4 md:mb-0 text-sm">
-                    <div className="flex flex-col"><span className="text-zinc-500">T. Crédito</span><span className="font-bold text-lg text-blue-600">S/. {totalCredito.toFixed(2)}</span></div>
-                    <div className="flex flex-col"><span className="text-zinc-500">T. Contado</span><span className="font-bold text-lg text-emerald-600">S/. {totalContado.toFixed(2)}</span></div>
-                    <div className="flex flex-col"><span className="text-zinc-500">T. Depósitos</span><span className="font-bold text-lg text-purple-600">S/. {totalDepositos.toFixed(2)}</span></div>
-
-                    <div className={`flex flex-col ${Math.abs(balance) > 1 ? 'text-amber-500' : 'text-zinc-800 dark:text-zinc-200'}`}>
-                        <span className="text-zinc-500">Balance</span>
-                        <span className="font-bold text-lg">S/. {balance.toFixed(2)}</span>
-                        {Math.abs(balance) > 1 && <span className="text-xs font-medium bg-amber-100 text-amber-800 px-2 py-0.5 rounded">Diferencia</span>}
+                        <p className="font-bold text-red-800">Diferencias detectadas entre reporte diario y semanal</p>
+                        <p className="text-sm text-red-700 mt-0.5">Revisa los datos ingresados o contacta al administrador para reconciliar los totales.</p>
                     </div>
                 </div>
+            )}
 
-                <Button size="lg" type="submit" disabled={isSubmitting} className="w-full md:w-auto">
-                    {isSubmitting ? 'Guardando...' : 'Guardar Liquidación'}
-                </Button>
-            </div>
-        </form>
-    )
+            {/* Dynamic daily report form */}
+            <ReporteDiario />
+
+            {/* Weekly cross-reference summary */}
+            {cruceData.length > 0 && (
+                <Card className="border-2 border-[#2D6A4F]/20">
+                    <CardHeader className="bg-[#1B4332]/5 border-b border-[#2D6A4F]/20 pb-3">
+                        <div className="flex items-center gap-2">
+                            <TrendingUp size={16} className="text-[#2D6A4F]" />
+                            <CardTitle className="text-base text-[#1B4332]">Resumen Semanal Acumulado</CardTitle>
+                        </div>
+                        <CardDescription className="text-xs">Comparativo entre tus reportes diarios y el reporte semanal</CardDescription>
+                    </CardHeader>
+                    <CardContent className="p-0">
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-sm">
+                                <thead>
+                                    <tr className="bg-zinc-50 border-b">
+                                        <th className="text-left px-4 py-2 font-semibold text-zinc-600">Categoría</th>
+                                        <th className="text-right px-4 py-2 font-semibold text-zinc-600">Acumulado Diario</th>
+                                        <th className="text-right px-4 py-2 font-semibold text-zinc-600">Total Semanal</th>
+                                        <th className="text-right px-4 py-2 font-semibold text-zinc-600">Diferencia</th>
+                                        <th className="text-center px-4 py-2 font-semibold text-zinc-600">Estado</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y">
+                                    {cruceData.map(row => {
+                                        const cfg = ESTADO_CONFIG[row.estado];
+                                        const Icon = cfg.icon;
+                                        return (
+                                            <tr key={row.categoria} className="hover:bg-zinc-50/50">
+                                                <td className="px-4 py-2.5 font-medium text-zinc-800">{row.categoria}</td>
+                                                <td className="px-4 py-2.5 text-right font-medium">S/ {row.total_diario_acumulado.toFixed(2)}</td>
+                                                <td className="px-4 py-2.5 text-right font-medium">S/ {row.total_semanal.toFixed(2)}</td>
+                                                <td className={`px-4 py-2.5 text-right font-bold ${row.diferencia < 0 ? 'text-red-600' : row.diferencia > 0 ? 'text-amber-600' : 'text-emerald-600'}`}>
+                                                    {row.diferencia > 0 ? '+' : ''}{row.diferencia.toFixed(2)}
+                                                    <span className="text-xs font-normal ml-1 text-zinc-400">({row.diferencia_pct.toFixed(1)}%)</span>
+                                                </td>
+                                                <td className="px-4 py-2.5 text-center">
+                                                    <span className={`inline-flex items-center gap-1 text-xs font-semibold border px-2.5 py-0.5 rounded-full ${cfg.cls}`}>
+                                                        <Icon size={12} />
+                                                        {cfg.label}
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
+        </div>
+    );
 }

@@ -14,7 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Settings, Plus, Store, Users, Key } from 'lucide-react';
+import { Settings, Plus, Store, Users, Key, LayoutList, GripVertical, ToggleLeft, ToggleRight } from 'lucide-react';
 
 export default function ConfiguracionPage() {
     const { loading } = useUser();
@@ -31,6 +31,13 @@ export default function ConfiguracionPage() {
     // User Form
     const [newUser, setNewUser] = useState({ email: '', rol: 'COMEDOR', comedor_id: 'none' });
     const [isSubmittingU, setIsSubmittingU] = useState(false);
+
+    // Campo config
+    const [selectedComedorId, setSelectedComedorId] = useState('');
+    const [camposComedor, setCamposComedor] = useState<any[]>([]);
+    const [loadingCampos, setLoadingCampos] = useState(false);
+    const [newCampo, setNewCampo] = useState({ nombre_campo: '', categoria: 'ALMUERZO' as string, orden: 0 });
+    const [isSubmittingCampo, setIsSubmittingCampo] = useState(false);
 
     async function loadData() {
         const [cRes, uRes] = await Promise.all([
@@ -106,6 +113,39 @@ export default function ConfiguracionPage() {
         }
     }
 
+    async function loadCamposComedor(comedorId: string) {
+        setLoadingCampos(true);
+        const { data } = await supabase
+            .from('comedor_campos_reporte')
+            .select('*')
+            .eq('comedor_id', comedorId)
+            .order('orden');
+        if (data) setCamposComedor(data);
+        setLoadingCampos(false);
+    }
+
+    async function toggleCampoActivo(id: string, activo: boolean) {
+        await supabase.from('comedor_campos_reporte').update({ activo: !activo } as any).eq('id', id);
+        setCamposComedor(prev => prev.map(c => c.id === id ? { ...c, activo: !activo } : c));
+        toast.success('Campo actualizado');
+    }
+
+    async function agregarCampo(e: React.FormEvent) {
+        e.preventDefault();
+        if (!selectedComedorId || !newCampo.nombre_campo) { toast.error('Completa todos los campos'); return; }
+        setIsSubmittingCampo(true);
+        const { error } = await supabase.from('comedor_campos_reporte').insert({
+            comedor_id: selectedComedorId,
+            nombre_campo: newCampo.nombre_campo.toUpperCase(),
+            categoria: newCampo.categoria,
+            orden: newCampo.orden || (camposComedor.length + 1),
+            activo: true,
+        } as any);
+        if (error) { toast.error('Error al agregar campo'); }
+        else { toast.success('Campo agregado'); setNewCampo({ nombre_campo: '', categoria: 'ALMUERZO', orden: 0 }); loadCamposComedor(selectedComedorId); }
+        setIsSubmittingCampo(false);
+    }
+
     if (loading || !dataLoaded) return <div className="p-8 text-center text-zinc-500">Cargando configuración...</div>;
 
     return (
@@ -120,9 +160,10 @@ export default function ConfiguracionPage() {
             </div>
 
             <Tabs defaultValue="comedores" className="w-full">
-                <TabsList className="grid grid-cols-2 md:w-[400px]">
-                    <TabsTrigger value="comedores" className="flex gap-2"><Store size={16} /> Comedores</TabsTrigger>
-                    <TabsTrigger value="usuarios" className="flex gap-2"><Users size={16} /> Accesos y Roles</TabsTrigger>
+                <TabsList className="grid grid-cols-3 md:w-[600px] bg-zinc-100">
+                    <TabsTrigger value="comedores" className="flex gap-2 data-[state=active]:bg-[#2D6A4F] data-[state=active]:text-white"><Store size={16} /> Comedores</TabsTrigger>
+                    <TabsTrigger value="usuarios" className="flex gap-2 data-[state=active]:bg-[#2D6A4F] data-[state=active]:text-white"><Users size={16} /> Accesos</TabsTrigger>
+                    <TabsTrigger value="campos" className="flex gap-2 data-[state=active]:bg-[#2D6A4F] data-[state=active]:text-white"><LayoutList size={16} /> Campos por Comedor</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="comedores" className="mt-6 space-y-6">
@@ -199,7 +240,7 @@ export default function ConfiguracionPage() {
                                 </div>
                                 <div className="space-y-2 w-full md:w-1/4">
                                     <label className="text-sm font-medium">Rol</label>
-                                    <Select value={newUser.rol} onValueChange={v => setNewUser({ ...newUser, rol: v })}>
+                                    <Select value={newUser.rol} onValueChange={v => setNewUser({ ...newUser, rol: v || '' })}>
                                         <SelectTrigger>
                                             <SelectValue />
                                         </SelectTrigger>
@@ -212,7 +253,7 @@ export default function ConfiguracionPage() {
                                 {newUser.rol === 'COMEDOR' && (
                                     <div className="space-y-2 w-full md:w-1/3">
                                         <label className="text-sm font-medium">Asignar Comedor</label>
-                                        <Select value={newUser.comedor_id} onValueChange={v => setNewUser({ ...newUser, comedor_id: v })}>
+                                        <Select value={newUser.comedor_id} onValueChange={v => setNewUser({ ...newUser, comedor_id: v || '' })}>
                                             <SelectTrigger>
                                                 <SelectValue />
                                             </SelectTrigger>
@@ -263,6 +304,94 @@ export default function ConfiguracionPage() {
                                     ))}
                                 </TableBody>
                             </Table>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+
+                <TabsContent value="campos" className="mt-6 space-y-6">
+                    <Card>
+                        <CardHeader className="bg-zinc-50 border-b pb-4">
+                            <CardTitle className="text-lg flex items-center gap-2"><LayoutList size={16} /> Configurar Campos por Comedor</CardTitle>
+                            <CardDescription>Selecciona un comedor para ver y editar sus campos de reporte diario.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="pt-6">
+                            <div className="flex gap-4 items-end mb-6">
+                                <div className="space-y-2 w-full md:w-1/2">
+                                    <label className="text-sm font-medium">Seleccionar Comedor</label>
+                                    <Select value={selectedComedorId} onValueChange={v => { setSelectedComedorId(v || ''); loadCamposComedor(v || ''); }}>
+                                        <SelectTrigger><SelectValue placeholder="-- Selecciona un comedor --" /></SelectTrigger>
+                                        <SelectContent>
+                                            {comedores.map(c => <SelectItem key={c.id} value={c.id}>{c.nombre}</SelectItem>)}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            </div>
+
+                            {selectedComedorId && (
+                                <>
+                                    {/* Add new campo form */}
+                                    <form onSubmit={agregarCampo} className="flex flex-wrap gap-3 items-end mb-6 p-4 bg-[#1B4332]/5 rounded-lg border border-[#2D6A4F]/20">
+                                        <div className="space-y-1 flex-1 min-w-[160px]">
+                                            <label className="text-xs font-medium text-zinc-600">Nombre del Campo</label>
+                                            <Input placeholder="Ej. ALMUERZOS SISTEMA" value={newCampo.nombre_campo} onChange={e => setNewCampo({ ...newCampo, nombre_campo: e.target.value })} required />
+                                        </div>
+                                        <div className="space-y-1 w-44">
+                                            <label className="text-xs font-medium text-zinc-600">Categoría</label>
+                                            <Select value={newCampo.categoria} onValueChange={v => setNewCampo({ ...newCampo, categoria: v || 'ALMUERZO' })}>
+                                                <SelectTrigger><SelectValue /></SelectTrigger>
+                                                <SelectContent>
+                                                    {['DESAYUNO', 'ALMUERZO', 'CENA', 'AMANECIDA', 'LONCHE', 'PAN', 'BEBIDA', 'EXTRA', 'OTRO'].map(cat => (
+                                                        <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                        <div className="space-y-1 w-20">
+                                            <label className="text-xs font-medium text-zinc-600">Orden</label>
+                                            <Input type="number" min={0} placeholder="0" value={newCampo.orden || ''} onChange={e => setNewCampo({ ...newCampo, orden: Number(e.target.value) })} />
+                                        </div>
+                                        <Button type="submit" disabled={isSubmittingCampo} className="bg-[#2D6A4F] hover:bg-[#1B4332]">
+                                            <Plus size={16} className="mr-1.5" />{isSubmittingCampo ? 'Agregando...' : 'Agregar'}
+                                        </Button>
+                                    </form>
+
+                                    {/* Campo list */}
+                                    {loadingCampos ? (
+                                        <p className="text-center text-zinc-400 py-4">Cargando campos...</p>
+                                    ) : (
+                                        <Table>
+                                            <TableHeader>
+                                                <TableRow>
+                                                    <TableHead className="w-8">#</TableHead>
+                                                    <TableHead>Nombre del Campo</TableHead>
+                                                    <TableHead>Categoría</TableHead>
+                                                    <TableHead className="text-center">Activo</TableHead>
+                                                    <TableHead className="text-center">Auto</TableHead>
+                                                </TableRow>
+                                            </TableHeader>
+                                            <TableBody>
+                                                {camposComedor.map((campo, idx) => (
+                                                    <TableRow key={campo.id} className={!campo.activo ? 'opacity-50' : ''}>
+                                                        <TableCell className="text-zinc-400 text-xs">{campo.orden}</TableCell>
+                                                        <TableCell className="font-medium">{campo.nombre_campo}</TableCell>
+                                                        <TableCell><Badge variant="outline" className="text-xs">{campo.categoria}</Badge></TableCell>
+                                                        <TableCell className="text-center">
+                                                            <button onClick={() => toggleCampoActivo(campo.id, campo.activo)} className="transition-colors">
+                                                                {campo.activo
+                                                                    ? <ToggleRight size={24} className="text-[#2D6A4F]" />
+                                                                    : <ToggleLeft size={24} className="text-zinc-400" />}
+                                                            </button>
+                                                        </TableCell>
+                                                        <TableCell className="text-center">
+                                                            {campo.es_readonly ? <Badge className="text-xs bg-zinc-100 text-zinc-600">calc.</Badge> : <span className="text-zinc-300 text-xs">—</span>}
+                                                        </TableCell>
+                                                    </TableRow>
+                                                ))}
+                                            </TableBody>
+                                        </Table>
+                                    )}
+                                </>
+                            )}
                         </CardContent>
                     </Card>
                 </TabsContent>
