@@ -10,8 +10,11 @@ import { es } from 'date-fns/locale';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { MapPin, User as UserIcon, Building, Phone, Calendar, AlertTriangle, TrendingUp, CheckCircle2, AlertCircle, HelpCircle } from 'lucide-react';
+import { MapPin, User as UserIcon, Building, Phone, Calendar, AlertTriangle, TrendingUp, CheckCircle2, AlertCircle, HelpCircle, Eye, Info } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Separator } from '@/components/ui/separator';
 
 export default function ComedorDetallePage() {
     const params = useParams();
@@ -27,6 +30,10 @@ export default function ComedorDetallePage() {
     const [gastos, setGastos] = useState<any[]>([]);
     const [especiales, setEspeciales] = useState<any[]>([]);
     const [cruceData, setCruceData] = useState<any[]>([]);
+    const [selectedReporte, setSelectedReporte] = useState<any>(null);
+    const [reporteDetalles, setReporteDetalles] = useState<any[]>([]);
+    const [loadingDetalle, setLoadingDetalle] = useState(false);
+    const [openDetalle, setOpenDetalle] = useState(false);
 
     useEffect(() => {
         if (!id) return;
@@ -63,6 +70,27 @@ export default function ComedorDetallePage() {
         }
         fetchData();
     }, [id, supabase]);
+
+    async function verDetalle(reporte: any) {
+        setSelectedReporte(reporte);
+        setOpenDetalle(true);
+        setLoadingDetalle(true);
+        try {
+            // Fetch values and field names
+            const { data, error } = await supabase
+                .from('reporte_diario_valores')
+                .select('valor, monto, comedor_campos_reporte(nombre_campo, categoria)')
+                .eq('reporte_id', reporte.id);
+
+            if (error) throw error;
+            setReporteDetalles(data || []);
+        } catch (err) {
+            console.error(err);
+            setReporteDetalles([]);
+        } finally {
+            setLoadingDetalle(false);
+        }
+    }
 
     if (loading || !dataLoaded) return <div className="p-8 text-center text-zinc-500">Cargando datos del comedor...</div>;
     if (!comedor) return <div className="p-8 text-center text-zinc-500">Comedor no encontrado</div>;
@@ -142,6 +170,7 @@ export default function ComedorDetallePage() {
                                         <TableHead>Coffe Break</TableHead>
                                         <TableHead>Observaciones</TableHead>
                                         <TableHead className="text-center">Estado</TableHead>
+                                        <TableHead className="text-center">Detalle</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -156,6 +185,11 @@ export default function ComedorDetallePage() {
                                                     <Badge className={l.bloqueado ? 'bg-zinc-200 text-zinc-600' : 'bg-emerald-100 text-emerald-800'}>
                                                         {l.bloqueado ? 'Cerrado' : 'Activo'}
                                                     </Badge>
+                                                </TableCell>
+                                                <TableCell className="text-center">
+                                                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => verDetalle(l)}>
+                                                        <Eye size={16} className="text-[#2D6A4F]" />
+                                                    </Button>
                                                 </TableCell>
                                             </TableRow>
                                         ))}
@@ -367,6 +401,89 @@ export default function ComedorDetallePage() {
                     </Card>
                 </TabsContent>
             </Tabs>
+
+            <Dialog open={openDetalle} onOpenChange={setOpenDetalle}>
+                <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                    <DialogHeader className="border-b pb-4">
+                        <DialogTitle className="text-2xl font-bold text-[#1B4332] flex items-center gap-3">
+                            <Info size={24} /> Resumen Detallado
+                        </DialogTitle>
+                        <CardDescription>
+                            Reporte del {selectedReporte && format(new Date(selectedReporte.fecha + 'T12:00:00'), 'EEEE dd MMMM yyyy', { locale: es })}
+                        </CardDescription>
+                    </DialogHeader>
+
+                    {loadingDetalle ? (
+                        <div className="py-12 text-center text-zinc-500 italic">Cargando detalles...</div>
+                    ) : (
+                        <div className="space-y-6 pt-4">
+                            {/* Observaciones Banner */}
+                            {selectedReporte?.observaciones && (
+                                <div className="bg-amber-50 border border-amber-100 p-4 rounded-lg text-amber-800 text-sm italic">
+                                    <span className="font-bold mb-1 block">Observaciones:</span>
+                                    "{selectedReporte.observaciones}"
+                                </div>
+                            )}
+
+                            {/* Coffee Break Banner */}
+                            {selectedReporte?.tiene_coffe_break && (
+                                <div className="bg-indigo-50 border border-indigo-100 p-4 rounded-lg flex justify-between items-center">
+                                    <div>
+                                        <p className="font-bold text-indigo-900">Servicio Coffee Break</p>
+                                        <p className="text-xs text-indigo-700">{selectedReporte.coffe_break_descripcion}</p>
+                                    </div>
+                                    <div className="text-lg font-bold text-indigo-900">
+                                        S/. {Number(selectedReporte.coffe_break_monto || 0).toFixed(2)}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Detailed Table grouped by category */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                {['DESAYUNO', 'ALMUERZO', 'CENA', 'AMANECIDA', 'LONCHE', 'PAN', 'BEBIDA', 'EXTRA'].map(cat => {
+                                    const items = reporteDetalles.filter(d => d.comedor_campos_reporte?.categoria === cat);
+                                    if (items.length === 0) return null;
+
+                                    return (
+                                        <Card key={cat} className="overflow-hidden border-zinc-200">
+                                            <CardHeader className="bg-zinc-50 py-2 border-b">
+                                                <CardTitle className="text-xs font-bold tracking-wider text-zinc-500 uppercase">{cat}</CardTitle>
+                                            </CardHeader>
+                                            <CardContent className="p-0">
+                                                <table className="w-full text-sm">
+                                                    <thead className="bg-white text-zinc-400 text-[10px] border-b">
+                                                        <tr>
+                                                            <th className="text-left px-4 py-2 font-medium">Concepto</th>
+                                                            <th className="text-center px-4 py-2 font-medium">Cant.</th>
+                                                            <th className="text-right px-4 py-2 font-medium">Subtotal</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody className="divide-y">
+                                                        {items.map((item, i) => (
+                                                            <tr key={i} className="hover:bg-zinc-50">
+                                                                <td className="px-4 py-2 font-medium">{item.comedor_campos_reporte?.nombre_campo}</td>
+                                                                <td className="px-4 py-2 text-center text-zinc-600">{item.valor}</td>
+                                                                <td className="px-4 py-2 text-right font-bold text-[#2D6A4F]">S/. {Number(item.monto || 0).toFixed(2)}</td>
+                                                            </tr>
+                                                        ))}
+                                                    </tbody>
+                                                </table>
+                                            </CardContent>
+                                        </Card>
+                                    );
+                                })}
+                            </div>
+
+                            <Separator />
+
+                            <div className="flex justify-between items-center p-4 bg-[#1B4332] text-white rounded-xl">
+                                <span className="font-medium">TOTAL GENERAL DEL DÍA</span>
+                                <span className="text-2xl font-bold">S/. {Number(selectedReporte?.subtotal || 0).toFixed(2)}</span>
+                            </div>
+                        </div>
+                    )}
+                </DialogContent>
+            </Dialog>
         </div>
     )
 }
