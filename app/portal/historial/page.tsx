@@ -9,6 +9,9 @@ import { es } from 'date-fns/locale';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Eye } from 'lucide-react';
 
 export default function HistorialPage() {
     const { comedorId, loading } = useUser();
@@ -21,6 +24,11 @@ export default function HistorialPage() {
     const [pan, setPan] = useState<any[]>([]);
     const [gastos, setGastos] = useState<any[]>([]);
     const [coffe, setCoffe] = useState<any[]>([]);
+
+    const [selectedReporte, setSelectedReporte] = useState<any>(null);
+    const [reporteDetalles, setReporteDetalles] = useState<any[]>([]);
+    const [openDetalle, setOpenDetalle] = useState(false);
+    const [loadingDetalle, setLoadingDetalle] = useState(false);
 
     useEffect(() => {
         if (!comedorId) return;
@@ -85,9 +93,35 @@ export default function HistorialPage() {
         fetchData();
     }, [comedorId, supabase]);
 
+    async function verDetalle(reporte: any) {
+        setSelectedReporte(reporte);
+        setOpenDetalle(true);
+        setLoadingDetalle(true);
+        try {
+            const [valRes, totRes] = await Promise.all([
+                supabase
+                    .from('reporte_diario_valores')
+                    .select('cantidad, monto, comedor_campos_reporte(nombre_campo, categoria)')
+                    .eq('reporte_id', reporte.id),
+                supabase
+                    .from('reporte_diario_totales')
+                    .select('*')
+                    .eq('reporte_id', reporte.id)
+            ]);
+
+            if (valRes.error) throw valRes.error;
+            setReporteDetalles(valRes.data || []);
+            setSelectedReporte({ ...reporte, totales: totRes.data || [] });
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setLoadingDetalle(false);
+        }
+    }
+
     if (loading || !dataLoaded) return <div className="p-8 text-center text-zinc-500 flex justify-center items-center h-[50vh]">Cargando historial...</div>;
 
-    const formatDateStr = (date: string) => format(new Date(date), 'dd MMM yyyy', { locale: es });
+    const formatDateStr = (date: string) => format(new Date(date + 'T12:00:00'), 'dd MMM yyyy', { locale: es });
 
     return (
         <div className="max-w-7xl mx-auto space-y-6">
@@ -107,7 +141,7 @@ export default function HistorialPage() {
 
                 <TabsContent value="diario">
                     <HistoryTable
-                        headers={['Fecha', 'Monto Coffe', 'Observaciones', 'Total Día']}
+                        headers={['Fecha', 'Monto Coffe', 'Observaciones', 'Total Día', 'Detalle']}
                         data={liquidaciones}
                         renderRow={(l) => (
                             <TableRow key={l.id}>
@@ -115,6 +149,11 @@ export default function HistorialPage() {
                                 <TableCell>S/ {Number(l.monto_coffe || 0).toFixed(2)}</TableCell>
                                 <TableCell className="text-xs text-zinc-500">{l.observaciones || '-'}</TableCell>
                                 <TableCell className="text-right font-bold text-[#2D6A4F]">S/ {Number(l.subtotal || 0).toFixed(2)}</TableCell>
+                                <TableCell className="text-center">
+                                    <button onClick={() => verDetalle(l)} className="text-[#2D6A4F] hover:text-[#1B4332] p-1 h-8 w-8 inline-flex items-center justify-center rounded-md border border-zinc-200">
+                                        <Eye size={16} />
+                                    </button>
+                                </TableCell>
                             </TableRow>
                         )}
                     />
@@ -206,6 +245,79 @@ export default function HistorialPage() {
                     />
                 </TabsContent>
             </Tabs>
+
+            <Dialog open={openDetalle} onOpenChange={setOpenDetalle}>
+                <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
+                    <DialogHeader>
+                        <DialogTitle className="text-[#1B4332] flex items-center justify-between">
+                            <span>Resumen de Reporte</span>
+                            <Badge variant="outline" className="text-[#2D6A4F] border-[#2D6A4F]">
+                                {selectedReporte && formatDateStr(selectedReporte.fecha)}
+                            </Badge>
+                        </DialogTitle>
+                        <DialogDescription>Desglose por categorías y servicios adicionales.</DialogDescription>
+                    </DialogHeader>
+
+                    {loadingDetalle ? (
+                        <div className="py-20 text-center text-zinc-500">Cargando desglose...</div>
+                    ) : (
+                        <div className="space-y-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {['DESAYUNO', 'ALMUERZO', 'CENA', 'AMANECIDA', 'LONCHE', 'PAN', 'BEBIDA', 'EXTRA'].map(cat => {
+                                    const items = reporteDetalles.filter(d => d.comedor_campos_reporte?.categoria === cat);
+                                    if (items.length === 0) return null;
+                                    const catTotal = selectedReporte?.totales?.find((t: any) => t.categoria === cat);
+
+                                    return (
+                                        <Card key={cat} className="overflow-hidden border-zinc-200">
+                                            <div className="bg-emerald-50 px-3 py-1.5 border-b flex justify-between items-center">
+                                                <span className="text-[10px] font-bold text-emerald-800 uppercase tracking-wider">{cat}</span>
+                                                {catTotal && <span className="text-[10px] font-bold text-emerald-600">{catTotal.total_cantidad} pax</span>}
+                                            </div>
+                                            <CardContent className="p-0">
+                                                <table className="w-full text-xs">
+                                                    <tbody className="divide-y">
+                                                        {items.map((item, idx) => (
+                                                            <tr key={idx}>
+                                                                <td className="px-3 py-1.5">{item.comedor_campos_reporte?.nombre_campo}</td>
+                                                                <td className="px-3 py-1.5 text-center font-medium bg-zinc-50/50">{item.cantidad}</td>
+                                                                <td className="px-3 py-1.5 text-right font-medium">S/ {Number(item.monto || 0).toFixed(2)}</td>
+                                                            </tr>
+                                                        ))}
+                                                    </tbody>
+                                                </table>
+                                            </CardContent>
+                                        </Card>
+                                    );
+                                })}
+                            </div>
+
+                            {(selectedReporte?.tiene_coffe_break || selectedReporte?.observaciones) && (
+                                <div className="space-y-4 pt-4 border-t">
+                                    {selectedReporte.tiene_coffe_break && (
+                                        <div className="bg-amber-50 p-3 rounded-lg border border-amber-200">
+                                            <h4 className="text-xs font-bold text-amber-800 mb-1">COFFE BREAK / ESPECIALES</h4>
+                                            <p className="text-xs text-amber-900">{selectedReporte.descripcion_coffe}</p>
+                                            <p className="text-sm font-bold text-amber-800 mt-1">Monto: S/ {Number(selectedReporte.monto_coffe || 0).toFixed(2)}</p>
+                                        </div>
+                                    )}
+                                    {selectedReporte.observaciones && (
+                                        <div className="bg-zinc-50 p-3 rounded-lg border">
+                                            <h4 className="text-xs font-bold text-zinc-600 mb-1 text-uppercase">OBSERVACIONES</h4>
+                                            <p className="text-xs text-zinc-700 italic">{selectedReporte.observaciones}</p>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            <div className="bg-[#1B4332] text-white p-4 rounded-xl flex items-center justify-between">
+                                <span className="font-bold">TOTAL FINAL DEL DÍA</span>
+                                <span className="text-xl font-bold">S/ {Number(selectedReporte?.subtotal || 0).toFixed(2)}</span>
+                            </div>
+                        </div>
+                    )}
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

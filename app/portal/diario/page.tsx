@@ -56,7 +56,7 @@ export default function DiarioPage() {
     if (loading) return <div className="p-8 text-center text-zinc-500">Cargando...</div>;
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 pb-44">
             {/* Header */}
             <div>
                 <h2 className="text-2xl font-bold tracking-tight text-[#1B4332]">Reporte Diario</h2>
