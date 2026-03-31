@@ -226,14 +226,14 @@ export default function SolicitudesPage() {
                                             <p className="text-[10px] font-bold text-emerald-600 uppercase mb-1">Resumen de Datos:</p>
                                             <div className="space-y-1">
                                                 {sol.datos_json.totales.cantidad > 0 && (
-                                                    <div className="flex justify-between text-xs font-bold">
-                                                        <span>Total Pax:</span>
-                                                        <span>{sol.datos_json.totales.cantidad}</span>
+                                                    <div className="flex justify-between text-xs font-black whitespace-nowrap">
+                                                        <span className="text-zinc-500">TOTAL PAX:</span>
+                                                        <span className="text-zinc-900">{sol.datos_json.totales.cantidad}</span>
                                                     </div>
                                                 )}
-                                                <div className="flex justify-between text-xs font-bold">
-                                                    <span>Monto Total:</span>
-                                                    <span>S/ {sol.datos_json.totales.monto.toFixed(2)}</span>
+                                                <div className="flex justify-between text-xs font-black whitespace-nowrap">
+                                                    <span className="text-zinc-500">MONTO TOTAL:</span>
+                                                    <span className="text-[#1B4332]">S/ {sol.datos_json.totales.monto.toFixed(2)}</span>
                                                 </div>
                                             </div>
                                         </div>

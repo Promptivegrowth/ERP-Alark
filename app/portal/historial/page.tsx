@@ -369,26 +369,26 @@ export default function HistorialPage() {
                                     return (
                                         <Card key={cat} className="overflow-hidden border-2 border-emerald-100 shadow-sm">
                                             <div className="bg-emerald-600 px-4 py-2 flex justify-between items-center text-white">
-                                                <span className="text-xs font-black uppercase tracking-widest">{cat}</span>
-                                                {catTotal && <span className="text-lg font-black">{catTotal.total_cantidad} PAX</span>}
+                                                <span className="text-[10px] font-black uppercase tracking-widest whitespace-nowrap">SECCIÓN {cat}</span>
+                                                {catTotal && <span className="text-lg font-black whitespace-nowrap">{catTotal.total_cantidad} PAX</span>}
                                             </div>
                                             <CardContent className="p-0">
                                                 <table className="w-full text-sm">
                                                     <tbody className="divide-y divide-emerald-50">
                                                         {items.map((item, idx) => (
                                                             <tr key={idx} className="hover:bg-emerald-50/30 transition-colors">
-                                                                <td className="px-4 py-3 font-semibold text-zinc-700">{item.comedor_campos_reporte?.nombre_campo}</td>
-                                                                <td className="px-4 py-3 text-center font-black text-lg bg-zinc-50/50 text-zinc-800">{item.cantidad}</td>
-                                                                <td className="px-4 py-3 text-right font-black text-lg text-emerald-700">S/ {Number(item.monto || 0).toFixed(2)}</td>
+                                                                <td className="px-4 py-2.5 font-semibold text-zinc-700 text-xs">{item.comedor_campos_reporte?.nombre_campo}</td>
+                                                                <td className="px-4 py-2.5 text-center font-black text-lg bg-zinc-50/50 text-zinc-800 whitespace-nowrap w-24">{item.cantidad}</td>
+                                                                <td className="px-4 py-2.5 text-right font-black text-lg text-emerald-700 whitespace-nowrap w-32">S/ {Number(item.monto || 0).toFixed(2)}</td>
                                                             </tr>
                                                         ))}
                                                     </tbody>
                                                     {catTotal && (
-                                                        <tfoot className="bg-emerald-50/50 border-t-2 border-emerald-100">
+                                                        <tfoot className="bg-emerald-50/50 border-t-2 border-emerald-100 uppercase">
                                                             <tr className="text-emerald-900 font-black">
-                                                                <td className="px-4 py-3 text-xs uppercase">Subtotal {cat}</td>
-                                                                <td className="px-4 py-3 text-center text-xl">{catTotal.total_cantidad}</td>
-                                                                <td className="px-4 py-3 text-right text-xl">S/ {Number(catTotal.total_monto || 0).toFixed(2)}</td>
+                                                                <td className="px-4 py-2 text-[10px] tracking-widest">Subtotal {cat}</td>
+                                                                <td className="px-4 py-2 text-center text-xl whitespace-nowrap">{catTotal.total_cantidad}</td>
+                                                                <td className="px-4 py-2 text-right text-xl whitespace-nowrap">S/ {Number(catTotal.total_monto || 0).toFixed(2)}</td>
                                                             </tr>
                                                         </tfoot>
                                                     )}

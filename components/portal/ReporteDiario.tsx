@@ -448,10 +448,10 @@ export default function ReporteDiario() {
                             </div>
                             {/* Category subtotal */}
                             <div className={`flex flex-col sm:flex-row justify-between items-center px-4 py-3 ${config.bg} border-t ${config.border} gap-2`}>
-                                <span className={`text-[10px] sm:text-xs font-black uppercase tracking-wider ${config.color}`}>Subtotal {cat}</span>
-                                <div className="flex justify-between w-full sm:w-auto gap-4 text-right">
-                                    <span className={`text-sm font-black ${config.color}`}>{subtotalCat(cat)} pax</span>
-                                    <span className={`text-sm font-black ${config.color}`}>S/ {subtotalMontoCat(cat).toFixed(2)}</span>
+                                <span className={`text-[10px] sm:text-xs font-black uppercase tracking-wider ${config.color} whitespace-nowrap`}>Subtotal {cat}</span>
+                                <div className="flex justify-end items-center w-full sm:w-auto gap-6 text-right">
+                                    <span className={`text-sm font-black ${config.color} whitespace-nowrap`}>{subtotalCat(cat)} PAX</span>
+                                    <span className={`text-sm font-black ${config.color} whitespace-nowrap`}>S/ {subtotalMontoCat(cat).toFixed(2)}</span>
                                 </div>
                             </div>
                         </CardContent>
@@ -529,10 +529,10 @@ export default function ReporteDiario() {
             {isEmergencyMode && (
                 <Card className="border-2 border-rose-200 bg-rose-50/30 overflow-hidden">
                     <CardHeader className="py-2 px-4 bg-rose-100 flex flex-row items-center justify-between border-b border-rose-200">
-                        <span className="text-xs font-black text-rose-800 uppercase flex items-center gap-2">
-                            <CalendarIcon size={14} /> Seleccionar Fecha del Reporte Pasado
+                        <span className="text-sm font-black text-rose-800 uppercase flex items-center gap-2">
+                            <CalendarIcon size={18} /> SELECCIONAR FECHA DE REPORTE PASADO
                         </span>
-                        <Badge className="bg-rose-600">MODO EMERGENCIA</Badge>
+                        <Badge className="bg-rose-600 px-3 py-1 text-white font-black">MODO EMERGENCIA</Badge>
                     </CardHeader>
                     <CardContent className="p-4 flex flex-col sm:flex-row items-center gap-6">
                         <Popover>
@@ -576,9 +576,9 @@ export default function ReporteDiario() {
                                 </div>
                             );
                         })}
-                        <div className="flex flex-col items-center border-l border-zinc-200 pl-4 sm:ml-2">
-                            <span className="font-black text-xl text-[#1B4332]">S/ {totales.monto.toFixed(2)}</span>
-                            <span className="text-[9px] text-zinc-400 font-bold uppercase tracking-widest">Total Gral</span>
+                        <div className="flex flex-col items-end border-l border-zinc-200 pl-4 sm:ml-2 whitespace-nowrap">
+                            <span className="font-black text-xl text-[#1B4332] leading-none">S/ {totales.monto.toFixed(2)}</span>
+                            <span className="text-[10px] text-zinc-400 font-black uppercase tracking-widest mt-1">LIQUIDACIÓN TOTAL</span>
                         </div>
                     </div>
                     <Button
