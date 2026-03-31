@@ -268,10 +268,11 @@ export default function ComedorDetallePage() {
                                         <TableHead className="text-right">Total Ventas</TableHead>
                                         <TableHead className="text-right">Stock Físico</TableHead>
                                         <TableHead className="text-right">Diferencia</TableHead>
+                                        <TableHead>Observación</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {kardex.length === 0 ? <TableRow><TableCell colSpan={6} className="text-center py-6 text-zinc-500">Sin datos</TableCell></TableRow> :
+                                    {kardex.length === 0 ? <TableRow><TableCell colSpan={7} className="text-center py-6 text-zinc-500">Sin datos</TableCell></TableRow> :
                                         kardex.map((k, idx) => (
                                             <TableRow key={idx}>
                                                 <TableCell className="font-medium text-xs">
@@ -291,6 +292,7 @@ export default function ComedorDetallePage() {
                                                         {k.merma || 0}
                                                     </span>
                                                 </TableCell>
+                                                <TableCell className="text-zinc-500 text-xs italic">{k.observacion || '-'}</TableCell>
                                             </TableRow>
                                         ))}
                                 </TableBody>

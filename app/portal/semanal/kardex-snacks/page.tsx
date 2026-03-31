@@ -122,7 +122,8 @@ export default function KardexSnacksPage() {
                     venta_credito: item.ventas_credito,
                     venta_contado_yape: item.ventas_contado,
                     merma: diff,
-                    stock_final_valor: 0
+                    stock_final_valor: 0,
+                    observacion: item.observacion
                 };
             });
 

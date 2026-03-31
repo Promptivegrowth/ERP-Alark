@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
+import { calcularCruceSemanal } from '@/lib/calculations/cruce-semanal';
 import { Save, Coffee, ChevronDown, ChevronUp } from 'lucide-react';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -215,7 +216,7 @@ export default function ReporteDiario() {
             };
 
             if (reporteId) {
-                const { error } = await supabase.from('reporte_diario').update(headerData as any).eq('id', reporteId as string);
+                const { error } = await supabase.from('reporte_diario').update(headerData as any).eq('id', reporteId as any);
                 if (error) throw error;
             } else {
                 const { data, error } = await supabase.from('reporte_diario').insert(headerData as any).select('id').single();
@@ -244,7 +245,24 @@ export default function ReporteDiario() {
                 total_monto: subtotalMontoCat(cat),
             }));
 
+
             await supabase.from('reporte_diario_totales').upsert(totalesInserts as any, { onConflict: 'reporte_id,categoria' });
+
+            // 4. Trigger Cruce calculation
+            try {
+                // Get or create semana_id via RPC
+                const { data: semId, error: semErr } = await (supabase.rpc as any)('get_or_create_semana', {
+                    p_comedor_id: comedorId,
+                    p_fecha: reporte.fecha
+                });
+
+                if (!semId || semErr) throw new Error('No se pudo identificar la semana para el cruce');
+
+                await calcularCruceSemanal(comedorId as string, semId as string);
+            } catch (cruceErr) {
+                console.error('Error calculating cruce:', cruceErr);
+                // We don't throw here to avoid blocking a successful report save
+            }
 
             toast.success('Reporte diario guardado ✓');
         } catch (err: any) {

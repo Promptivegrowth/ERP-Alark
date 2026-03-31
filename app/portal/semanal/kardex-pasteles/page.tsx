@@ -122,7 +122,8 @@ export default function KardexPastelesPage() {
                     venta_credito_yapes: item.ventas_credito,
                     venta_contado: item.ventas_contado,
                     merma: diff,
-                    stock_final_valor: 0
+                    stock_final_valor: 0,
+                    observacion: item.observacion
                 };
             });
 
