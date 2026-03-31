@@ -537,7 +537,7 @@ export default function ReporteDiario() {
                     <CardContent className="p-4 flex flex-col sm:flex-row items-center gap-6">
                         <Popover>
                             <PopoverTrigger asChild>
-                                <Button variant="outline" className="w-full sm:w-[280px] justify-start text-left font-black border-rose-300">
+                                <Button type="button" variant="outline" className="w-full sm:w-[280px] justify-start text-left font-black border-rose-300">
                                     <CalendarIcon className="mr-2 h-4 w-4" />
                                     {reporte.fecha ? format(new Date(reporte.fecha + 'T12:00:00'), 'PPP', { locale: es }) : <span>Seleccionar fecha</span>}
                                 </Button>

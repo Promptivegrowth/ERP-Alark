@@ -117,7 +117,7 @@ export default function SolicitudesPage() {
                 .from('reporte_diario_solicitudes')
                 .update({
                     estado: 'APROBADO',
-                    admin_observacion: adminComment[sol.id] || 'Aprobado por administración'
+                    admin_observacion: (adminComment[sol.id] || 'Aprobado por administración')
                 } as any)
                 .eq('id', sol.id);
 
