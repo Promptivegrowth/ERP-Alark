@@ -12,7 +12,10 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { calcularCruceSemanal } from '@/lib/calculations/cruce-semanal';
-import { Save, Coffee, ChevronDown, ChevronUp } from 'lucide-react';
+import { Save, Coffee, ChevronDown, ChevronUp, AlertCircle, Calendar as CalendarIcon, Send } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { subDays, isAfter, isBefore, startOfDay } from 'date-fns';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface Campo {
@@ -74,6 +77,10 @@ export default function ReporteDiario() {
     });
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [dataLoaded, setDataLoaded] = useState(false);
+    const [isEmergencyMode, setIsEmergencyMode] = useState(false);
+
+    const today = startOfDay(new Date());
+    const minDate = subDays(today, 7);
 
     // Load fields
     useEffect(() => {
@@ -199,8 +206,47 @@ export default function ReporteDiario() {
     // Submit
     async function handleSubmit() {
         if (!comedorId) return;
+
+        // Validation for Emergency Mode
+        if (isEmergencyMode) {
+            if (!reporte.observaciones || reporte.observaciones.trim().length < 10) {
+                toast.error('❌ Para reportes de emergencia, debes ingresar un motivo detallado en Observaciones (mínimo 10 caracteres).');
+                return;
+            }
+        }
+
         setIsSubmitting(true);
         try {
+            if (isEmergencyMode) {
+                // Prepare full report data for JSON storage
+                const fullData = {
+                    reporte,
+                    totales: grandTotal(),
+                    campos_detalle: campos.map(c => ({
+                        id: c.id,
+                        nombre: c.nombre_campo,
+                        categoria: c.categoria,
+                        cantidad: c.es_readonly ? getReadonlyCantidad(c) : (reporte.valores[c.id]?.cantidad || 0),
+                        monto: reporte.valores[c.id]?.monto || 0
+                    }))
+                };
+
+                const { error: solErr } = await (supabase.from('reporte_diario_solicitudes') as any).insert({
+                    comedor_id: comedorId,
+                    fecha_reporte: reporte.fecha,
+                    datos_json: fullData,
+                    motivo: reporte.observaciones,
+                    estado: 'PENDIENTE'
+                });
+
+                if (solErr) throw solErr;
+
+                toast.success('Solicitud de emergencia enviada para revisión del administrador ✓');
+                setIsEmergencyMode(false);
+                setReporte(prev => ({ ...prev, fecha: format(new Date(), 'yyyy-MM-dd') }));
+                return;
+            }
+
             let reporteId = reporte.id;
 
             // Upsert header
@@ -261,13 +307,12 @@ export default function ReporteDiario() {
                 await calcularCruceSemanal(comedorId as string, semId as string);
             } catch (cruceErr) {
                 console.error('Error calculating cruce:', cruceErr);
-                // We don't throw here to avoid blocking a successful report save
             }
 
             toast.success('Reporte diario guardado ✓');
         } catch (err: any) {
             console.error(err);
-            toast.error(`Error al guardar: ${err.message || 'Intenta nuevamente'}`);
+            toast.error(`Error al procesar: ${err.message || 'Intenta nuevamente'}`);
         } finally {
             setIsSubmitting(false);
         }
@@ -402,11 +447,11 @@ export default function ReporteDiario() {
                                 })}
                             </div>
                             {/* Category subtotal */}
-                            <div className={`flex justify-between items-center px-4 py-2 ${config.bg} border-t ${config.border}`}>
-                                <span className={`text-xs font-bold uppercase ${config.color}`}>TOTAL {cat}</span>
-                                <div className="flex gap-4 text-right">
-                                    <span className={`text-sm font-bold ${config.color}`}>{subtotalCat(cat)} pax</span>
-                                    <span className={`text-sm font-bold ${config.color}`}>S/ {subtotalMontoCat(cat).toFixed(2)}</span>
+                            <div className={`flex flex-col sm:flex-row justify-between items-center px-4 py-3 ${config.bg} border-t ${config.border} gap-2`}>
+                                <span className={`text-[10px] sm:text-xs font-black uppercase tracking-wider ${config.color}`}>Subtotal {cat}</span>
+                                <div className="flex justify-between w-full sm:w-auto gap-4 text-right">
+                                    <span className={`text-sm font-black ${config.color}`}>{subtotalCat(cat)} pax</span>
+                                    <span className={`text-sm font-black ${config.color}`}>S/ {subtotalMontoCat(cat).toFixed(2)}</span>
                                 </div>
                             </div>
                         </CardContent>
@@ -457,50 +502,107 @@ export default function ReporteDiario() {
                 )}
             </Card>
 
-            {/* Observaciones */}
-            <Card>
-                <CardHeader className="py-3 px-4 bg-zinc-50 border-b">
-                    <CardTitle className="text-sm font-semibold text-zinc-600">📝 Observaciones del día</CardTitle>
-                </CardHeader>
-                <CardContent className="pt-3">
-                    <Textarea
-                        placeholder="Incidentes, novedades, comentarios del día..."
-                        value={reporte.observaciones}
-                        onChange={e => setReporte(prev => ({ ...prev, observaciones: e.target.value }))}
-                        className="resize-none text-sm"
-                        rows={3}
-                    />
-                </CardContent>
-            </Card>
+            {/* Emergency Mode UI */}
+            <div className="flex flex-col sm:flex-row items-center justify-between bg-zinc-900 text-white p-4 rounded-xl shadow-lg border-b-4 border-rose-600 gap-4">
+                <div className="flex items-center gap-3">
+                    <div className={`p-2 rounded-full ${isEmergencyMode ? 'bg-rose-600 animate-pulse' : 'bg-zinc-800'}`}>
+                        <AlertCircle size={20} />
+                    </div>
+                    <div>
+                        <h4 className="font-bold text-sm">¿Necesitas reportar un día pasado?</h4>
+                        <p className="text-[10px] text-zinc-400 uppercase tracking-wider">Máximo 7 días de antiguedad • Requiere aprobación</p>
+                    </div>
+                </div>
+                <Button
+                    variant={isEmergencyMode ? "destructive" : "outline"}
+                    className={isEmergencyMode ? "bg-rose-600 hover:bg-rose-700" : "bg-transparent text-white border-zinc-700 hover:bg-zinc-800"}
+                    onClick={() => {
+                        setIsEmergencyMode(!isEmergencyMode);
+                        if (isEmergencyMode) setReporte(prev => ({ ...prev, fecha: format(new Date(), 'yyyy-MM-dd') }));
+                    }}
+                >
+                    {isEmergencyMode ? 'Cancelar Emergencia' : '🆘 Activar Modo Emergencia'}
+                </Button>
+            </div>
+
+            {/* Date Selection (Emergency) */}
+            {isEmergencyMode && (
+                <Card className="border-2 border-rose-200 bg-rose-50/30 overflow-hidden">
+                    <CardHeader className="py-2 px-4 bg-rose-100 flex flex-row items-center justify-between border-b border-rose-200">
+                        <span className="text-xs font-black text-rose-800 uppercase flex items-center gap-2">
+                            <CalendarIcon size={14} /> Seleccionar Fecha del Reporte Pasado
+                        </span>
+                        <Badge className="bg-rose-600">MODO EMERGENCIA</Badge>
+                    </CardHeader>
+                    <CardContent className="p-4 flex flex-col sm:flex-row items-center gap-6">
+                        <Popover>
+                            <PopoverTrigger asChild>
+                                <Button variant="outline" className="w-full sm:w-[280px] justify-start text-left font-black border-rose-300">
+                                    <CalendarIcon className="mr-2 h-4 w-4" />
+                                    {reporte.fecha ? format(new Date(reporte.fecha + 'T12:00:00'), 'PPP', { locale: es }) : <span>Seleccionar fecha</span>}
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0">
+                                <Calendar
+                                    mode="single"
+                                    selected={new Date(reporte.fecha + 'T12:00:00')}
+                                    onSelect={(date) => date && setReporte(prev => ({ ...prev, fecha: format(date, 'yyyy-MM-dd') }))}
+                                    disabled={(date) => isAfter(date, today) || isBefore(date, minDate)}
+                                    initialFocus
+                                />
+                            </PopoverContent>
+                        </Popover>
+                        <div className="flex-1 text-xs text-rose-700 font-bold leading-relaxed">
+                            ⚠️ Recuerda: Este reporte no se activará de inmediato. El administrador debe validarlo antes de que aparezca en el historial oficial.
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
+
+            {/* Existing Cards for categories... (Line 160 approx) */}
 
             {/* Sticky Save Bar */}
-            <div className="fixed bottom-0 left-0 lg:left-64 right-0 z-30 bg-white border-t-2 border-[#2D6A4F] px-6 py-3 shadow-2xl">
-                <div className="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
-                    <div className="flex gap-6 text-sm">
+            <div className="fixed bottom-0 left-0 lg:left-64 right-0 z-40 bg-white/90 backdrop-blur-md border-t-2 border-[#1B4332] px-4 sm:px-6 py-4 shadow-[0_-10px_40px_rgba(0,0,0,0.1)] pb-safe-offset-4">
+                <div className="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <div className="grid grid-cols-3 sm:flex gap-4 sm:gap-6 text-center sm:text-left w-full sm:w-auto">
                         {categorias.map(cat => {
                             const config = CATEGORIA_CONFIG[cat] || CATEGORIA_CONFIG.OTRO;
                             const qty = subtotalCat(cat);
                             if (qty === 0) return null;
                             return (
                                 <div key={cat} className="flex flex-col items-center">
-                                    <span className={`font-bold text-lg ${config.color}`}>{qty}</span>
-                                    <span className="text-[10px] text-zinc-400 uppercase">{cat}</span>
+                                    <span className={`font-black text-lg ${config.color}`}>{qty}</span>
+                                    <span className="text-[9px] text-zinc-400 font-bold uppercase tracking-tight">{cat.slice(0, 4)}</span>
                                 </div>
                             );
                         })}
-                        <div className="flex flex-col items-center border-l pl-4 ml-2">
-                            <span className="font-bold text-lg text-[#1B4332]">S/ {totales.monto.toFixed(2)}</span>
-                            <span className="text-[10px] text-zinc-400 uppercase">Total</span>
+                        <div className="flex flex-col items-center border-l border-zinc-200 pl-4 sm:ml-2">
+                            <span className="font-black text-xl text-[#1B4332]">S/ {totales.monto.toFixed(2)}</span>
+                            <span className="text-[9px] text-zinc-400 font-bold uppercase tracking-widest">Total Gral</span>
                         </div>
                     </div>
                     <Button
                         onClick={handleSubmit}
                         disabled={isSubmitting}
                         size="lg"
-                        className="bg-[#2D6A4F] hover:bg-[#1B4332] text-white gap-2 w-full sm:w-auto font-semibold shadow-lg"
+                        className={`${isEmergencyMode ? 'bg-rose-600 hover:bg-rose-800' : 'bg-[#2D6A4F] hover:bg-[#1B4332]'} text-white gap-2 w-full sm:w-auto font-black shadow-lg transition-all transform active:scale-95`}
                     >
-                        <Save size={18} />
-                        {isSubmitting ? 'Guardando...' : 'Guardar Reporte'}
+                        {isSubmitting ? (
+                            <span className="flex items-center gap-2">
+                                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                Procesando...
+                            </span>
+                        ) : isEmergencyMode ? (
+                            <>
+                                <Send size={18} />
+                                ENVIAR SOLICITUD DE ACTUALIZACIÓN
+                            </>
+                        ) : (
+                            <>
+                                <Save size={18} />
+                                GUARDAR REPORTE DIARIO
+                            </>
+                        )}
                     </Button>
                 </div>
             </div>

@@ -479,18 +479,18 @@ export default function ComedorDetallePage() {
                                                     <tbody className="divide-y divide-zinc-100">
                                                         {items.map((item, i) => (
                                                             <tr key={i} className="hover:bg-zinc-50">
-                                                                <td className="px-4 py-2 font-medium">{item.comedor_campos_reporte?.nombre_campo}</td>
-                                                                <td className="px-4 py-2 text-center text-zinc-600">{item.cantidad}</td>
-                                                                <td className="px-4 py-2 text-right text-zinc-700">S/. {Number(item.monto || 0).toFixed(2)}</td>
+                                                                <td className="px-4 py-2.5 font-semibold text-zinc-900">{item.comedor_campos_reporte?.nombre_campo}</td>
+                                                                <td className="px-4 py-2.5 text-center text-zinc-950 font-bold text-lg">{item.cantidad}</td>
+                                                                <td className="px-4 py-2.5 text-right text-zinc-900 font-bold text-lg">S/. {Number(item.monto || 0).toFixed(2)}</td>
                                                             </tr>
                                                         ))}
                                                     </tbody>
                                                     {catTotal && (
-                                                        <tfoot className="bg-zinc-50/80 border-t">
+                                                        <tfoot className="bg-emerald-50/30 border-t-2 border-emerald-100">
                                                             <tr>
-                                                                <td className="px-4 py-2 font-bold text-xs">TOTAL {cat}</td>
-                                                                <td className="px-4 py-2 text-center font-bold text-xs">{catTotal.total_cantidad}</td>
-                                                                <td className="px-4 py-2 text-right font-bold text-[#2D6A4F]">S/. {Number(catTotal.total_monto || 0).toFixed(2)}</td>
+                                                                <td className="px-4 py-3 font-black text-sm text-emerald-900">TOTAL {cat}</td>
+                                                                <td className="px-4 py-3 text-center font-black text-xl text-emerald-800">{catTotal.total_cantidad}</td>
+                                                                <td className="px-4 py-3 text-right font-black text-xl text-[#1B4332]">S/. {Number(catTotal.total_monto || 0).toFixed(2)}</td>
                                                             </tr>
                                                         </tfoot>
                                                     )}

@@ -14,6 +14,7 @@ import {
     Settings,
     LogOut,
     Menu,
+    AlertTriangle,
 } from 'lucide-react';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -33,6 +34,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     const menuItems = [
         { name: 'Dashboard', href: '/admin/dashboard', icon: BarChart3 },
         { name: 'Comedores', href: '/admin/comedores', icon: Building2 },
+        { name: 'Solicitudes', href: '/admin/solicitudes', icon: AlertTriangle },
         { name: 'Logística', href: '/admin/logistica', icon: Truck },
         { name: 'Recursos Humanos', href: '/admin/rrhh', icon: Users },
         { name: 'Reportes', href: '/admin/reportes', icon: FileText },
@@ -43,28 +45,28 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <div className="flex h-screen bg-zinc-50 dark:bg-zinc-950">
             <aside
                 className={`${collapsed ? 'w-16' : 'w-64'
-                    } bg-[#5850EC] text-white transition-all duration-300 flex flex-col hidden sm:flex`}
+                    } bg-[#1B4332] text-white transition-all duration-300 flex flex-col hidden sm:flex shadow-xl`}
             >
-                <div className="h-16 flex items-center justify-between px-4 border-b border-indigo-500">
-                    {!collapsed && <span className="font-bold text-lg truncate">Admin Panel</span>}
-                    <button onClick={() => setCollapsed(!collapsed)} className="text-white hover:bg-indigo-500 p-1 rounded">
+                <div className="h-16 flex items-center justify-between px-4 border-b border-emerald-800">
+                    {!collapsed && <span className="font-black text-lg tracking-tight uppercase">Alark Admin</span>}
+                    <button onClick={() => setCollapsed(!collapsed)} className="text-white hover:bg-emerald-800 p-1.5 rounded-lg transition-colors">
                         <Menu size={20} />
                     </button>
                 </div>
 
-                <nav className="flex-1 overflow-y-auto py-4">
-                    <ul className="space-y-1 px-2">
+                <nav className="flex-1 overflow-y-auto py-6">
+                    <ul className="space-y-2 px-3">
                         {menuItems.map((item) => {
                             const isActive = pathname.startsWith(item.href);
                             return (
                                 <li key={item.name}>
                                     <Link
                                         href={item.href}
-                                        className={`flex items-center gap-3 px-3 py-2 rounded-md transition-colors ${isActive ? 'bg-indigo-700' : 'hover:bg-indigo-600'
+                                        className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group ${isActive ? 'bg-[#2D6A4F] shadow-lg scale-[1.02]' : 'hover:bg-[#2D6A4F]/40'
                                             }`}
                                     >
-                                        <item.icon size={20} />
-                                        {!collapsed && <span>{item.name}</span>}
+                                        <item.icon size={20} className={isActive ? 'text-white' : 'text-emerald-300 group-hover:text-white'} />
+                                        {!collapsed && <span className={`text-sm font-bold ${isActive ? 'text-white' : 'text-emerald-100'}`}>{item.name}</span>}
                                     </Link>
                                 </li>
                             );
@@ -73,17 +75,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 </nav>
             </aside>
 
-            <main className="flex-1 flex flex-col overflow-hidden">
-                <header className="h-16 flex items-center justify-between px-6 bg-white dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 shadow-sm">
+            <main className="flex-1 flex flex-col overflow-hidden bg-zinc-50">
+                <header className="h-16 flex items-center justify-between px-6 bg-white border-b border-zinc-200 shadow-sm z-20">
                     <div className="flex items-center gap-4">
                         <div className="md:hidden">
                             <Menu size={24} className="text-zinc-500" />
                         </div>
-                        <h1 className="text-xl font-bold text-zinc-800 dark:text-zinc-100">
-                            Panel Administrativo
+                        <h1 className="text-xl font-black text-zinc-800 tracking-tight">
+                            PLATAFORMA ERP
                         </h1>
-                        <span className="px-2 py-1 text-xs font-semibold bg-indigo-100 text-indigo-800 rounded-full">
-                            Admin
+                        <span className="px-3 py-1 text-[10px] font-black bg-emerald-100 text-[#1B4332] rounded-full uppercase tracking-widest">
+                            Panel Control
                         </span>
                     </div>
 
