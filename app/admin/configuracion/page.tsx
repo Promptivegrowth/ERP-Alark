@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Settings, Plus, Store, Users, Key, LayoutList, GripVertical, ToggleLeft, ToggleRight } from 'lucide-react';
 
@@ -38,6 +39,12 @@ export default function ConfiguracionPage() {
     const [loadingCampos, setLoadingCampos] = useState(false);
     const [newCampo, setNewCampo] = useState({ nombre_campo: '', categoria: 'ALMUERZO' as string, orden: 0 });
     const [isSubmittingCampo, setIsSubmittingCampo] = useState(false);
+
+    // Password Reset
+    const [resetUser, setResetUser] = useState<any>(null);
+    const [newPasswordForReset, setNewPasswordForReset] = useState('');
+    const [isResetting, setIsResetting] = useState(false);
+    const [isDialogOpen, setIsDialogOpen] = useState(false);
 
     async function loadData() {
         const [cRes, uRes] = await Promise.all([
@@ -113,6 +120,38 @@ export default function ConfiguracionPage() {
         }
     }
 
+    async function handleResetPassword() {
+        if (!resetUser || !newPasswordForReset) return;
+        if (newPasswordForReset.length < 8) {
+            toast.error('La contraseña debe tener al menos 8 caracteres');
+            return;
+        }
+
+        setIsResetting(true);
+        try {
+            const res = await fetch('/api/admin/reset-password', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId: resetUser.id, newPassword: newPasswordForReset })
+            });
+
+            const data = await res.json();
+            if (data.success) {
+                toast.success(`Contraseña de ${resetUser.email} actualizada con éxito`);
+                setIsDialogOpen(false);
+                setNewPasswordForReset('');
+                setResetUser(null);
+            } else {
+                throw new Error(data.error || 'Error al resetear contraseña');
+            }
+        } catch (err: any) {
+            console.error(err);
+            toast.error(err.message || 'Error al resetear contraseña');
+        } finally {
+            setIsResetting(false);
+        }
+    }
+
     async function loadCamposComedor(comedorId: string) {
         setLoadingCampos(true);
         const { data } = await supabase
@@ -125,7 +164,7 @@ export default function ConfiguracionPage() {
     }
 
     async function toggleCampoActivo(id: string, activo: boolean) {
-        await supabase.from('comedor_campos_reporte').update({ activo: !activo } as any).eq('id', id);
+        await (supabase.from('comedor_campos_reporte') as any).update({ activo: !activo }).eq('id', id);
         setCamposComedor(prev => prev.map(c => c.id === id ? { ...c, activo: !activo } : c));
         toast.success('Campo actualizado');
     }
@@ -285,6 +324,7 @@ export default function ConfiguracionPage() {
                                         <TableHead>Rol Asignado</TableHead>
                                         <TableHead>Comedor Vinculado</TableHead>
                                         <TableHead className="w-32">Registro</TableHead>
+                                        <TableHead className="text-right">Acciones</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -299,6 +339,46 @@ export default function ConfiguracionPage() {
                                             <TableCell>{u.comedores?.nombre || <span className="text-zinc-400 italic">No Aplica (Admin)</span>}</TableCell>
                                             <TableCell className="text-xs text-zinc-500">
                                                 {format(new Date(u.created_at || new Date()), 'dd MMM yyyy', { locale: es })}
+                                            </TableCell>
+                                            <TableCell className="text-right">
+                                                <Dialog open={isDialogOpen && resetUser?.id === u.id} onOpenChange={(open) => {
+                                                    setIsDialogOpen(open);
+                                                    if (open) setResetUser(u);
+                                                    else { setResetUser(null); setNewPasswordForReset(''); }
+                                                }}>
+                                                    <DialogTrigger render={
+                                                        <Button variant="outline" size="sm" className="h-8 gap-2">
+                                                            <Key size={14} />
+                                                            Cambiar Clave
+                                                        </Button>
+                                                    } />
+                                                    <DialogContent>
+                                                        <DialogHeader>
+                                                            <DialogTitle>Cambiar Contraseña</DialogTitle>
+                                                        </DialogHeader>
+                                                        <div className="space-y-4 py-4">
+                                                            <div className="space-y-2">
+                                                                <p className="text-sm font-medium">Resetear clave para: <span className="font-bold">{u.email}</span></p>
+                                                                <Input
+                                                                    type="password"
+                                                                    placeholder="Nueva contraseña (min. 8 caracteres)"
+                                                                    value={newPasswordForReset}
+                                                                    onChange={(e) => setNewPasswordForReset(e.target.value)}
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                        <DialogFooter>
+                                                            <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Cancelar</Button>
+                                                            <Button
+                                                                className="bg-indigo-600 hover:bg-indigo-700"
+                                                                onClick={handleResetPassword}
+                                                                disabled={isResetting || newPasswordForReset.length < 8}
+                                                            >
+                                                                {isResetting ? 'Guardando...' : 'Actualizar Contraseña'}
+                                                            </Button>
+                                                        </DialogFooter>
+                                                    </DialogContent>
+                                                </Dialog>
                                             </TableCell>
                                         </TableRow>
                                     ))}
