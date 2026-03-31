@@ -79,7 +79,7 @@ export default function ComedorDetallePage() {
             // Fetch values and field names
             const { data, error } = await supabase
                 .from('reporte_diario_valores')
-                .select('valor, monto, comedor_campos_reporte(nombre_campo, categoria)')
+                .select('cantidad, monto, comedor_campos_reporte(nombre_campo, categoria)')
                 .eq('reporte_id', reporte.id);
 
             if (error) throw error;
@@ -462,7 +462,7 @@ export default function ComedorDetallePage() {
                                                         {items.map((item, i) => (
                                                             <tr key={i} className="hover:bg-zinc-50">
                                                                 <td className="px-4 py-2 font-medium">{item.comedor_campos_reporte?.nombre_campo}</td>
-                                                                <td className="px-4 py-2 text-center text-zinc-600">{item.valor}</td>
+                                                                <td className="px-4 py-2 text-center text-zinc-600">{item.cantidad}</td>
                                                                 <td className="px-4 py-2 text-right font-bold text-[#2D6A4F]">S/. {Number(item.monto || 0).toFixed(2)}</td>
                                                             </tr>
                                                         ))}
