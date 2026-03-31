@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
+import { Eye, EyeOff } from 'lucide-react';
 
 const loginSchema = z.object({
     email: z.string().email('Ingresa un correo válido'),
@@ -21,6 +22,7 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
     const [isLoading, setIsLoading] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
     const router = useRouter();
     const supabase = createClient();
 
@@ -132,13 +134,22 @@ export default function LoginPage() {
                             </div>
                             <div className="space-y-1.5 pt-1">
                                 <label className="text-[12px] font-black text-zinc-400 uppercase tracking-widest pl-1">Contraseña</label>
-                                <Input
-                                    type="password"
-                                    placeholder="••••••••"
-                                    className="h-12 bg-zinc-50 border-zinc-200 rounded-xl px-4 font-medium transition-all focus:ring-emerald-500 focus:border-emerald-500"
-                                    disabled={isLoading}
-                                    {...form.register('password')}
-                                />
+                                <div className="relative">
+                                    <Input
+                                        type={showPassword ? "text" : "password"}
+                                        placeholder="••••••••"
+                                        className="h-12 bg-zinc-50 border-zinc-200 rounded-xl px-4 pr-12 font-medium transition-all focus:ring-emerald-500 focus:border-emerald-500"
+                                        disabled={isLoading}
+                                        {...form.register('password')}
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowPassword(!showPassword)}
+                                        className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-emerald-600 transition-colors"
+                                    >
+                                        {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                                    </button>
+                                </div>
                                 {form.formState.errors.password && (
                                     <p className="text-xs font-bold text-rose-500 pl-1">{form.formState.errors.password.message}</p>
                                 )}

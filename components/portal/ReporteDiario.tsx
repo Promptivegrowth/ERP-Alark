@@ -514,14 +514,17 @@ export default function ReporteDiario() {
                     </div>
                 </div>
                 <Button
-                    variant={isEmergencyMode ? "destructive" : "outline"}
-                    className={isEmergencyMode ? "bg-rose-600 hover:bg-rose-700" : "bg-transparent text-white border-zinc-700 hover:bg-zinc-800"}
+                    variant="ghost"
+                    className={isEmergencyMode
+                        ? "bg-rose-600 hover:bg-rose-700 text-white font-black px-6 shadow-md transition-all active:scale-95"
+                        : "bg-rose-500 hover:bg-rose-600 text-white font-black px-6 shadow-md transition-all active:scale-95"
+                    }
                     onClick={() => {
                         setIsEmergencyMode(!isEmergencyMode);
                         if (isEmergencyMode) setReporte(prev => ({ ...prev, fecha: format(new Date(), 'yyyy-MM-dd') }));
                     }}
                 >
-                    {isEmergencyMode ? 'Cancelar Emergencia' : '🆘 Activar Modo Emergencia'}
+                    {isEmergencyMode ? 'CANCELAR EMERGENCIA' : '🆘 ACTIVAR MODO EMERGENCIA'}
                 </Button>
             </div>
 
