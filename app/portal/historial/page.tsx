@@ -26,9 +26,9 @@ export default function HistorialPage() {
         if (!comedorId) return;
 
         async function fetchData() {
-            // 1. Fetch Liquidaciones
+            // 1. Fetch Reporte Diario (new module)
             const { data: liqData } = await supabase
-                .from('liquidacion_diaria')
+                .from('reporte_diario')
                 .select('*')
                 .eq('comedor_id', comedorId as any)
                 .order('fecha', { ascending: false })
@@ -107,20 +107,14 @@ export default function HistorialPage() {
 
                 <TabsContent value="diario">
                     <HistoryTable
-                        headers={['Fecha', 'Servicio', 'Tipo Pago', 'Cantidad', 'Precio', 'Total']}
+                        headers={['Fecha', 'Monto Coffe', 'Observaciones', 'Total Día']}
                         data={liquidaciones}
                         renderRow={(l) => (
                             <TableRow key={l.id}>
                                 <TableCell className="font-medium">{formatDateStr(l.fecha)}</TableCell>
-                                <TableCell>{l.servicio}</TableCell>
-                                <TableCell>
-                                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${l.tipo_pago === 'CREDITO_RANSA' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'}`}>
-                                        {l.tipo_pago}
-                                    </span>
-                                </TableCell>
-                                <TableCell className="text-right">{l.cantidad}</TableCell>
-                                <TableCell className="text-right">S/ {l.precio_unit.toFixed(2)}</TableCell>
-                                <TableCell className="text-right font-bold">S/ {(l.cantidad * l.precio_unit).toFixed(2)}</TableCell>
+                                <TableCell>S/ {Number(l.monto_coffe || 0).toFixed(2)}</TableCell>
+                                <TableCell className="text-xs text-zinc-500">{l.observaciones || '-'}</TableCell>
+                                <TableCell className="text-right font-bold text-[#2D6A4F]">S/ {Number(l.subtotal || 0).toFixed(2)}</TableCell>
                             </TableRow>
                         )}
                     />

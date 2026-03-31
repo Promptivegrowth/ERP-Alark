@@ -76,14 +76,23 @@ export default function ComedorDetallePage() {
         setOpenDetalle(true);
         setLoadingDetalle(true);
         try {
-            // Fetch values and field names
-            const { data, error } = await supabase
-                .from('reporte_diario_valores')
-                .select('cantidad, monto, comedor_campos_reporte(nombre_campo, categoria)')
-                .eq('reporte_id', reporte.id);
+            // Fetch values, field names and category totals
+            const [valRes, totRes] = await Promise.all([
+                supabase
+                    .from('reporte_diario_valores')
+                    .select('cantidad, monto, comedor_campos_reporte(nombre_campo, categoria)')
+                    .eq('reporte_id', reporte.id),
+                supabase
+                    .from('reporte_diario_totales')
+                    .select('*')
+                    .eq('reporte_id', reporte.id)
+            ]);
 
-            if (error) throw error;
-            setReporteDetalles(data || []);
+            if (valRes.error) throw valRes.error;
+            setReporteDetalles(valRes.data || []);
+
+            // We can attach totals to the selectedReporte or keep local
+            setSelectedReporte({ ...reporte, totales: totRes.data || [] });
         } catch (err) {
             console.error(err);
             setReporteDetalles([]);
@@ -446,29 +455,45 @@ export default function ComedorDetallePage() {
                                     const items = reporteDetalles.filter(d => d.comedor_campos_reporte?.categoria === cat);
                                     if (items.length === 0) return null;
 
+                                    const catTotal = selectedReporte?.totales?.find((t: any) => t.categoria === cat);
+
                                     return (
                                         <Card key={cat} className="overflow-hidden border-zinc-200">
-                                            <CardHeader className="bg-zinc-50 py-2 border-b">
-                                                <CardTitle className="text-xs font-bold tracking-wider text-zinc-500 uppercase">{cat}</CardTitle>
+                                            <CardHeader className="bg-emerald-50/50 py-2 border-b flex flex-row items-center justify-between">
+                                                <CardTitle className="text-xs font-bold tracking-wider text-[#1B4332] uppercase">{cat}</CardTitle>
+                                                {catTotal && (
+                                                    <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">
+                                                        {catTotal.total_cantidad} pax
+                                                    </span>
+                                                )}
                                             </CardHeader>
                                             <CardContent className="p-0">
                                                 <table className="w-full text-sm">
-                                                    <thead className="bg-white text-zinc-400 text-[10px] border-b">
+                                                    <thead className="bg-zinc-50 text-zinc-400 text-[10px] border-b">
                                                         <tr>
                                                             <th className="text-left px-4 py-2 font-medium">Concepto</th>
                                                             <th className="text-center px-4 py-2 font-medium">Cant.</th>
                                                             <th className="text-right px-4 py-2 font-medium">Subtotal</th>
                                                         </tr>
                                                     </thead>
-                                                    <tbody className="divide-y">
+                                                    <tbody className="divide-y divide-zinc-100">
                                                         {items.map((item, i) => (
                                                             <tr key={i} className="hover:bg-zinc-50">
                                                                 <td className="px-4 py-2 font-medium">{item.comedor_campos_reporte?.nombre_campo}</td>
                                                                 <td className="px-4 py-2 text-center text-zinc-600">{item.cantidad}</td>
-                                                                <td className="px-4 py-2 text-right font-bold text-[#2D6A4F]">S/. {Number(item.monto || 0).toFixed(2)}</td>
+                                                                <td className="px-4 py-2 text-right text-zinc-700">S/. {Number(item.monto || 0).toFixed(2)}</td>
                                                             </tr>
                                                         ))}
                                                     </tbody>
+                                                    {catTotal && (
+                                                        <tfoot className="bg-zinc-50/80 border-t">
+                                                            <tr>
+                                                                <td className="px-4 py-2 font-bold text-xs">TOTAL {cat}</td>
+                                                                <td className="px-4 py-2 text-center font-bold text-xs">{catTotal.total_cantidad}</td>
+                                                                <td className="px-4 py-2 text-right font-bold text-[#2D6A4F]">S/. {Number(catTotal.total_monto || 0).toFixed(2)}</td>
+                                                            </tr>
+                                                        </tfoot>
+                                                    )}
                                                 </table>
                                             </CardContent>
                                         </Card>

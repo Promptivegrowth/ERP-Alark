@@ -35,16 +35,16 @@ export default function PortalDashboard() {
         async function loadDashboardData() {
             const today = new Date().toISOString().split('T')[0];
 
-            // 1. Check liquidation today
+            // 1. Check liquidation today (new module)
             const { data: liqData } = await supabase
-                .from('liquidacion_diaria')
-                .select('*')
+                .from('reporte_diario')
+                .select('subtotal')
                 .eq('comedor_id', comedorId as any)
                 .eq('fecha', today);
 
             if (liqData && liqData.length > 0) {
                 setHasLiquidationToday(true);
-                const total = (liqData as any[]).reduce((acc, curr) => acc + (Number(curr.cantidad) * Number(curr.precio_unit)), 0);
+                const total = (liqData as any[]).reduce((acc, curr) => acc + Number(curr.subtotal || 0), 0);
                 setSalesToday(total);
             }
 
