@@ -471,7 +471,7 @@ export default function ComedorDetallePage() {
             </Tabs>
 
             <Dialog open={openDetalle} onOpenChange={setOpenDetalle}>
-                <DialogContent className="max-w-7xl max-h-[90vh] overflow-y-auto">
+                <DialogContent className="sm:max-w-7xl w-full max-h-[90vh] overflow-y-auto p-6 md:p-8">
                     <DialogHeader className="border-b pb-4">
                         <DialogTitle className="text-2xl font-bold text-[#1B4332] flex items-center gap-3">
                             <Info size={24} /> Resumen Detallado
