@@ -33,11 +33,8 @@ export default function PortalDashboard() {
         if (!comedorId) return;
 
         async function loadDashboardData() {
-            // Use local date for Peru (UTC-5) or just the browser's local YYYY-MM-DD
-            const now = new Date();
-            const offset = now.getTimezoneOffset() * 60000;
-            const localISOTime = new Date(now.getTime() - offset).toISOString().split('T')[0];
-            const today = localISOTime;
+            // Use local date for Peru (yyyy-MM-dd)
+            const today = format(new Date(), 'yyyy-MM-dd');
 
             // 1. Check liquidation today (new module)
             const [liqRes, solRes] = await Promise.all([
@@ -47,7 +44,7 @@ export default function PortalDashboard() {
 
             if ((liqRes.data && liqRes.data.length > 0) || solRes.data) {
                 setHasLiquidationToday(true);
-                const total = (liqRes.data || []).reduce((acc, curr) => acc + Number(curr.subtotal || 0), 0);
+                const total = (liqRes.data as any[] || []).reduce((acc, curr) => acc + Number(curr.subtotal || 0), 0);
                 setSalesToday(total);
             }
 

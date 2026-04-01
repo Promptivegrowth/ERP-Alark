@@ -79,7 +79,7 @@ export default function ReporteDiario() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [dataLoaded, setDataLoaded] = useState(false);
     const [isEmergencyMode, setIsEmergencyMode] = useState(false);
-    const [hasPendingRequest, setHasPendingRequest] = useState(false);
+    const [pendingRequest, setPendingRequest] = useState<any>(null);
     const [activeTab, setActiveTab] = useState('diario');
     const today = startOfDay(new Date());
     const minDate = subDays(today, 7);
@@ -145,13 +145,13 @@ export default function ReporteDiario() {
                 // Check for pending requests for this date
                 const { data: pending } = await supabase
                     .from('reporte_diario_solicitudes')
-                    .select('id')
+                    .select('*')
                     .eq('comedor_id', comedorId as any)
                     .eq('fecha_reporte', reporte.fecha)
                     .eq('estado', 'PENDIENTE')
                     .maybeSingle();
 
-                setHasPendingRequest(!!pending);
+                setPendingRequest(pending);
             } catch (err) {
                 console.error('Error loading existing report:', err);
             }
@@ -334,6 +334,18 @@ export default function ReporteDiario() {
         }
     }
 
+    async function handleCancelarSolicitud() {
+        if (!pendingRequest || !confirm('¿Estás seguro de cancelar esta solicitud de actualización?')) return;
+        setIsSubmitting(true);
+        const { error } = await supabase.from('reporte_diario_solicitudes').delete().eq('id', pendingRequest.id);
+        if (error) toast.error('Error al cancelar solicitud');
+        else {
+            toast.success('Solicitud cancelada ✓');
+            setPendingRequest(null);
+        }
+        setIsSubmitting(false);
+    }
+
     if (loading || !dataLoaded) {
         return (
             <div className="flex items-center justify-center h-64">
@@ -374,398 +386,318 @@ export default function ReporteDiario() {
                         value={reporte.fecha}
                         onChange={e => setReporte(prev => ({ ...prev, fecha: e.target.value }))}
                     />
-                    {reporte.id && <Badge className="bg-emerald-100 text-emerald-800 text-xs">Reporte guardado</Badge>}
+                    {reporte.id && !pendingRequest && <Badge className="bg-emerald-100 text-emerald-800 text-xs">Reporte guardado</Badge>}
+                    {pendingRequest && <Badge className="bg-amber-100 text-amber-800 text-xs animate-pulse">Solicitud Pendiente</Badge>}
                 </div>
             </div>
 
-            {/* Field Cards by Category */}
-            {categorias.map(cat => {
-                const config = CATEGORIA_CONFIG[cat] || CATEGORIA_CONFIG.OTRO;
-                const camposCat = campos.filter(c => c.categoria === cat);
-                const isVolcan = comedorNombre === 'VOLCAN';
-                const isPamolsaOrTottus = ['PAMOLSA', 'TOTTUS-CDF', 'TOTTUS-CDS', 'TOTTUS-PPA'].includes(comedorNombre);
-
-                return (
-                    <Card key={cat} className={`border-2 ${config.border} overflow-hidden`}>
-                        <CardHeader className={`${config.bg} py-3 px-4 border-b ${config.border}`}>
-                            <CardTitle className={`text-base font-bold ${config.color}`}>
-                                {config.label}
+            {/* Pending Request View */}
+            {pendingRequest ? (
+                <div className="space-y-6 animate-in fade-in zoom-in-95 duration-500">
+                    <Card className="border-2 border-amber-200 shadow-xl overflow-hidden bg-amber-50/30">
+                        <CardHeader className="bg-amber-100/50 border-b border-amber-200 py-6 text-center">
+                            <div className="mx-auto w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mb-4 border-2 border-amber-300">
+                                <Coffee className="text-amber-600" size={32} />
+                            </div>
+                            <CardTitle className="text-2xl font-black text-amber-900 uppercase tracking-tighter">
+                                Solicitud de Actualización Pendiente
                             </CardTitle>
+                            <p className="text-amber-700 font-bold mt-2">
+                                Enviada el {format(new Date(pendingRequest.created_at), "PPP 'a las' p", { locale: es })}
+                            </p>
                         </CardHeader>
-                        <CardContent className="p-0">
-                            <div className="divide-y divide-zinc-100">
-                                {camposCat.map((campo, idx) => {
-                                    const isReadonly = campo.es_readonly;
-                                    const cantidadVal = isReadonly ? getReadonlyCantidad(campo) : (reporte.valores[campo.id]?.cantidad || 0);
-                                    const montoVal = reporte.valores[campo.id]?.monto || 0;
+                        <CardContent className="p-8 space-y-6">
+                            <div className="bg-white p-6 rounded-2xl border border-amber-100 shadow-sm">
+                                <h4 className="text-xs font-black text-amber-600 uppercase tracking-widest mb-3">Detalles del Motivo:</h4>
+                                <p className="text-zinc-700 italic text-lg leading-relaxed font-medium">
+                                    "{pendingRequest.motivo}"
+                                </p>
+                            </div>
 
-                                    // Visual separators
-                                    const showVolcanFaucettSep = isVolcan && idx > 0 && VOLCAN_FAUCETT.includes(campo.nombre_campo) && !VOLCAN_FAUCETT.includes(camposCat[idx - 1].nombre_campo);
-                                    const showVolcanGambettaSep = isVolcan && idx > 0 && !VOLCAN_FAUCETT.includes(campo.nombre_campo) && VOLCAN_FAUCETT.includes(camposCat[idx - 1].nombre_campo);
-                                    const showTottusSep = isPamolsaOrTottus && PAMOLSA_TOTTUS.includes(campo.nombre_campo) && !PAMOLSA_TOTTUS.includes(camposCat[idx - 1]?.nombre_campo || '');
+                            <div className="grid md:grid-cols-2 gap-4">
+                                <div className="p-4 bg-emerald-50 rounded-xl border border-emerald-100">
+                                    <span className="text-[10px] font-black text-emerald-600 uppercase block mb-1">Monto Solicitado</span>
+                                    <span className="text-xl font-black text-emerald-900">S/ {pendingRequest.datos_json.totales.monto.toFixed(2)}</span>
+                                </div>
+                                <div className="p-4 bg-zinc-50 rounded-xl border border-zinc-100">
+                                    <span className="text-[10px] font-black text-zinc-400 uppercase block mb-1">Estado de Auditoría</span>
+                                    <span className="text-sm font-black text-zinc-600 uppercase flex items-center gap-2">
+                                        <div className="w-2 h-2 rounded-full bg-amber-500 animate-ping" />
+                                        Espera de aprobación
+                                    </span>
+                                </div>
+                            </div>
 
-                                    return (
-                                        <div key={campo.id}>
-                                            {(showVolcanFaucettSep || showVolcanGambettaSep) && (
-                                                <div className="px-4 py-1 bg-zinc-100 text-xs font-bold text-zinc-500 uppercase tracking-wide">
-                                                    {VOLCAN_FAUCETT.includes(campo.nombre_campo) ? '📍 Sede Faucett' : '📍 Sede Gambetta'}
-                                                </div>
-                                            )}
-                                            {showTottusSep && (
-                                                <div className="px-4 py-1 bg-blue-50 text-xs font-bold text-blue-700 uppercase tracking-wide border-y border-blue-100">
-                                                    🏪 Sección TOTTUS
-                                                </div>
-                                            )}
-                                            {isPamolsaOrTottus && idx === 0 && (
-                                                <div className="px-4 py-1 bg-green-50 text-xs font-bold text-green-700 uppercase tracking-wide border-b border-green-100">
-                                                    🟢 Sección ALMARK
-                                                </div>
-                                            )}
-                                            <div className={`flex items-center gap-3 px-4 py-2.5 ${isReadonly ? 'bg-zinc-50' : 'hover:bg-zinc-50/50'} transition-colors`}>
-                                                <div className="flex-1 min-w-0">
-                                                    <span className={`text-sm font-medium ${isReadonly ? 'text-zinc-400 italic' : 'text-zinc-800'}`}>
-                                                        {campo.nombre_campo}
-                                                        {isReadonly && <span className="ml-2 text-[10px] bg-zinc-200 text-zinc-500 px-1.5 py-0.5 rounded">auto</span>}
-                                                    </span>
-                                                </div>
-                                                <div className="flex items-center gap-2">
-                                                    <div className="w-24">
-                                                        <label className="text-[10px] text-zinc-400 block text-center mb-0.5">Cantidad</label>
-                                                        <Input
-                                                            type="number"
-                                                            min="0"
-                                                            value={cantidadVal || ''}
-                                                            readOnly={isReadonly}
-                                                            onChange={e => !isReadonly && handleCantidad(campo.id, Number(e.target.value))}
-                                                            className={`text-center text-sm h-8 ${isReadonly ? 'bg-zinc-100 text-zinc-500 cursor-default' : 'border-[#2D6A4F] focus:ring-[#2D6A4F]'}`}
-                                                            placeholder="0"
-                                                        />
-                                                    </div>
-                                                    <div className="w-28">
-                                                        <label className="text-[10px] text-zinc-400 block text-center mb-0.5">Monto S/.</label>
-                                                        <div className="relative">
-                                                            <span className="absolute left-2 top-1.5 text-zinc-400 text-xs">S/</span>
+                            <div className="pt-4 flex flex-col sm:flex-row gap-4">
+                                <div className="flex-1 p-4 bg-rose-50 rounded-xl border border-rose-100">
+                                    <p className="text-xs text-rose-800 font-bold leading-tight">
+                                        ⚠️ El formulario está bloqueado mientras esta solicitud esté en revisión. Si necesitas corregir algo, cancela esta solicitud y envía una nueva.
+                                    </p>
+                                </div>
+                                <Button
+                                    variant="outline"
+                                    className="border-rose-200 text-rose-600 hover:bg-rose-50 font-black h-14 px-8"
+                                    onClick={handleCancelarSolicitud}
+                                    disabled={isSubmitting}
+                                >
+                                    CANCELAR SOLICITUD
+                                </Button>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
+            ) : (
+                <>
+                    {/* Normal Form View */}
+                    {/* Emergency Banner */}
+                    <div className="flex flex-col sm:flex-row items-center justify-between bg-zinc-900 text-white p-4 rounded-xl shadow-lg border-b-4 border-rose-600 gap-4">
+                        <div className="flex items-center gap-3">
+                            <div className={`p-2 rounded-full ${isEmergencyMode ? 'bg-rose-600 animate-pulse' : 'bg-zinc-800'}`}>
+                                <AlertCircle size={20} />
+                            </div>
+                            <div>
+                                <h4 className="font-bold text-sm">¿Necesitas reportar un día pasado?</h4>
+                                <p className="text-[10px] text-zinc-400 uppercase tracking-wider">Máximo 7 días de antiguedad • Requiere aprobación</p>
+                            </div>
+                        </div>
+                        <Button
+                            variant="ghost"
+                            className={isEmergencyMode
+                                ? "bg-rose-600 hover:bg-rose-700 text-white font-black px-6 shadow-md transition-all active:scale-95"
+                                : "bg-rose-500 hover:bg-rose-600 text-white font-black px-6 shadow-md transition-all active:scale-95"
+                            }
+                            onClick={() => {
+                                setIsEmergencyMode(!isEmergencyMode);
+                                if (isEmergencyMode) setReporte(prev => ({ ...prev, fecha: format(new Date(), 'yyyy-MM-dd') }));
+                            }}
+                        >
+                            {isEmergencyMode ? 'CANCELAR EMERGENCIA' : '🆘 ACTIVAR MODO EMERGENCIA'}
+                        </Button>
+                    </div>
+
+                    {/* Date Selection (Emergency) */}
+                    {isEmergencyMode && (
+                        <Card className="border-2 border-rose-300 shadow-lg overflow-hidden animate-in slide-in-from-top-4 duration-500">
+                            <CardHeader className="bg-rose-50 py-3 px-4 flex flex-row items-center justify-between border-b border-rose-100">
+                                <span className="text-sm font-black text-rose-800 uppercase flex items-center gap-2">
+                                    <CalendarIcon size={18} /> SELECCIONAR FECHA DE REPORTE PASADO
+                                </span>
+                                <Badge className="bg-rose-600 px-3 py-1 text-white font-black">MODO EMERGENCIA</Badge>
+                            </CardHeader>
+                            <CardContent className="p-4 space-y-4">
+                                <div className="flex flex-col sm:flex-row items-center gap-6">
+                                    <Popover>
+                                        <PopoverTrigger asChild>
+                                            <Button type="button" variant="outline" className="w-full sm:w-[280px] justify-start text-left font-black border-rose-300">
+                                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                                {reporte.fecha ? format(new Date(reporte.fecha + 'T12:00:00'), 'PPP', { locale: es }) : <span>Seleccionar fecha</span>}
+                                            </Button>
+                                        </PopoverTrigger>
+                                        <PopoverContent className="w-auto p-0">
+                                            <Calendar
+                                                mode="single"
+                                                selected={new Date(reporte.fecha + 'T12:00:00')}
+                                                onSelect={(date) => date && setReporte(prev => ({ ...prev, fecha: format(date, 'yyyy-MM-dd') }))}
+                                                disabled={(date) => isAfter(date, today) || isBefore(date, minDate)}
+                                                initialFocus
+                                            />
+                                        </PopoverContent>
+                                    </Popover>
+                                    <div className="flex-1 text-xs text-rose-700 font-bold leading-relaxed">
+                                        ⚠️ Recuerda: Este reporte no se activará de inmediato. El administrador debe validarlo antes de que aparezca en el historial oficial.
+                                    </div>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <div className="flex justify-between items-center">
+                                        <label className="text-sm font-bold text-rose-800 uppercase">Motivo / Observación del Cambio (Obligatorio)</label>
+                                        <span className={`text-[10px] font-black uppercase ${reporte.observaciones.length >= 8 ? 'text-emerald-600' : 'text-rose-500'}`}>
+                                            {reporte.observaciones.length} / 8 caracteres
+                                        </span>
+                                    </div>
+                                    <Textarea
+                                        placeholder="Explica detalladamente por qué necesitas actualizar este día pasado..."
+                                        value={reporte.observaciones}
+                                        onChange={e => setReporte(prev => ({ ...prev, observaciones: e.target.value }))}
+                                        className="min-h-[100px] border-rose-300 focus:ring-rose-400 bg-white"
+                                        required
+                                        minLength={8}
+                                    />
+                                </div>
+                            </CardContent>
+                        </Card>
+                    )}
+
+                    {categorias.map(cat => {
+                        const config = CATEGORIA_CONFIG[cat] || CATEGORIA_CONFIG.OTRO;
+                        return (
+                            <Card key={cat} className={`border-l-4 ${config.border} shadow-md overflow-hidden bg-white/50 backdrop-blur-sm`}>
+                                <CardHeader className={`${config.bg} py-3 px-4 flex flex-row items-center justify-between`}>
+                                    <CardTitle className={`text-base font-black uppercase tracking-tight ${config.color}`}>
+                                        {config.label}
+                                    </CardTitle>
+                                    <div className="flex items-center gap-3">
+                                        <div className="text-right">
+                                            <p className="text-[10px] font-bold text-zinc-400 uppercase leading-none">Subtotal Pax</p>
+                                            <p className={`text-sm font-black ${config.color}`}>{subtotalCat(cat)}</p>
+                                        </div>
+                                        <div className="text-right border-l border-zinc-200 pl-3">
+                                            <p className="text-[10px] font-bold text-zinc-400 uppercase leading-none">Monto</p>
+                                            <p className={`text-sm font-black ${config.color}`}>S/ {subtotalMontoCat(cat).toFixed(2)}</p>
+                                        </div>
+                                    </div>
+                                </CardHeader>
+                                <CardContent className="p-0">
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full text-sm">
+                                            <thead className="bg-zinc-50/50 border-b border-zinc-100">
+                                                <tr className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">
+                                                    <th className="px-4 py-2 text-left">Concepto / Servicio</th>
+                                                    <th className="px-4 py-2 text-right w-24">Cantidad</th>
+                                                    <th className="px-4 py-2 text-right w-32">Monto S/</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-zinc-100">
+                                                {campos.filter(c => c.categoria === cat).map(campo => (
+                                                    <tr key={campo.id} className="hover:bg-zinc-50/30 transition-colors">
+                                                        <td className="px-4 py-3">
+                                                            <p className="font-bold text-zinc-700 leading-tight uppercase text-xs">{campo.nombre_campo}</p>
+                                                            {campo.es_readonly && <span className="text-[9px] font-black text-rose-500 uppercase">Calculado Automático</span>}
+                                                        </td>
+                                                        <td className="px-4 py-3 text-right">
                                                             <Input
                                                                 type="number"
-                                                                min="0"
-                                                                step="0.01"
-                                                                value={montoVal || ''}
-                                                                onChange={e => handleMonto(campo.id, Number(e.target.value))}
-                                                                className="pl-6 text-sm h-8 border-[#2D6A4F] focus:ring-[#2D6A4F]"
-                                                                placeholder="0.00"
+                                                                className={`w-20 ml-auto h-8 text-right font-black border-zinc-200 focus:ring-1 ${campo.es_readonly ? 'bg-zinc-100 opacity-70' : 'bg-white'}`}
+                                                                value={campo.es_readonly ? getReadonlyCantidad(campo) : (reporte.valores[campo.id]?.cantidad || 0)}
+                                                                onChange={e => handleCantidad(campo.id, parseFloat(e.target.value) || 0)}
+                                                                readOnly={campo.es_readonly}
                                                             />
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
+                                                        </td>
+                                                        <td className="px-4 py-3 text-right">
+                                                            <Input
+                                                                type="number"
+                                                                step="0.01"
+                                                                className="w-28 ml-auto h-8 text-right font-black border-zinc-200 focus:ring-1 bg-white"
+                                                                value={reporte.valores[campo.id]?.monto || 0}
+                                                                onChange={e => handleMonto(campo.id, parseFloat(e.target.value) || 0)}
+                                                            />
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        );
+                    })}
+
+                    {/* Coffe Break / Eventos */}
+                    <Card className="border-l-4 border-l-amber-400 shadow-md bg-white/50 backdrop-blur-sm">
+                        <CardHeader className="bg-amber-50 py-3 px-4 flex flex-row items-center justify-between">
+                            <CardTitle className="text-base font-black uppercase tracking-tight text-amber-800">
+                                ☕ Coffe Break / Eventos Especiales
+                            </CardTitle>
+                            <div className="flex items-center gap-2">
+                                <label className="text-xs font-bold text-zinc-500 uppercase">¿Hubo Coffe?</label>
+                                <Switch
+                                    checked={reporte.tiene_coffe_break}
+                                    onCheckedChange={val => setReporte(prev => ({ ...prev, tiene_coffe_break: val }))}
+                                />
+                            </div>
+                        </CardHeader>
+                        {reporte.tiene_coffe_break && (
+                            <CardContent className="p-4 space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                                <div className="grid md:grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Descripción del Evento</label>
+                                        <Input
+                                            placeholder="Ej: Coffe Break Capacitación Ransa..."
+                                            value={reporte.descripcion_coffe}
+                                            onChange={e => setReporte(prev => ({ ...prev, descripcion_coffe: e.target.value }))}
+                                            className="font-bold border-zinc-200"
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Monto S/</label>
+                                        <Input
+                                            type="number"
+                                            step="0.01"
+                                            placeholder="0.00"
+                                            value={reporte.monto_coffe}
+                                            onChange={e => setReporte(prev => ({ ...prev, monto_coffe: parseFloat(e.target.value) || 0 }))}
+                                            className="font-black border-zinc-200 text-amber-700"
+                                        />
+                                    </div>
+                                </div>
+                            </CardContent>
+                        )}
+                    </Card>
+
+                    {/* Observaciones Generales */}
+                    <Card className="border-l-4 border-l-zinc-400 shadow-md bg-white/50 backdrop-blur-sm">
+                        <CardHeader className="bg-zinc-50 py-3 px-4">
+                            <CardTitle className="text-base font-black uppercase tracking-tight text-zinc-800">
+                                💬 Observaciones Generales
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="p-4">
+                            <Textarea
+                                placeholder="Cualquier aclaración adicional para este reporte..."
+                                value={reporte.observaciones}
+                                onChange={e => setReporte(prev => ({ ...prev, observaciones: e.target.value }))}
+                                className="font-medium border-zinc-200 min-h-[80px]"
+                            />
+                        </CardContent>
+                    </Card>
+
+                    {/* Sticky Save Bar */}
+                    <div className="fixed bottom-0 left-0 lg:left-64 right-0 z-40 bg-white/90 backdrop-blur-md border-t-2 border-[#1B4332] px-4 sm:px-6 py-4 shadow-[0_-10px_40px_rgba(0,0,0,0.1)] pb-safe-offset-4">
+                        <div className="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+                            <div className="grid grid-cols-3 sm:flex gap-4 sm:gap-6 text-center sm:text-left w-full sm:w-auto">
+                                {categorias.map(cat => {
+                                    const config = CATEGORIA_CONFIG[cat] || CATEGORIA_CONFIG.OTRO;
+                                    const qty = subtotalCat(cat);
+                                    if (qty === 0) return null;
+                                    return (
+                                        <div key={cat} className="flex flex-col items-center">
+                                            <span className={`font-black text-lg ${config.color}`}>{qty}</span>
+                                            <span className="text-[9px] text-zinc-400 font-bold uppercase tracking-tight">{cat.slice(0, 4)}</span>
                                         </div>
                                     );
                                 })}
-                            </div>
-                            {/* Category subtotal */}
-                            <div className={`flex flex-col sm:flex-row justify-between items-center px-4 py-3 ${config.bg} border-t ${config.border} gap-2`}>
-                                <span className={`text-[10px] sm:text-xs font-black uppercase tracking-wider ${config.color} whitespace-nowrap`}>Subtotal {cat}</span>
-                                <div className="flex justify-end items-center w-full sm:w-auto gap-6 text-right">
-                                    <span className={`text-sm font-black ${config.color} whitespace-nowrap`}>{subtotalCat(cat)} PAX</span>
-                                    <span className={`text-sm font-black ${config.color} whitespace-nowrap`}>S/ {subtotalMontoCat(cat).toFixed(2)}</span>
+                                <div className="flex flex-col items-end border-l border-zinc-200 pl-4 sm:ml-2 whitespace-nowrap">
+                                    <span className="font-black text-xl text-[#1B4332] leading-none">S/ {totales.monto.toFixed(2)}</span>
+                                    <span className="text-[10px] text-zinc-400 font-black uppercase tracking-widest mt-1">LIQUIDACIÓN TOTAL</span>
                                 </div>
                             </div>
-                        </CardContent>
-                    </Card>
-                );
-            })}
-
-            {/* Coffee Break Section */}
-            <Card className={`border-2 ${reporte.tiene_coffe_break ? 'border-amber-300' : 'border-zinc-200'} transition-colors`}>
-                <CardHeader className={`py-3 px-4 flex flex-row items-center justify-between ${reporte.tiene_coffe_break ? 'bg-amber-50 border-b border-amber-200' : 'bg-zinc-50'}`}>
-                    <CardTitle className="text-base font-bold text-zinc-700 flex items-center gap-2">
-                        <Coffee size={16} />
-                        Coffe Break / Servicios Adicionales
-                    </CardTitle>
-                    <button
-                        type="button"
-                        onClick={() => setReporte(prev => ({ ...prev, tiene_coffe_break: !prev.tiene_coffe_break }))}
-                        className={`text-xs px-3 py-1 rounded-full font-semibold transition-all ${reporte.tiene_coffe_break ? 'bg-amber-500 text-white' : 'bg-zinc-200 text-zinc-600 hover:bg-zinc-300'}`}
-                    >
-                        {reporte.tiene_coffe_break ? 'SÍ — incluido' : 'NO — clic para agregar'}
-                    </button>
-                </CardHeader>
-                {reporte.tiene_coffe_break && (
-                    <CardContent className="pt-4 space-y-3">
-                        <Textarea
-                            placeholder="Describe el servicio de coffe break..."
-                            value={reporte.descripcion_coffe}
-                            onChange={e => setReporte(prev => ({ ...prev, descripcion_coffe: e.target.value }))}
-                            className="resize-none text-sm border-amber-300 focus:ring-amber-400"
-                            rows={2}
-                        />
-                        <div className="flex items-center gap-3">
-                            <label className="text-sm font-medium text-zinc-600">Monto:</label>
-                            <div className="relative w-36">
-                                <span className="absolute left-2 top-2 text-zinc-400 text-xs">S/</span>
-                                <Input
-                                    type="number"
-                                    min="0"
-                                    step="0.01"
-                                    value={reporte.monto_coffe || ''}
-                                    onChange={e => setReporte(prev => ({ ...prev, monto_coffe: Number(e.target.value) }))}
-                                    className="pl-6 text-sm border-amber-300"
-                                    placeholder="0.00"
-                                />
-                            </div>
+                            <Button
+                                onClick={handleSubmit}
+                                disabled={isSubmitting}
+                                size="lg"
+                                className={`${isEmergencyMode ? 'bg-rose-600 hover:bg-rose-800' : 'bg-[#2D6A4F] hover:bg-[#1B4332]'} text-white gap-2 w-full sm:w-auto font-black shadow-lg transition-all transform active:scale-95`}
+                            >
+                                {isSubmitting ? (
+                                    <span className="flex items-center gap-2">
+                                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                        Procesando...
+                                    </span>
+                                ) : isEmergencyMode ? (
+                                    <>
+                                        <Send size={18} />
+                                        ENVIAR SOLICITUD DE ACTUALIZACIÓN
+                                    </>
+                                ) : (
+                                    <>
+                                        <Save size={18} />
+                                        GUARDAR REPORTE DIARIO
+                                    </>
+                                )}
+                            </Button>
                         </div>
-                    </CardContent>
-                )}
-            </Card>
-
-            {/* Emergency Mode UI */}
-            <div className="flex flex-col sm:flex-row items-center justify-between bg-zinc-900 text-white p-4 rounded-xl shadow-lg border-b-4 border-rose-600 gap-4">
-                <div className="flex items-center gap-3">
-                    <div className={`p-2 rounded-full ${isEmergencyMode ? 'bg-rose-600 animate-pulse' : 'bg-zinc-800'}`}>
-                        <AlertCircle size={20} />
                     </div>
-                    <div>
-                        <h4 className="font-bold text-sm">¿Necesitas reportar un día pasado?</h4>
-                        <p className="text-[10px] text-zinc-400 uppercase tracking-wider">Máximo 7 días de antiguedad • Requiere aprobación</p>
-                    </div>
-                </div>
-                <Button
-                    variant="ghost"
-                    className={isEmergencyMode
-                        ? "bg-rose-600 hover:bg-rose-700 text-white font-black px-6 shadow-md transition-all active:scale-95"
-                        : "bg-rose-500 hover:bg-rose-600 text-white font-black px-6 shadow-md transition-all active:scale-95"
-                    }
-                    onClick={() => {
-                        setIsEmergencyMode(!isEmergencyMode);
-                        if (isEmergencyMode) setReporte(prev => ({ ...prev, fecha: format(new Date(), 'yyyy-MM-dd') }));
-                    }}
-                >
-                    {isEmergencyMode ? 'CANCELAR EMERGENCIA' : '🆘 ACTIVAR MODO EMERGENCIA'}
-                </Button>
-            </div>
-
-            {/* Date Selection (Emergency) */}
-            {isEmergencyMode && (
-                <Card className="border-2 border-rose-200 bg-rose-50/30 overflow-hidden">
-                    <CardHeader className="py-2 px-4 bg-rose-100 flex flex-row items-center justify-between border-b border-rose-200">
-                        <span className="text-sm font-black text-rose-800 uppercase flex items-center gap-2">
-                            <CalendarIcon size={18} /> SELECCIONAR FECHA DE REPORTE PASADO
-                        </span>
-                        <Badge className="bg-rose-600 px-3 py-1 text-white font-black">MODO EMERGENCIA</Badge>
-                    </CardHeader>
-                    <CardContent className="p-4 space-y-4">
-                        <div className="flex flex-col sm:flex-row items-center gap-6">
-                            <Popover>
-                                <PopoverTrigger asChild>
-                                    <Button type="button" variant="outline" className="w-full sm:w-[280px] justify-start text-left font-black border-rose-300">
-                                        <CalendarIcon className="mr-2 h-4 w-4" />
-                                        {reporte.fecha ? format(new Date(reporte.fecha + 'T12:00:00'), 'PPP', { locale: es }) : <span>Seleccionar fecha</span>}
-                                    </Button>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-auto p-0">
-                                    <Calendar
-                                        mode="single"
-                                        selected={new Date(reporte.fecha + 'T12:00:00')}
-                                        onSelect={(date) => date && setReporte(prev => ({ ...prev, fecha: format(date, 'yyyy-MM-dd') }))}
-                                        disabled={(date) => isAfter(date, today) || isBefore(date, minDate)}
-                                        initialFocus
-                                    />
-                                </PopoverContent>
-                            </Popover>
-                            <div className="flex-1 text-xs text-rose-700 font-bold leading-relaxed">
-                                ⚠️ Recuerda: Este reporte no se activará de inmediato. El administrador debe validarlo antes de que aparezca en el historial oficial.
-                            </div>
-                        </div>
-
-                        {hasPendingRequest && (
-                            <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg flex items-center gap-3 animate-pulse">
-                                <div className="h-2 w-2 rounded-full bg-amber-500" />
-                                <span className="text-xs font-black text-amber-800 uppercase tracking-tight">Solicitud de actualización en curso</span>
-                            </div>
-                        )}
-
-                        <div className="space-y-2">
-                            <label className="text-sm font-bold text-rose-800 uppercase">Motivo / Observación del Cambio (Obligatorio min 8 carac.)</label>
-                            <Textarea
-                                placeholder="Explica detalladamente por qué necesitas actualizar este día pasado..."
-                                value={reporte.observaciones}
-                                onChange={e => setReporte(prev => ({ ...prev, observaciones: e.target.value }))}
-                                className="min-h-[100px] border-rose-300 focus:ring-rose-400 bg-white"
-                                required
-                            />
-                        </div>
-                    </CardContent>
-                </Card>
+                </>
             )}
-
-            {categorias.map(cat => {
-                const config = CATEGORIA_CONFIG[cat] || CATEGORIA_CONFIG.OTRO;
-                return (
-                    <Card key={cat} className={`border-l-4 ${config.border} shadow-md overflow-hidden bg-white/50 backdrop-blur-sm`}>
-                        <CardHeader className={`${config.bg} py-3 px-4 flex flex-row items-center justify-between`}>
-                            <CardTitle className={`text-base font-black uppercase tracking-tight ${config.color}`}>
-                                {config.label}
-                            </CardTitle>
-                            <div className="flex items-center gap-3">
-                                <div className="text-right">
-                                    <p className="text-[10px] font-bold text-zinc-400 uppercase leading-none">Subtotal Pax</p>
-                                    <p className={`text-sm font-black ${config.color}`}>{subtotalCat(cat)}</p>
-                                </div>
-                                <div className="text-right border-l border-zinc-200 pl-3">
-                                    <p className="text-[10px] font-bold text-zinc-400 uppercase leading-none">Monto</p>
-                                    <p className={`text-sm font-black ${config.color}`}>S/ {subtotalMontoCat(cat).toFixed(2)}</p>
-                                </div>
-                            </div>
-                        </CardHeader>
-                        <CardContent className="p-0">
-                            <div className="overflow-x-auto">
-                                <table className="w-full text-sm">
-                                    <thead className="bg-zinc-50/50 border-b border-zinc-100">
-                                        <tr className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">
-                                            <th className="px-4 py-2 text-left">Concepto / Servicio</th>
-                                            <th className="px-4 py-2 text-right w-24">Cantidad</th>
-                                            <th className="px-4 py-2 text-right w-32">Monto S/</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-zinc-100">
-                                        {campos.filter(c => c.categoria === cat).map(campo => (
-                                            <tr key={campo.id} className="hover:bg-zinc-50/30 transition-colors">
-                                                <td className="px-4 py-3">
-                                                    <p className="font-bold text-zinc-700 leading-tight uppercase text-xs">{campo.nombre_campo}</p>
-                                                    {campo.es_readonly && <span className="text-[9px] font-black text-rose-500 uppercase">Calculado Automático</span>}
-                                                </td>
-                                                <td className="px-4 py-3 text-right">
-                                                    <Input
-                                                        type="number"
-                                                        className={`w-20 ml-auto h-8 text-right font-black border-zinc-200 focus:ring-1 ${campo.es_readonly ? 'bg-zinc-100 opacity-70' : 'bg-white'}`}
-                                                        value={campo.es_readonly ? getReadonlyCantidad(campo) : (reporte.valores[campo.id]?.cantidad || 0)}
-                                                        onChange={e => handleCantidad(campo.id, parseFloat(e.target.value) || 0)}
-                                                        readOnly={campo.es_readonly}
-                                                    />
-                                                </td>
-                                                <td className="px-4 py-3 text-right">
-                                                    <Input
-                                                        type="number"
-                                                        step="0.01"
-                                                        className="w-28 ml-auto h-8 text-right font-black border-zinc-200 focus:ring-1 bg-white"
-                                                        value={reporte.valores[campo.id]?.monto || 0}
-                                                        onChange={e => handleMonto(campo.id, parseFloat(e.target.value) || 0)}
-                                                    />
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </CardContent>
-                    </Card>
-                );
-            })}
-
-            {/* Coffe Break / Eventos */}
-            <Card className="border-l-4 border-l-amber-400 shadow-md bg-white/50 backdrop-blur-sm">
-                <CardHeader className="bg-amber-50 py-3 px-4 flex flex-row items-center justify-between">
-                    <CardTitle className="text-base font-black uppercase tracking-tight text-amber-800">
-                        ☕ Coffe Break / Eventos Especiales
-                    </CardTitle>
-                    <div className="flex items-center gap-2">
-                        <label className="text-xs font-bold text-zinc-500 uppercase">¿Hubo Coffe?</label>
-                        <Switch
-                            checked={reporte.tiene_coffe_break}
-                            onCheckedChange={val => setReporte(prev => ({ ...prev, tiene_coffe_break: val }))}
-                        />
-                    </div>
-                </CardHeader>
-                {reporte.tiene_coffe_break && (
-                    <CardContent className="p-4 space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
-                        <div className="grid md:grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Descripción del Evento</label>
-                                <Input
-                                    placeholder="Ej: Coffe Break Capacitación Ransa..."
-                                    value={reporte.descripcion_coffe}
-                                    onChange={e => setReporte(prev => ({ ...prev, descripcion_coffe: e.target.value }))}
-                                    className="font-bold border-zinc-200"
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Monto S/</label>
-                                <Input
-                                    type="number"
-                                    step="0.01"
-                                    placeholder="0.00"
-                                    value={reporte.monto_coffe}
-                                    onChange={e => setReporte(prev => ({ ...prev, monto_coffe: parseFloat(e.target.value) || 0 }))}
-                                    className="font-black border-zinc-200 text-amber-700"
-                                />
-                            </div>
-                        </div>
-                    </CardContent>
-                )}
-            </Card>
-
-            {/* Observaciones Generales */}
-            <Card className="border-l-4 border-l-zinc-400 shadow-md bg-white/50 backdrop-blur-sm">
-                <CardHeader className="bg-zinc-50 py-3 px-4">
-                    <CardTitle className="text-base font-black uppercase tracking-tight text-zinc-800">
-                        💬 Observaciones Generales
-                    </CardTitle>
-                </CardHeader>
-                <CardContent className="p-4">
-                    <Textarea
-                        placeholder="Cualquier aclaración adicional para este reporte..."
-                        value={reporte.observaciones}
-                        onChange={e => setReporte(prev => ({ ...prev, observaciones: e.target.value }))}
-                        className="font-medium border-zinc-200 min-h-[80px]"
-                    />
-                </CardContent>
-            </Card>
-
-            {/* Sticky Save Bar */}
-            <div className="fixed bottom-0 left-0 lg:left-64 right-0 z-40 bg-white/90 backdrop-blur-md border-t-2 border-[#1B4332] px-4 sm:px-6 py-4 shadow-[0_-10px_40px_rgba(0,0,0,0.1)] pb-safe-offset-4">
-                <div className="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-                    <div className="grid grid-cols-3 sm:flex gap-4 sm:gap-6 text-center sm:text-left w-full sm:w-auto">
-                        {categorias.map(cat => {
-                            const config = CATEGORIA_CONFIG[cat] || CATEGORIA_CONFIG.OTRO;
-                            const qty = subtotalCat(cat);
-                            if (qty === 0) return null;
-                            return (
-                                <div key={cat} className="flex flex-col items-center">
-                                    <span className={`font-black text-lg ${config.color}`}>{qty}</span>
-                                    <span className="text-[9px] text-zinc-400 font-bold uppercase tracking-tight">{cat.slice(0, 4)}</span>
-                                </div>
-                            );
-                        })}
-                        <div className="flex flex-col items-end border-l border-zinc-200 pl-4 sm:ml-2 whitespace-nowrap">
-                            <span className="font-black text-xl text-[#1B4332] leading-none">S/ {totales.monto.toFixed(2)}</span>
-                            <span className="text-[10px] text-zinc-400 font-black uppercase tracking-widest mt-1">LIQUIDACIÓN TOTAL</span>
-                        </div>
-                    </div>
-                    <Button
-                        onClick={handleSubmit}
-                        disabled={isSubmitting}
-                        size="lg"
-                        className={`${isEmergencyMode ? 'bg-rose-600 hover:bg-rose-800' : 'bg-[#2D6A4F] hover:bg-[#1B4332]'} text-white gap-2 w-full sm:w-auto font-black shadow-lg transition-all transform active:scale-95`}
-                    >
-                        {isSubmitting ? (
-                            <span className="flex items-center gap-2">
-                                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                                Procesando...
-                            </span>
-                        ) : isEmergencyMode ? (
-                            <>
-                                <Send size={18} />
-                                ENVIAR SOLICITUD DE ACTUALIZACIÓN
-                            </>
-                        ) : (
-                            <>
-                                <Save size={18} />
-                                GUARDAR REPORTE DIARIO
-                            </>
-                        )}
-                    </Button>
-                </div>
-            </div>
         </div>
     );
 }
