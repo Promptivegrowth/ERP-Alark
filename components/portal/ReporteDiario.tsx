@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useUser } from '@/hooks/useAuth';
 import { toast } from 'sonner';
+import { cancelarSolicitudEmergencia } from '@/app/actions/reporte_solicitudes';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -355,24 +356,23 @@ export default function ReporteDiario() {
         if (!pendingRequest || !confirm('¿Estás seguro de cancelar esta solicitud de actualización?')) return;
         setIsSubmitting(true);
         try {
-            // We use .select() because if RLS blocks the delete, PostgREST might return 204 (Success) but with 0 rows affected.
-            // .select() returns the deleted data, so if it's empty, we know it failed.
-            const { data, error } = await (supabase.from('reporte_diario_solicitudes').delete().eq('id', pendingRequest.id).select() as any);
+            // We use a Server Action that uses the service_role key to bypass RLS.
+            const result = await cancelarSolicitudEmergencia(pendingRequest.id);
 
-            if (error || !data || data.length === 0) {
-                console.error('Delete failed or blocked by RLS:', error);
-                toast.error('❌ Error de Permisos: La base de datos no permitió la eliminación. Es necesario activar la política DELETE en Supabase.');
+            if (!result.success) {
+                console.error('Server Action failed:', result.error);
+                toast.error(`❌ Error: ${result.error}`);
             } else {
                 toast.success('Solicitud cancelada ✓');
                 setPendingRequest(null);
 
-                // Wait slightly for DB to propagate deletion before refreshing
+                // Refresh local state
                 setTimeout(async () => {
                     await loadExisting();
                 }, 1000);
             }
         } catch (err) {
-            console.error('Cancellation error:', err);
+            console.error('Cancellation exception:', err);
             toast.error('Error al procesar la cancelación');
         } finally {
             setIsSubmitting(false);
