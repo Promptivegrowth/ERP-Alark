@@ -4,17 +4,19 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { useUser } from '@/hooks/useAuth';
-import { format } from 'date-fns';
+import { format, startOfWeek, subDays } from 'date-fns';
 import { es } from 'date-fns/locale';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { MapPin, User as UserIcon, Building, Phone, Calendar, AlertTriangle, TrendingUp, CheckCircle2, AlertCircle, HelpCircle, Eye, Info } from 'lucide-react';
+import { MapPin, User as UserIcon, Building, Phone, Calendar, AlertTriangle, TrendingUp, CheckCircle2, AlertCircle, HelpCircle, Eye, Info, FileSpreadsheet, Download } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Separator } from '@/components/ui/separator';
+import { exportResumenExcel } from '@/lib/utils/export-resumen-excel';
+import { toast } from 'sonner';
 
 export default function ComedorDetallePage() {
     const params = useParams();
@@ -34,6 +36,10 @@ export default function ComedorDetallePage() {
     const [reporteDetalles, setReporteDetalles] = useState<any[]>([]);
     const [loadingDetalle, setLoadingDetalle] = useState(false);
     const [openDetalle, setOpenDetalle] = useState(false);
+
+    // Export states
+    const [exporting, setExporting] = useState(false);
+    const [exportStartDate, setExportStartDate] = useState<string>(format(subDays(new Date(), 7), 'yyyy-MM-dd'));
 
     useEffect(() => {
         if (!id) return;
@@ -101,6 +107,26 @@ export default function ComedorDetallePage() {
         }
     }
 
+    async function handleExport(days: number) {
+        if (!comedor) return;
+        setExporting(true);
+        try {
+            await exportResumenExcel(
+                supabase,
+                comedor.id,
+                comedor.nombre,
+                new Date(exportStartDate + 'T12:00:00'),
+                days
+            );
+            toast.success(`Resumen de ${days} días exportado con éxito`);
+        } catch (error: any) {
+            console.error(error);
+            toast.error(`Error al exportar: ${error.message}`);
+        } finally {
+            setExporting(false);
+        }
+    }
+
     if (loading || !dataLoaded) return <div className="p-8 text-center text-zinc-500">Cargando datos del comedor...</div>;
     if (!comedor) return <div className="p-8 text-center text-zinc-500">Comedor no encontrado</div>;
 
@@ -108,7 +134,7 @@ export default function ComedorDetallePage() {
         <div className="space-y-6">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h2 className="text-3xl font-bold tracking-tight text-[#1B4332] flex items-center gap-3">
+                    <h2 className="text-3xl font-black tracking-tight text-[#1B4332] flex items-center gap-3">
                         {comedor.nombre}
                         {comedor.activo ? (
                             <Badge className="bg-emerald-100 text-emerald-800 hover:bg-emerald-100 border-emerald-200">Activo</Badge>
@@ -120,8 +146,39 @@ export default function ComedorDetallePage() {
                         <Building size={16} /> {comedor.cliente_empresa}
                     </p>
                 </div>
-                <div className="flex gap-4">
-                    {/* Actions like Edit could go here */}
+                <div className="flex flex-wrap items-center gap-3 bg-white p-3 rounded-xl border border-zinc-200 shadow-sm">
+                    <div className="flex items-center gap-2">
+                        <Calendar size={18} className="text-zinc-400" />
+                        <input
+                            type="date"
+                            value={exportStartDate}
+                            onChange={(e) => setExportStartDate(e.target.value)}
+                            className="text-sm border-none focus:ring-0 p-0 text-zinc-600 font-medium"
+                        />
+                    </div>
+                    <Separator orientation="vertical" className="h-8 hidden sm:block" />
+                    <div className="flex gap-2">
+                        <Button
+                            size="sm"
+                            variant="outline"
+                            className="bg-emerald-50 border-emerald-200 text-emerald-800 hover:bg-emerald-100"
+                            onClick={() => handleExport(7)}
+                            disabled={exporting}
+                        >
+                            <FileSpreadsheet size={16} className="mr-2" />
+                            {exporting ? 'Generando...' : '7 Días'}
+                        </Button>
+                        <Button
+                            size="sm"
+                            variant="outline"
+                            className="bg-emerald-50 border-emerald-200 text-emerald-800 hover:bg-emerald-100"
+                            onClick={() => handleExport(15)}
+                            disabled={exporting}
+                        >
+                            <FileSpreadsheet size={16} className="mr-2" />
+                            {exporting ? 'Generando...' : '15 Días'}
+                        </Button>
+                    </div>
                 </div>
             </div>
 

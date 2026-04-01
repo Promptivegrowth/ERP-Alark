@@ -27,6 +27,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
     const { user, comedorNombre, rol, loading } = useUser();
     const [collapsed, setCollapsed] = useState(false);
     const [semanalOpen, setSemanalOpen] = useState(false);
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const pathname = usePathname();
     const supabase = createClient();
 
@@ -51,12 +52,109 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
         { name: 'Coffe & Otros', href: '/portal/semanal/coffe-otros', icon: Coffee },
     ];
 
+    const NavContent = ({ mobile = false }: { mobile?: boolean }) => (
+        <nav className="flex-1 overflow-y-auto py-4">
+            <ul className="space-y-1 px-2">
+                {menuItems.map((item) => {
+                    const isActive = pathname === item.href;
+                    return (
+                        <li key={item.name}>
+                            <Link
+                                href={item.href}
+                                onClick={() => mobile && setIsMobileMenuOpen(false)}
+                                className={`flex items-center gap-3 px-3 py-2 rounded-md transition-colors ${isActive ? 'bg-[#2D6A4F]' : 'hover:bg-[#2D6A4F]/70'
+                                    }`}
+                            >
+                                <item.icon size={20} />
+                                {(!collapsed || mobile) && <span>{item.name}</span>}
+                            </Link>
+                        </li>
+                    );
+                })}
+
+                <li>
+                    <button
+                        onClick={() => setSemanalOpen(!semanalOpen)}
+                        className={`w-full flex items-center justify-between px-3 py-2 rounded-md transition-colors hover:bg-[#2D6A4F]/70`}
+                    >
+                        <div className="flex items-center gap-3">
+                            <TableProperties size={20} />
+                            {(!collapsed || mobile) && <span>Ingreso semanal</span>}
+                        </div>
+                        {(!collapsed || mobile) && <ChevronDown size={16} className={`transition-transform ${semanalOpen ? 'rotate-180' : ''}`} />}
+                    </button>
+
+                    {semanalOpen && (!collapsed || mobile) && (
+                        <ul className={`mt-1 space-y-1 ${mobile ? 'ml-6' : 'ml-6'}`}>
+                            {semanalItems.map((sub) => (
+                                <li key={sub.name}>
+                                    <Link
+                                        href={sub.href}
+                                        onClick={() => mobile && setIsMobileMenuOpen(false)}
+                                        className={`flex items-center gap-2 px-3 py-2 text-sm rounded-md transition-colors ${pathname === sub.href ? 'bg-[#2D6A4F]' : 'hover:bg-[#2D6A4F]/70'
+                                            }`}
+                                    >
+                                        <sub.icon size={16} />
+                                        <span>{sub.name}</span>
+                                    </Link>
+                                </li>
+                            ))}
+                        </ul>
+                    )}
+                </li>
+
+                <li>
+                    <Link
+                        href="/portal/historial"
+                        onClick={() => mobile && setIsMobileMenuOpen(false)}
+                        className={`flex items-center gap-3 px-3 py-2 rounded-md transition-colors ${pathname === '/portal/historial' ? 'bg-[#2D6A4F]' : 'hover:bg-[#2D6A4F]/70'}`}
+                    >
+                        <History size={20} />
+                        {(!collapsed || mobile) && <span>Historial</span>}
+                    </Link>
+                </li>
+                <li>
+                    <Link
+                        href="/portal/perfil"
+                        onClick={() => mobile && setIsMobileMenuOpen(false)}
+                        className={`flex items-center gap-3 px-3 py-2 rounded-md transition-colors ${pathname === '/portal/perfil' ? 'bg-[#2D6A4F]' : 'hover:bg-[#2D6A4F]/70'}`}
+                    >
+                        <User size={20} />
+                        {(!collapsed || mobile) && <span>Perfil</span>}
+                    </Link>
+                </li>
+            </ul>
+        </nav>
+    );
+
     return (
-        <div className="flex h-screen bg-zinc-50 dark:bg-zinc-950">
-            {/* Sidebar */}
+        <div className="flex h-screen bg-zinc-50 dark:bg-zinc-950 overflow-hidden">
+            {/* Mobile Sidebar Overlay */}
+            {isMobileMenuOpen && (
+                <div
+                    className="fixed inset-0 z-50 bg-black/50 lg:hidden"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                />
+            )}
+
+            {/* Mobile Sidebar */}
+            <aside
+                className={`fixed top-0 left-0 z-50 h-full w-64 bg-[#1B4332] text-white transition-transform duration-300 transform lg:hidden ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
+                    }`}
+            >
+                <div className="h-16 flex items-center justify-between px-4 border-b border-[#2D6A4F]">
+                    <span className="font-bold text-lg">Comedores</span>
+                    <button onClick={() => setIsMobileMenuOpen(false)} className="text-white p-1">
+                        <Menu size={24} />
+                    </button>
+                </div>
+                <NavContent mobile />
+            </aside>
+
+            {/* Desktop Sidebar */}
             <aside
                 className={`${collapsed ? 'w-16' : 'w-64'
-                    } bg-[#1B4332] text-white transition-all duration-300 flex flex-col hidden sm:flex`}
+                    } bg-[#1B4332] text-white transition-all duration-300 flex flex-col hidden lg:flex`}
             >
                 <div className="h-16 flex items-center justify-between px-4 border-b border-[#2D6A4F]">
                     {!collapsed && <span className="font-bold text-lg truncate">Comedores</span>}
@@ -64,84 +162,24 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
                         <Menu size={20} />
                     </button>
                 </div>
-
-                <nav className="flex-1 overflow-y-auto py-4">
-                    <ul className="space-y-1 px-2">
-                        {menuItems.map((item) => {
-                            const isActive = pathname === item.href;
-                            return (
-                                <li key={item.name}>
-                                    <Link
-                                        href={item.href}
-                                        className={`flex items-center gap-3 px-3 py-2 rounded-md transition-colors ${isActive ? 'bg-[#2D6A4F]' : 'hover:bg-[#2D6A4F]/70'
-                                            }`}
-                                    >
-                                        <item.icon size={20} />
-                                        {!collapsed && <span>{item.name}</span>}
-                                    </Link>
-                                </li>
-                            );
-                        })}
-
-                        <li>
-                            <button
-                                onClick={() => setSemanalOpen(!semanalOpen)}
-                                className={`w-full flex items-center justify-between px-3 py-2 rounded-md transition-colors hover:bg-[#2D6A4F]/70`}
-                            >
-                                <div className="flex items-center gap-3">
-                                    <TableProperties size={20} />
-                                    {!collapsed && <span>Ingreso semanal</span>}
-                                </div>
-                                {!collapsed && <ChevronDown size={16} className={`transition-transform ${semanalOpen ? 'rotate-180' : ''}`} />}
-                            </button>
-
-                            {semanalOpen && !collapsed && (
-                                <ul className="mt-1 ml-6 space-y-1">
-                                    {semanalItems.map((sub) => (
-                                        <li key={sub.name}>
-                                            <Link
-                                                href={sub.href}
-                                                className={`flex items-center gap-2 px-3 py-2 text-sm rounded-md transition-colors ${pathname === sub.href ? 'bg-[#2D6A4F]' : 'hover:bg-[#2D6A4F]/70'
-                                                    }`}
-                                            >
-                                                <sub.icon size={16} />
-                                                <span>{sub.name}</span>
-                                            </Link>
-                                        </li>
-                                    ))}
-                                </ul>
-                            )}
-                        </li>
-
-
-                        <li>
-                            <Link href="/portal/historial" className={`flex items-center gap-3 px-3 py-2 rounded-md transition-colors ${pathname === '/portal/historial' ? 'bg-[#2D6A4F]' : 'hover:bg-[#2D6A4F]/70'}`}>
-                                <History size={20} />
-                                {!collapsed && <span>Historial</span>}
-                            </Link>
-                        </li>
-                        <li>
-                            <Link href="/portal/perfil" className={`flex items-center gap-3 px-3 py-2 rounded-md transition-colors ${pathname === '/portal/perfil' ? 'bg-[#2D6A4F]' : 'hover:bg-[#2D6A4F]/70'}`}>
-                                <User size={20} />
-                                {!collapsed && <span>Perfil</span>}
-                            </Link>
-                        </li>
-                    </ul>
-                </nav>
+                <NavContent />
             </aside>
 
             {/* Main Content */}
-            <main className="flex-1 flex flex-col overflow-hidden">
+            <main className="flex-1 flex flex-col overflow-hidden relative">
                 {/* Header */}
-                <header className="h-16 flex items-center justify-between px-6 bg-white dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 shadow-sm">
+                <header className="h-16 flex items-center justify-between px-6 bg-white dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 shadow-sm z-30">
                     <div className="flex items-center gap-4">
-                        <div className="md:hidden">
-                            <Menu size={24} className="text-zinc-500" />
-                        </div>
-                        <h1 className="text-xl font-bold text-zinc-800 dark:text-zinc-100">
+                        <button
+                            onClick={() => setIsMobileMenuOpen(true)}
+                            className="lg:hidden text-zinc-500 p-1 hover:bg-zinc-100 rounded"
+                        >
+                            <Menu size={24} />
+                        </button>
+                        <h1 className="text-xl font-bold text-zinc-800 dark:text-zinc-100 truncate max-w-[200px] sm:max-w-none">
                             {comedorNombre || 'Cargando Comedor...'}
                         </h1>
-                        <span className="px-2 py-1 text-xs font-semibold bg-emerald-100 text-emerald-800 rounded-full">
+                        <span className="px-2 py-1 text-xs font-semibold bg-emerald-100 text-emerald-800 rounded-full hidden xs:inline">
                             Comedor
                         </span>
                     </div>
@@ -155,8 +193,8 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
                     </button>
                 </header>
 
-                {/* Content */}
-                <div className="flex-1 overflow-auto p-4 md:p-6 pb-24 relative">
+                {/* Content Area */}
+                <div className="flex-1 overflow-auto p-4 md:p-6 pb-24">
                     {children}
                     <IncidenceModal />
                 </div>
