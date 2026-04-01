@@ -163,7 +163,7 @@ export default function ReporteDiario() {
         if (!comedorId) return;
 
         const channel = supabase
-            .channel('public:reporte_diario_solicitudes')
+            .channel(`reporte_diario_solicitudes_${comedorId}`)
             .on('postgres_changes', {
                 event: '*',
                 schema: 'public',
@@ -270,6 +270,10 @@ export default function ReporteDiario() {
                 });
 
                 if (solErr) throw solErr;
+
+                // Force state update before feedback
+                await loadExisting();
+
                 toast.success('Solicitud de emergencia enviada para revisión del administrador ✓');
                 setIsEmergencyMode(false);
                 setReportingEmergency(true);
@@ -304,7 +308,7 @@ export default function ReporteDiario() {
                 const { data, error } = await (supabase.from('reporte_diario').insert(headerData as any) as any).select('id').single();
                 if (error) throw error;
                 reporteId = (data as any).id;
-                setReporte(prev => ({ ...prev, id: reporteId }));
+                setReporte(prev => ({ ...prev, id: reporteId } as any));
             }
 
             const valoresInserts = campos.map(campo => ({
@@ -355,6 +359,8 @@ export default function ReporteDiario() {
         else {
             toast.success('Solicitud cancelada ✓');
             setPendingRequest(null);
+            // Refresh to be 100% sure sync is clean
+            await loadExisting();
         }
         setIsSubmitting(false);
     }
@@ -402,84 +408,6 @@ export default function ReporteDiario() {
                     {pendingRequest && <Badge className="bg-amber-100 text-amber-800 text-[10px] font-black animate-pulse">PENDIENTE AUDITORÍA</Badge>}
                 </div>
             </div>
-
-            {/* Emergency Banner */}
-            <div className="flex flex-col sm:flex-row items-center justify-between bg-zinc-900 text-white p-4 rounded-xl shadow-lg border-b-4 border-rose-600 gap-4">
-                <div className="flex items-center gap-3">
-                    <div className={`p-2 rounded-full ${isEmergencyMode ? 'bg-rose-600 animate-pulse' : 'bg-zinc-800'}`}>
-                        <AlertCircle size={20} />
-                    </div>
-                    <div>
-                        <h4 className="font-bold text-sm">¿Necesitas reportar un día pasado?</h4>
-                        <p className="text-[10px] text-zinc-400 uppercase tracking-wider">Máximo 7 días de antiguedad • Requiere aprobación</p>
-                    </div>
-                </div>
-                <Button
-                    variant="ghost"
-                    className={isEmergencyMode
-                        ? "bg-rose-600 hover:bg-rose-700 text-white font-black px-6 shadow-md transition-all active:scale-95"
-                        : "bg-rose-500 hover:bg-rose-600 text-white font-black px-6 shadow-md transition-all active:scale-95"
-                    }
-                    onClick={() => {
-                        setIsEmergencyMode(!isEmergencyMode);
-                        if (!isEmergencyMode) setReporte(prev => ({ ...prev, fecha: format(new Date(), 'yyyy-MM-dd') }));
-                    }}
-                >
-                    {isEmergencyMode ? 'CANCELAR EMERGENCIA' : '🆘 ACTIVAR MODO EMERGENCIA'}
-                </Button>
-            </div>
-
-            {/* Date Selection (Emergency) */}
-            {isEmergencyMode && (
-                <Card className="border-2 border-rose-300 shadow-lg overflow-hidden animate-in slide-in-from-top-4 duration-500">
-                    <CardHeader className="bg-rose-50 py-3 px-4 flex flex-row items-center justify-between border-b border-rose-100">
-                        <span className="text-sm font-black text-rose-800 uppercase flex items-center gap-2">
-                            <CalendarIcon size={18} /> SELECCIONAR FECHA DE REPORTE PASADO
-                        </span>
-                        <Badge className="bg-rose-600 px-3 py-1 text-white font-black">MODO EMERGENCIA</Badge>
-                    </CardHeader>
-                    <CardContent className="p-4 space-y-4">
-                        <div className="flex flex-col sm:flex-row items-center gap-6">
-                            <Popover>
-                                <PopoverTrigger asChild>
-                                    <Button type="button" variant="outline" className="w-full sm:w-[280px] justify-start text-left font-black border-rose-300">
-                                        <CalendarIcon className="mr-2 h-4 w-4" />
-                                        {reporte.fecha ? format(new Date(reporte.fecha + 'T12:00:00'), 'PPP', { locale: es }) : <span>Seleccionar fecha</span>}
-                                    </Button>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-auto p-0">
-                                    <Calendar
-                                        mode="single"
-                                        selected={new Date(reporte.fecha + 'T12:00:00')}
-                                        onSelect={(date) => date && setReporte(prev => ({ ...prev, fecha: format(date, 'yyyy-MM-dd') }))}
-                                        disabled={(date) => isAfter(date, today) || isBefore(date, minDate)}
-                                        initialFocus
-                                    />
-                                </PopoverContent>
-                            </Popover>
-                            <div className="flex-1 text-xs text-rose-700 font-bold leading-relaxed italic">
-                                ⚠️ Estos cambios no afectarán tu liquidación actual hasta que sean aprobados por un administrador.
-                            </div>
-                        </div>
-
-                        <div className="space-y-2">
-                            <div className="flex justify-between items-center">
-                                <label className="text-sm font-bold text-rose-800 uppercase">Motivo (Mínimo 8 caracteres):</label>
-                                <span className={`text-[10px] font-black uppercase ${reporte.observaciones.length >= 8 ? 'text-emerald-600' : 'text-rose-500'}`}>
-                                    {reporte.observaciones.length} / 8
-                                </span>
-                            </div>
-                            <Textarea
-                                placeholder="Explica detalladamente por qué necesitas actualizar este día pasado..."
-                                value={reporte.observaciones}
-                                onChange={e => setReporte(prev => ({ ...prev, observaciones: e.target.value }))}
-                                className="min-h-[80px] border-rose-300 focus:ring-rose-400 bg-white"
-                                required
-                            />
-                        </div>
-                    </CardContent>
-                </Card>
-            )}
 
             {/* Main Form Cards */}
             {categorias.map(cat => {
@@ -603,49 +531,136 @@ export default function ReporteDiario() {
                 </CardContent>
             </Card>
 
-            {/* Success Message for Emergency */}
-            {!isEmergencyMode && !pendingRequest && reportingEmergency && (
-                <div className="bg-emerald-50 border-2 border-emerald-200 p-4 rounded-xl flex items-center gap-3 animate-in fade-in slide-in-from-top-2">
-                    <CheckCircle2 className="text-emerald-600" />
-                    <p className="text-emerald-800 font-bold text-sm">¡Solicitud enviada con éxito! Aparecerá abajo en breve.</p>
+            {/* ─── EMERGENCY SECTION (AT THE BOTTOM) ─── */}
+            <div className="pt-10 space-y-6">
+                <div className="flex items-center gap-4">
+                    <div className="h-[2px] flex-1 bg-zinc-100" />
+                    <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Zona de Emergencias</span>
+                    <div className="h-[2px] flex-1 bg-zinc-100" />
                 </div>
-            )}
 
-            {/* Pending Request Status Card */}
-            {pendingRequest && (
-                <div className="animate-in fade-in zoom-in-95 duration-500">
-                    <Card className="border-2 border-amber-200 shadow-xl overflow-hidden bg-amber-50/50 backdrop-blur-sm">
-                        <CardHeader className="bg-amber-100/50 border-b border-amber-200 py-4 text-center">
-                            <CardTitle className="text-lg font-black text-amber-900 uppercase tracking-tighter flex items-center justify-center gap-2">
-                                <Clock className="text-amber-600" size={20} />
-                                Solicitud en Curso ({format(new Date(pendingRequest.fecha_reporte + 'T12:00:00'), 'dd/MM/yyyy')})
-                            </CardTitle>
-                            <p className="text-amber-700 font-bold text-[10px] uppercase">
-                                Enviada el {format(new Date(pendingRequest.created_at), "PPP 'a las' p", { locale: es })}
-                            </p>
+                {/* Emergency Banner */}
+                <div className="flex flex-col sm:flex-row items-center justify-between bg-zinc-900 text-white p-4 rounded-xl shadow-lg border-b-4 border-rose-600 gap-4 transition-all duration-500">
+                    <div className="flex items-center gap-3">
+                        <div className={`p-2 rounded-full ${isEmergencyMode ? 'bg-rose-600 animate-pulse' : 'bg-zinc-800'}`}>
+                            <AlertCircle size={20} />
+                        </div>
+                        <div>
+                            <h4 className="font-bold text-sm">¿Necesitas reportar un día pasado?</h4>
+                            <p className="text-[10px] text-zinc-400 uppercase tracking-wider">Máximo 7 días de antiguedad • Requiere aprobación</p>
+                        </div>
+                    </div>
+                    <Button
+                        variant="ghost"
+                        className={isEmergencyMode
+                            ? "bg-rose-600 hover:bg-rose-700 text-white font-black px-6 shadow-md transition-all active:scale-95"
+                            : "bg-rose-500 hover:bg-rose-600 text-white font-black px-6 shadow-md transition-all active:scale-95"
+                        }
+                        onClick={() => {
+                            setIsEmergencyMode(!isEmergencyMode);
+                            if (!isEmergencyMode) setReporte(prev => ({ ...prev, fecha: format(new Date(), 'yyyy-MM-dd') }));
+                        }}
+                    >
+                        {isEmergencyMode ? 'CANCELAR EMERGENCIA' : '🆘 ACTIVAR MODO EMERGENCIA'}
+                    </Button>
+                </div>
+
+                {/* Date Selection (Emergency Form) */}
+                {isEmergencyMode && (
+                    <Card className="border-2 border-rose-300 shadow-lg overflow-hidden animate-in slide-in-from-top-4 duration-500 mt-4">
+                        <CardHeader className="bg-rose-50 py-3 px-4 flex flex-row items-center justify-between border-b border-rose-100">
+                            <span className="text-sm font-black text-rose-800 uppercase flex items-center gap-2">
+                                <CalendarIcon size={18} /> SELECCIONAR FECHA DE REPORTE PASADO
+                            </span>
+                            <Badge className="bg-rose-600 px-3 py-1 text-white font-black">MODO EMERGENCIA</Badge>
                         </CardHeader>
-                        <CardContent className="p-5 space-y-4">
-                            <div className="bg-white/80 p-3 rounded-lg border border-amber-100 shadow-sm">
-                                <p className="text-zinc-700 italic text-sm font-medium text-center">"{pendingRequest.motivo}"</p>
+                        <CardContent className="p-4 space-y-4">
+                            <div className="flex flex-col sm:flex-row items-center gap-6">
+                                <Popover>
+                                    <PopoverTrigger asChild>
+                                        <Button type="button" variant="outline" className="w-full sm:w-[280px] justify-start text-left font-black border-rose-300">
+                                            <CalendarIcon className="mr-2 h-4 w-4" />
+                                            {reporte.fecha ? format(new Date(reporte.fecha + 'T12:00:00'), 'PPP', { locale: es }) : <span>Seleccionar fecha</span>}
+                                        </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-auto p-0">
+                                        <Calendar
+                                            mode="single"
+                                            selected={new Date(reporte.fecha + 'T12:00:00')}
+                                            onSelect={(date) => date && setReporte(prev => ({ ...prev, fecha: format(date, 'yyyy-MM-dd') }))}
+                                            disabled={(date) => isAfter(date, today) || isBefore(date, minDate)}
+                                            initialFocus
+                                        />
+                                    </PopoverContent>
+                                </Popover>
+                                <div className="flex-1 text-xs text-rose-700 font-bold leading-relaxed italic uppercase tracking-tighter">
+                                    ⚠️ No afecta liquidación hasta aprobación • Mínimo 8 caracteres en motivo
+                                </div>
                             </div>
-                            <div className="flex flex-col sm:flex-row items-center gap-4 justify-between border-t border-amber-200 pt-4">
-                                <p className="text-[10px] text-amber-800 font-black uppercase leading-tight italic max-w-md">
-                                    Esta solicitud está siendo revisada por administración. Mientras tanto, puedes seguir operando normalmente en el día de hoy.
-                                </p>
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    className="border-rose-200 text-rose-600 hover:bg-rose-50 font-black px-6 shadow-sm whitespace-nowrap"
-                                    onClick={handleCancelarSolicitud}
-                                    disabled={isSubmitting}
-                                >
-                                    CANCELAR SOLICITUD
-                                </Button>
+
+                            <div className="space-y-2">
+                                <div className="flex justify-between items-center">
+                                    <label className="text-sm font-bold text-rose-800 uppercase">Motivo detallado:</label>
+                                    <span className={`text-[10px] font-black uppercase ${reporte.observaciones.length >= 8 ? 'text-emerald-600' : 'text-rose-500'}`}>
+                                        {reporte.observaciones.length} / 8
+                                    </span>
+                                </div>
+                                <Textarea
+                                    placeholder="Explica detalladamente por qué necesitas actualizar este día pasado..."
+                                    value={reporte.observaciones}
+                                    onChange={e => setReporte(prev => ({ ...prev, observaciones: e.target.value }))}
+                                    className="min-h-[80px] border-rose-300 focus:ring-rose-400 bg-white font-medium"
+                                    required
+                                />
                             </div>
                         </CardContent>
                     </Card>
-                </div>
-            )}
+                )}
+
+                {/* Success Message for Emergency */}
+                {!isEmergencyMode && !pendingRequest && reportingEmergency && (
+                    <div className="bg-emerald-50 border-2 border-emerald-200 p-4 rounded-xl flex items-center gap-3 animate-in fade-in slide-in-from-top-2 shadow-inner">
+                        <CheckCircle2 className="text-emerald-600" />
+                        <p className="text-emerald-800 font-black text-sm uppercase">¡Solicitud enviada con éxito! Aparecerá abajo en breve.</p>
+                    </div>
+                )}
+
+                {/* Pending Request Status Card */}
+                {pendingRequest && (
+                    <div className="animate-in fade-in zoom-in-95 duration-500">
+                        <Card className="border-2 border-amber-200 shadow-xl overflow-hidden bg-amber-50/50 backdrop-blur-sm">
+                            <CardHeader className="bg-amber-100/50 border-b border-amber-200 py-4 text-center">
+                                <CardTitle className="text-lg font-black text-amber-900 uppercase tracking-tighter flex items-center justify-center gap-2">
+                                    <Clock className="text-amber-600" size={20} />
+                                    Solicitud en Curso ({format(new Date(pendingRequest.fecha_reporte + 'T12:00:00'), 'dd/MM/yyyy')})
+                                </CardTitle>
+                                <p className="text-amber-700 font-bold text-[10px] uppercase">
+                                    Enviada el {format(new Date(pendingRequest.created_at), "PPP 'a las' p", { locale: es })}
+                                </p>
+                            </CardHeader>
+                            <CardContent className="p-5 space-y-4">
+                                <div className="bg-white/80 p-3 rounded-lg border border-amber-100 shadow-sm">
+                                    <p className="text-zinc-700 italic text-sm font-medium text-center">"{pendingRequest.motivo}"</p>
+                                </div>
+                                <div className="flex flex-col sm:flex-row items-center gap-4 justify-between border-t border-amber-200 pt-4">
+                                    <p className="text-[10px] text-amber-800 font-black uppercase leading-tight italic max-w-sm">
+                                        Esta solicitud está siendo revisada por administración. Puedes seguir reportando otros días normalmente.
+                                    </p>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="border-rose-200 text-rose-600 hover:bg-rose-50 font-black px-6 shadow-sm whitespace-nowrap active:scale-95 transition-transform"
+                                        onClick={handleCancelarSolicitud}
+                                        disabled={isSubmitting}
+                                    >
+                                        CANCELAR SOLICITUD
+                                    </Button>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </div>
+                )}
+            </div>
 
             {/* Sticky Save Bar */}
             <div className="fixed bottom-0 left-0 lg:left-64 right-0 z-40 bg-white/95 backdrop-blur-md border-t-4 border-[#1B4332] px-4 sm:px-6 py-4 shadow-[0_-10px_50px_rgba(0,0,0,0.15)] pb-safe-offset-4 animate-in slide-in-from-bottom-8 duration-500">

@@ -112,6 +112,25 @@ export default function SolicitudesPage() {
     async function handleAprobar(sol: Solicitud) {
         setProcessingId(sol.id);
         try {
+            // First verify it still exists and is PENDING
+            const { data: current, error: checkErr } = await (supabase
+                .from('reporte_diario_solicitudes')
+                .select('estado')
+                .eq('id', sol.id)
+                .maybeSingle() as any);
+
+            if (checkErr || !current) {
+                toast.error('La solicitud ya no existe o fue cancelada por el comedor');
+                loadSolicitudes();
+                return;
+            }
+
+            if ((current as any).estado !== 'PENDIENTE') {
+                toast.error('Esta solicitud ya fue procesada');
+                loadSolicitudes();
+                return;
+            }
+
             const { reporte, campos_detalle } = sol.datos_json;
 
             // 1. Upsert reporte_diario header
@@ -193,15 +212,29 @@ export default function SolicitudesPage() {
             toast.error('Por favor ingresa un motivo para el rechazo');
             return;
         }
+
         setProcessingId(sol.id);
         try {
-            await supabase
+            // Verify existence
+            const { data: current } = await (supabase
+                .from('reporte_diario_solicitudes')
+                .select('id')
+                .eq('id', sol.id)
+                .maybeSingle() as any);
+
+            if (!current) {
+                toast.error('La solicitud ya no existe');
+                loadSolicitudes();
+                return;
+            }
+
+            await (supabase
                 .from('reporte_diario_solicitudes')
                 .update({
                     estado: 'RECHAZADO',
                     admin_observacion: adminComment[sol.id]
                 } as any)
-                .eq('id', sol.id);
+                .eq('id', sol.id) as any);
 
             toast.success('Solicitud rechazada');
             loadSolicitudes();
