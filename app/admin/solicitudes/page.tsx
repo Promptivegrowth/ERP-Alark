@@ -57,6 +57,29 @@ export default function SolicitudesPage() {
 
     useEffect(() => {
         loadSolicitudes();
+
+        // Realtime subscription
+        const channel = supabase
+            .channel('admin_audit')
+            .on('postgres_changes', {
+                event: '*',
+                schema: 'public',
+                table: 'reporte_diario_solicitudes'
+            }, () => {
+                loadSolicitudes();
+            })
+            .on('postgres_changes', {
+                event: '*',
+                schema: 'public',
+                table: 'incidencias'
+            }, () => {
+                loadSolicitudes();
+            })
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
     }, []);
 
     async function loadSolicitudes() {

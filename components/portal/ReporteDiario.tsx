@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { calcularCruceSemanal } from '@/lib/calculations/cruce-semanal';
-import { Save, Coffee, ChevronDown, ChevronUp, AlertCircle, Calendar as CalendarIcon, Send } from 'lucide-react';
+import { Save, Coffee, ChevronDown, ChevronUp, AlertCircle, Calendar as CalendarIcon, Send, Clock, CheckCircle2 } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { Switch } from '@/components/ui/switch';
@@ -58,9 +58,6 @@ const CATEGORIA_CONFIG: Record<string, { label: string; color: string; border: s
     OTRO: { label: '📋 Otros', color: 'text-zinc-800', border: 'border-zinc-300', bg: 'bg-zinc-50' },
 };
 
-const VOLCAN_FAUCETT = ['ALMUERZOS FAUCETT', 'CENA FAUCETT', 'AMANECIDA FAUCETT'];
-const PAMOLSA_TOTTUS = ['PANES TOTTUS', 'BEBIDAS TOTTUS', 'ALMUERZOS TOTTUS', 'CENAS TOTTUS'];
-
 // ─── Component ────────────────────────────────────────────────────────────────
 export default function ReporteDiario() {
     const { comedorId, loading } = useUser();
@@ -81,6 +78,7 @@ export default function ReporteDiario() {
     const [isEmergencyMode, setIsEmergencyMode] = useState(false);
     const [pendingRequest, setPendingRequest] = useState<any>(null);
     const [activeTab, setActiveTab] = useState('diario');
+    const [reportingEmergency, setReportingEmergency] = useState(false);
     const today = startOfDay(new Date());
     const minDate = subDays(today, 7);
 
@@ -104,60 +102,82 @@ export default function ReporteDiario() {
         load();
     }, [comedorId, supabase]);
 
-    // Load existing report for date
-    useEffect(() => {
+    const loadExisting = useCallback(async () => {
         if (!comedorId || !reporte.fecha || !dataLoaded) return;
-        async function loadExisting() {
-            try {
-                const { data: rd } = await supabase
-                    .from('reporte_diario')
-                    .select('*, reporte_diario_valores(*)')
-                    .eq('comedor_id', comedorId as any)
-                    .eq('fecha', reporte.fecha)
-                    .maybeSingle();
+        try {
+            const { data: rd } = await supabase
+                .from('reporte_diario')
+                .select('*, reporte_diario_valores(*)')
+                .eq('comedor_id', comedorId as any)
+                .eq('fecha', reporte.fecha)
+                .maybeSingle();
 
-                if (rd) {
-                    const valores: Record<string, FieldValue> = {};
-                    ((rd as any).reporte_diario_valores || []).forEach((v: any) => {
-                        valores[v.campo_id] = { campo_id: v.campo_id, cantidad: v.cantidad, monto: v.monto };
-                    });
-                    setReporte(prev => ({
-                        ...prev,
-                        id: (rd as any).id,
-                        tiene_coffe_break: (rd as any).tiene_coffe_break,
-                        descripcion_coffe: (rd as any).descripcion_coffe || '',
-                        monto_coffe: (rd as any).monto_coffe || 0,
-                        observaciones: (rd as any).observaciones || '',
-                        valores
-                    }));
-                } else {
-                    setReporte(prev => ({
-                        ...prev,
-                        id: undefined,
-                        tiene_coffe_break: false,
-                        descripcion_coffe: '',
-                        monto_coffe: 0,
-                        observaciones: '',
-                        valores: {}
-                    }));
-                }
-
-                // Check for pending requests for this date
-                const { data: pending } = await supabase
-                    .from('reporte_diario_solicitudes')
-                    .select('*')
-                    .eq('comedor_id', comedorId as any)
-                    .eq('fecha_reporte', reporte.fecha)
-                    .eq('estado', 'PENDIENTE')
-                    .maybeSingle();
-
-                setPendingRequest(pending);
-            } catch (err) {
-                console.error('Error loading existing report:', err);
+            if (rd) {
+                const valores: Record<string, FieldValue> = {};
+                ((rd as any).reporte_diario_valores || []).forEach((v: any) => {
+                    valores[v.campo_id] = { campo_id: v.campo_id, cantidad: v.cantidad, monto: v.monto };
+                });
+                setReporte(prev => ({
+                    ...prev,
+                    id: (rd as any).id,
+                    tiene_coffe_break: (rd as any).tiene_coffe_break,
+                    descripcion_coffe: (rd as any).descripcion_coffe || '',
+                    monto_coffe: (rd as any).monto_coffe || 0,
+                    observaciones: (rd as any).observaciones || '',
+                    valores
+                }));
+            } else {
+                setReporte(prev => ({
+                    ...prev,
+                    id: undefined,
+                    tiene_coffe_break: false,
+                    descripcion_coffe: '',
+                    monto_coffe: 0,
+                    observaciones: '',
+                    valores: {}
+                }));
             }
+
+            // Check for pending requests for any date (to show the status card)
+            const { data: pending } = await supabase
+                .from('reporte_diario_solicitudes')
+                .select('*')
+                .eq('comedor_id', comedorId as any)
+                .eq('estado', 'PENDIENTE')
+                .order('created_at', { ascending: false })
+                .limit(1)
+                .maybeSingle();
+
+            setPendingRequest(pending);
+        } catch (err) {
+            console.error('Error loading existing report:', err);
         }
-        loadExisting();
     }, [comedorId, reporte.fecha, dataLoaded, supabase]);
+
+    useEffect(() => {
+        loadExisting();
+    }, [loadExisting]);
+
+    // Realtime subscription
+    useEffect(() => {
+        if (!comedorId) return;
+
+        const channel = supabase
+            .channel('public:reporte_diario_solicitudes')
+            .on('postgres_changes', {
+                event: '*',
+                schema: 'public',
+                table: 'reporte_diario_solicitudes',
+                filter: `comedor_id=eq.${comedorId}`
+            }, () => {
+                loadExisting();
+            })
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, [comedorId, loadExisting, supabase]);
 
     // Handle value change
     const handleCantidad = useCallback((campoId: string, val: number) => {
@@ -180,12 +200,12 @@ export default function ReporteDiario() {
         }));
     }, []);
 
-    // Computed readonly (e.g. QUEBRADO = SOLICITADOS - CONSUMIDOS)
+    // Computed readonly
     function getReadonlyCantidad(campo: Campo): number {
         if (!campo.es_readonly || !campo.formula) return reporte.valores[campo.id]?.cantidad || 0;
         const cat = campo.categoria;
         const camposCat = campos.filter(c => c.categoria === cat && !c.es_readonly);
-        const prefix = campo.nombre_campo.split(' ')[0]; // ALMUERZOS / CENAS
+        const prefix = campo.nombre_campo.split(' ')[0];
         const solicitado = camposCat.find(c => c.nombre_campo.includes(prefix) && c.nombre_campo.includes('SOLICITADOS'));
         const consumido = camposCat.find(c => c.nombre_campo.includes(prefix) && c.nombre_campo.includes('CONSUMIDOS'));
         const s = solicitado ? (reporte.valores[solicitado.id]?.cantidad || 0) : 0;
@@ -193,10 +213,8 @@ export default function ReporteDiario() {
         return s - c;
     }
 
-    // Group by category
     const categorias = Array.from(new Set(campos.map(c => c.categoria)));
 
-    // Subtotals per category
     function subtotalCat(cat: string) {
         return campos
             .filter(c => c.categoria === cat)
@@ -219,11 +237,8 @@ export default function ReporteDiario() {
         };
     }
 
-    // Submit
     async function handleSubmit() {
         if (!comedorId) return;
-
-        // Validation for Emergency Mode
         if (isEmergencyMode) {
             if (!reporte.observaciones || reporte.observaciones.trim().length < 8) {
                 toast.error('❌ Para reportes de emergencia, debes ingresar un motivo detallado en Observaciones (mínimo 8 caracteres).');
@@ -234,7 +249,6 @@ export default function ReporteDiario() {
         setIsSubmitting(true);
         try {
             if (isEmergencyMode) {
-                // Prepare full report data for JSON storage
                 const fullData = {
                     reporte,
                     totales: grandTotal(),
@@ -256,16 +270,22 @@ export default function ReporteDiario() {
                 });
 
                 if (solErr) throw solErr;
-
                 toast.success('Solicitud de emergencia enviada para revisión del administrador ✓');
                 setIsEmergencyMode(false);
+                setReportingEmergency(true);
                 setReporte(prev => ({ ...prev, fecha: format(new Date(), 'yyyy-MM-dd') }));
+
+                // Scroll to bottom to see pending request card
+                setTimeout(() => {
+                    window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+                }, 500);
+
+                // Hide success message after 5s
+                setTimeout(() => setReportingEmergency(false), 5000);
                 return;
             }
 
             let reporteId = reporte.id;
-
-            // Upsert header
             const headerData = {
                 comedor_id: comedorId,
                 fecha: reporte.fecha,
@@ -278,16 +298,15 @@ export default function ReporteDiario() {
             };
 
             if (reporteId) {
-                const { error } = await supabase.from('reporte_diario').update(headerData as any).eq('id', reporteId as any);
+                const { error } = await (supabase.from('reporte_diario').update(headerData as any) as any).eq('id', reporteId);
                 if (error) throw error;
             } else {
-                const { data, error } = await supabase.from('reporte_diario').insert(headerData as any).select('id').single();
+                const { data, error } = await (supabase.from('reporte_diario').insert(headerData as any) as any).select('id').single();
                 if (error) throw error;
                 reporteId = (data as any).id;
                 setReporte(prev => ({ ...prev, id: reporteId }));
             }
 
-            // Upsert values
             const valoresInserts = campos.map(campo => ({
                 reporte_id: reporteId,
                 campo_id: campo.id,
@@ -295,10 +314,9 @@ export default function ReporteDiario() {
                 monto: reporte.valores[campo.id]?.monto || 0,
             }));
 
-            const { error: vErr } = await supabase.from('reporte_diario_valores').upsert(valoresInserts as any, { onConflict: 'reporte_id,campo_id' });
+            const { error: vErr } = await (supabase.from('reporte_diario_valores').upsert(valoresInserts as any, { onConflict: 'reporte_id,campo_id' }) as any);
             if (vErr) throw vErr;
 
-            // Upsert totals per category
             const totalesInserts = categorias.map(cat => ({
                 reporte_id: reporteId,
                 categoria: cat,
@@ -307,19 +325,14 @@ export default function ReporteDiario() {
                 total_monto: subtotalMontoCat(cat),
             }));
 
+            await (supabase.from('reporte_diario_totales').upsert(totalesInserts as any, { onConflict: 'reporte_id,categoria' }) as any);
 
-            await supabase.from('reporte_diario_totales').upsert(totalesInserts as any, { onConflict: 'reporte_id,categoria' });
-
-            // 4. Trigger Cruce calculation
             try {
-                // Get or create semana_id via RPC
                 const { data: semId, error: semErr } = await (supabase.rpc as any)('get_or_create_semana', {
                     p_comedor_id: comedorId,
                     p_fecha: reporte.fecha
                 });
-
                 if (!semId || semErr) throw new Error('No se pudo identificar la semana para el cruce');
-
                 await calcularCruceSemanal(comedorId as string, semId as string);
             } catch (cruceErr) {
                 console.error('Error calculating cruce:', cruceErr);
@@ -362,7 +375,6 @@ export default function ReporteDiario() {
             <div className="flex items-center justify-center h-64">
                 <div className="text-center p-8 border-2 border-dashed border-zinc-200 rounded-xl">
                     <p className="text-zinc-500 font-medium">No hay campos configurados para este comedor.</p>
-                    <p className="text-xs text-zinc-400 mt-1">Contacta al administrador para configurarlos.</p>
                 </div>
             </div>
         );
@@ -371,72 +383,259 @@ export default function ReporteDiario() {
     const totales = grandTotal();
 
     return (
-        <div className="space-y-5 pb-40">
-            {/* Header */}
+        <div className="space-y-6 pb-40">
+            {/* Header Unified */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h2 className="text-2xl font-bold text-[#1B4332]">Reporte Diario</h2>
-                    <p className="text-sm text-zinc-500">{comedorNombre}</p>
+                    <p className="text-zinc-500 font-bold uppercase tracking-widest text-[10px] mb-1">Panel de Control</p>
+                    <p className="text-2xl font-black text-[#1B4332] tracking-tighter uppercase">{comedorNombre}</p>
                 </div>
                 <div className="flex items-center gap-3">
-                    <label className="text-sm font-medium text-zinc-600">Fecha:</label>
+                    <label className="text-sm font-black text-zinc-500 uppercase">Fecha:</label>
                     <Input
                         type="date"
-                        className="w-44 border-[#2D6A4F] focus:ring-[#2D6A4F]"
+                        className="w-44 border-[#2D6A4F] font-black focus:ring-[#2D6A4F]"
                         value={reporte.fecha}
                         onChange={e => setReporte(prev => ({ ...prev, fecha: e.target.value }))}
                     />
-                    {reporte.id && !pendingRequest && <Badge className="bg-emerald-100 text-emerald-800 text-xs">Reporte guardado</Badge>}
-                    {pendingRequest && <Badge className="bg-amber-100 text-amber-800 text-xs animate-pulse">Solicitud Pendiente</Badge>}
+                    {reporte.id && !pendingRequest && <Badge className="bg-emerald-100 text-emerald-800 text-[10px] font-black">GUARDADO</Badge>}
+                    {pendingRequest && <Badge className="bg-amber-100 text-amber-800 text-[10px] font-black animate-pulse">PENDIENTE AUDITORÍA</Badge>}
                 </div>
             </div>
 
-            {/* Pending Request View */}
-            {pendingRequest ? (
-                <div className="space-y-6 animate-in fade-in zoom-in-95 duration-500">
-                    <Card className="border-2 border-amber-200 shadow-xl overflow-hidden bg-amber-50/30">
-                        <CardHeader className="bg-amber-100/50 border-b border-amber-200 py-6 text-center">
-                            <div className="mx-auto w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mb-4 border-2 border-amber-300">
-                                <Coffee className="text-amber-600" size={32} />
+            {/* Emergency Banner */}
+            <div className="flex flex-col sm:flex-row items-center justify-between bg-zinc-900 text-white p-4 rounded-xl shadow-lg border-b-4 border-rose-600 gap-4">
+                <div className="flex items-center gap-3">
+                    <div className={`p-2 rounded-full ${isEmergencyMode ? 'bg-rose-600 animate-pulse' : 'bg-zinc-800'}`}>
+                        <AlertCircle size={20} />
+                    </div>
+                    <div>
+                        <h4 className="font-bold text-sm">¿Necesitas reportar un día pasado?</h4>
+                        <p className="text-[10px] text-zinc-400 uppercase tracking-wider">Máximo 7 días de antiguedad • Requiere aprobación</p>
+                    </div>
+                </div>
+                <Button
+                    variant="ghost"
+                    className={isEmergencyMode
+                        ? "bg-rose-600 hover:bg-rose-700 text-white font-black px-6 shadow-md transition-all active:scale-95"
+                        : "bg-rose-500 hover:bg-rose-600 text-white font-black px-6 shadow-md transition-all active:scale-95"
+                    }
+                    onClick={() => {
+                        setIsEmergencyMode(!isEmergencyMode);
+                        if (!isEmergencyMode) setReporte(prev => ({ ...prev, fecha: format(new Date(), 'yyyy-MM-dd') }));
+                    }}
+                >
+                    {isEmergencyMode ? 'CANCELAR EMERGENCIA' : '🆘 ACTIVAR MODO EMERGENCIA'}
+                </Button>
+            </div>
+
+            {/* Date Selection (Emergency) */}
+            {isEmergencyMode && (
+                <Card className="border-2 border-rose-300 shadow-lg overflow-hidden animate-in slide-in-from-top-4 duration-500">
+                    <CardHeader className="bg-rose-50 py-3 px-4 flex flex-row items-center justify-between border-b border-rose-100">
+                        <span className="text-sm font-black text-rose-800 uppercase flex items-center gap-2">
+                            <CalendarIcon size={18} /> SELECCIONAR FECHA DE REPORTE PASADO
+                        </span>
+                        <Badge className="bg-rose-600 px-3 py-1 text-white font-black">MODO EMERGENCIA</Badge>
+                    </CardHeader>
+                    <CardContent className="p-4 space-y-4">
+                        <div className="flex flex-col sm:flex-row items-center gap-6">
+                            <Popover>
+                                <PopoverTrigger asChild>
+                                    <Button type="button" variant="outline" className="w-full sm:w-[280px] justify-start text-left font-black border-rose-300">
+                                        <CalendarIcon className="mr-2 h-4 w-4" />
+                                        {reporte.fecha ? format(new Date(reporte.fecha + 'T12:00:00'), 'PPP', { locale: es }) : <span>Seleccionar fecha</span>}
+                                    </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0">
+                                    <Calendar
+                                        mode="single"
+                                        selected={new Date(reporte.fecha + 'T12:00:00')}
+                                        onSelect={(date) => date && setReporte(prev => ({ ...prev, fecha: format(date, 'yyyy-MM-dd') }))}
+                                        disabled={(date) => isAfter(date, today) || isBefore(date, minDate)}
+                                        initialFocus
+                                    />
+                                </PopoverContent>
+                            </Popover>
+                            <div className="flex-1 text-xs text-rose-700 font-bold leading-relaxed italic">
+                                ⚠️ Estos cambios no afectarán tu liquidación actual hasta que sean aprobados por un administrador.
                             </div>
-                            <CardTitle className="text-2xl font-black text-amber-900 uppercase tracking-tighter">
-                                Solicitud de Actualización Pendiente
+                        </div>
+
+                        <div className="space-y-2">
+                            <div className="flex justify-between items-center">
+                                <label className="text-sm font-bold text-rose-800 uppercase">Motivo (Mínimo 8 caracteres):</label>
+                                <span className={`text-[10px] font-black uppercase ${reporte.observaciones.length >= 8 ? 'text-emerald-600' : 'text-rose-500'}`}>
+                                    {reporte.observaciones.length} / 8
+                                </span>
+                            </div>
+                            <Textarea
+                                placeholder="Explica detalladamente por qué necesitas actualizar este día pasado..."
+                                value={reporte.observaciones}
+                                onChange={e => setReporte(prev => ({ ...prev, observaciones: e.target.value }))}
+                                className="min-h-[80px] border-rose-300 focus:ring-rose-400 bg-white"
+                                required
+                            />
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
+
+            {/* Main Form Cards */}
+            {categorias.map(cat => {
+                const config = CATEGORIA_CONFIG[cat] || CATEGORIA_CONFIG.OTRO;
+                return (
+                    <Card key={cat} className={`border-l-4 ${config.border} shadow-md overflow-hidden bg-white/50 backdrop-blur-sm`}>
+                        <CardHeader className={`${config.bg} py-3 px-4 flex flex-row items-center justify-between`}>
+                            <CardTitle className={`text-base font-black uppercase tracking-tight ${config.color}`}>
+                                {config.label}
                             </CardTitle>
-                            <p className="text-amber-700 font-bold mt-2">
+                            <div className="flex items-center gap-3">
+                                <div className="text-right">
+                                    <p className="text-[10px] font-bold text-zinc-400 uppercase leading-none">Subtotal Pax</p>
+                                    <p className={`text-sm font-black ${config.color}`}>{subtotalCat(cat)}</p>
+                                </div>
+                                <div className="text-right border-l border-zinc-200 pl-3">
+                                    <p className="text-[10px] font-bold text-zinc-400 uppercase leading-none">Monto</p>
+                                    <p className={`text-sm font-black ${config.color}`}>S/ {subtotalMontoCat(cat).toFixed(2)}</p>
+                                </div>
+                            </div>
+                        </CardHeader>
+                        <CardContent className="p-0">
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-sm">
+                                    <thead className="bg-zinc-50/50 border-b border-zinc-100">
+                                        <tr className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">
+                                            <th className="px-4 py-2 text-left">Concepto / Servicio</th>
+                                            <th className="px-4 py-2 text-right w-24">Cant.</th>
+                                            <th className="px-4 py-2 text-right w-32">Monto S/</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-zinc-100 font-medium">
+                                        {campos.filter(c => c.categoria === cat).map(campo => (
+                                            <tr key={campo.id} className="hover:bg-zinc-50/30 transition-colors">
+                                                <td className="px-4 py-3">
+                                                    <p className="font-bold text-zinc-700 leading-tight uppercase text-xs">{campo.nombre_campo}</p>
+                                                    {campo.es_readonly && <span className="text-[9px] font-black text-rose-500 uppercase">Calculado</span>}
+                                                </td>
+                                                <td className="px-4 py-3 text-right">
+                                                    <Input
+                                                        type="number"
+                                                        className={`w-20 ml-auto h-8 text-right font-black border-zinc-200 ${campo.es_readonly ? 'bg-zinc-100' : 'bg-white'}`}
+                                                        value={campo.es_readonly ? getReadonlyCantidad(campo) : (reporte.valores[campo.id]?.cantidad || 0)}
+                                                        onChange={e => handleCantidad(campo.id, parseFloat(e.target.value) || 0)}
+                                                        readOnly={campo.es_readonly}
+                                                    />
+                                                </td>
+                                                <td className="px-4 py-3 text-right">
+                                                    <Input
+                                                        type="number"
+                                                        step="0.01"
+                                                        className="w-28 ml-auto h-8 text-right font-black border-zinc-200 bg-white"
+                                                        value={reporte.valores[campo.id]?.monto || 0}
+                                                        onChange={e => handleMonto(campo.id, parseFloat(e.target.value) || 0)}
+                                                    />
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </CardContent>
+                    </Card>
+                );
+            })}
+
+            {/* Coffe Break */}
+            <Card className="border-l-4 border-l-amber-400 shadow-md bg-white/50 backdrop-blur-sm">
+                <CardHeader className="bg-amber-50 py-3 px-4 flex flex-row items-center justify-between">
+                    <CardTitle className="text-base font-black uppercase tracking-tight text-amber-800">
+                        ☕ Coffe Break / Eventos
+                    </CardTitle>
+                    <div className="flex items-center gap-2">
+                        <label className="text-xs font-bold text-zinc-500 uppercase">¿Hubo Coffe?</label>
+                        <Switch
+                            checked={reporte.tiene_coffe_break}
+                            onCheckedChange={val => setReporte(prev => ({ ...prev, tiene_coffe_break: val }))}
+                        />
+                    </div>
+                </CardHeader>
+                {reporte.tiene_coffe_break && (
+                    <CardContent className="p-4 space-y-4 animate-in slide-in-from-top-2 duration-300">
+                        <div className="grid md:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black text-zinc-400 uppercase">Descripción</label>
+                                <Input
+                                    value={reporte.descripcion_coffe}
+                                    onChange={e => setReporte(prev => ({ ...prev, descripcion_coffe: e.target.value }))}
+                                    className="font-bold border-zinc-200"
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black text-zinc-400 uppercase">Monto S/</label>
+                                <Input
+                                    type="number"
+                                    step="0.01"
+                                    value={reporte.monto_coffe}
+                                    onChange={e => setReporte(prev => ({ ...prev, monto_coffe: parseFloat(e.target.value) || 0 }))}
+                                    className="font-black border-zinc-200 text-amber-700"
+                                />
+                            </div>
+                        </div>
+                    </CardContent>
+                )}
+            </Card>
+
+            {/* Observaciones */}
+            <Card className="border-l-4 border-l-zinc-400 shadow-md bg-white/50 backdrop-blur-sm">
+                <CardHeader className="bg-zinc-50 py-3 px-4">
+                    <CardTitle className="text-base font-black uppercase tracking-tight text-zinc-800">
+                        💬 Observaciones Generales
+                    </CardTitle>
+                </CardHeader>
+                <CardContent className="p-4">
+                    <Textarea
+                        placeholder="Cualquier aclaración adicional..."
+                        value={reporte.observaciones}
+                        onChange={e => setReporte(prev => ({ ...prev, observaciones: e.target.value }))}
+                        className="font-medium border-zinc-200 min-h-[80px]"
+                    />
+                </CardContent>
+            </Card>
+
+            {/* Success Message for Emergency */}
+            {!isEmergencyMode && !pendingRequest && reportingEmergency && (
+                <div className="bg-emerald-50 border-2 border-emerald-200 p-4 rounded-xl flex items-center gap-3 animate-in fade-in slide-in-from-top-2">
+                    <CheckCircle2 className="text-emerald-600" />
+                    <p className="text-emerald-800 font-bold text-sm">¡Solicitud enviada con éxito! Aparecerá abajo en breve.</p>
+                </div>
+            )}
+
+            {/* Pending Request Status Card */}
+            {pendingRequest && (
+                <div className="animate-in fade-in zoom-in-95 duration-500">
+                    <Card className="border-2 border-amber-200 shadow-xl overflow-hidden bg-amber-50/50 backdrop-blur-sm">
+                        <CardHeader className="bg-amber-100/50 border-b border-amber-200 py-4 text-center">
+                            <CardTitle className="text-lg font-black text-amber-900 uppercase tracking-tighter flex items-center justify-center gap-2">
+                                <Clock className="text-amber-600" size={20} />
+                                Solicitud en Curso ({format(new Date(pendingRequest.fecha_reporte + 'T12:00:00'), 'dd/MM/yyyy')})
+                            </CardTitle>
+                            <p className="text-amber-700 font-bold text-[10px] uppercase">
                                 Enviada el {format(new Date(pendingRequest.created_at), "PPP 'a las' p", { locale: es })}
                             </p>
                         </CardHeader>
-                        <CardContent className="p-8 space-y-6">
-                            <div className="bg-white p-6 rounded-2xl border border-amber-100 shadow-sm">
-                                <h4 className="text-xs font-black text-amber-600 uppercase tracking-widest mb-3">Detalles del Motivo:</h4>
-                                <p className="text-zinc-700 italic text-lg leading-relaxed font-medium">
-                                    "{pendingRequest.motivo}"
+                        <CardContent className="p-5 space-y-4">
+                            <div className="bg-white/80 p-3 rounded-lg border border-amber-100 shadow-sm">
+                                <p className="text-zinc-700 italic text-sm font-medium text-center">"{pendingRequest.motivo}"</p>
+                            </div>
+                            <div className="flex flex-col sm:flex-row items-center gap-4 justify-between border-t border-amber-200 pt-4">
+                                <p className="text-[10px] text-amber-800 font-black uppercase leading-tight italic max-w-md">
+                                    Esta solicitud está siendo revisada por administración. Mientras tanto, puedes seguir operando normalmente en el día de hoy.
                                 </p>
-                            </div>
-
-                            <div className="grid md:grid-cols-2 gap-4">
-                                <div className="p-4 bg-emerald-50 rounded-xl border border-emerald-100">
-                                    <span className="text-[10px] font-black text-emerald-600 uppercase block mb-1">Monto Solicitado</span>
-                                    <span className="text-xl font-black text-emerald-900">S/ {pendingRequest.datos_json.totales.monto.toFixed(2)}</span>
-                                </div>
-                                <div className="p-4 bg-zinc-50 rounded-xl border border-zinc-100">
-                                    <span className="text-[10px] font-black text-zinc-400 uppercase block mb-1">Estado de Auditoría</span>
-                                    <span className="text-sm font-black text-zinc-600 uppercase flex items-center gap-2">
-                                        <div className="w-2 h-2 rounded-full bg-amber-500 animate-ping" />
-                                        Espera de aprobación
-                                    </span>
-                                </div>
-                            </div>
-
-                            <div className="pt-4 flex flex-col sm:flex-row gap-4">
-                                <div className="flex-1 p-4 bg-rose-50 rounded-xl border border-rose-100">
-                                    <p className="text-xs text-rose-800 font-bold leading-tight">
-                                        ⚠️ El formulario está bloqueado mientras esta solicitud esté en revisión. Si necesitas corregir algo, cancela esta solicitud y envía una nueva.
-                                    </p>
-                                </div>
                                 <Button
                                     variant="outline"
-                                    className="border-rose-200 text-rose-600 hover:bg-rose-50 font-black h-14 px-8"
+                                    size="sm"
+                                    className="border-rose-200 text-rose-600 hover:bg-rose-50 font-black px-6 shadow-sm whitespace-nowrap"
                                     onClick={handleCancelarSolicitud}
                                     disabled={isSubmitting}
                                 >
@@ -446,258 +645,47 @@ export default function ReporteDiario() {
                         </CardContent>
                     </Card>
                 </div>
-            ) : (
-                <>
-                    {/* Normal Form View */}
-                    {/* Emergency Banner */}
-                    <div className="flex flex-col sm:flex-row items-center justify-between bg-zinc-900 text-white p-4 rounded-xl shadow-lg border-b-4 border-rose-600 gap-4">
-                        <div className="flex items-center gap-3">
-                            <div className={`p-2 rounded-full ${isEmergencyMode ? 'bg-rose-600 animate-pulse' : 'bg-zinc-800'}`}>
-                                <AlertCircle size={20} />
-                            </div>
-                            <div>
-                                <h4 className="font-bold text-sm">¿Necesitas reportar un día pasado?</h4>
-                                <p className="text-[10px] text-zinc-400 uppercase tracking-wider">Máximo 7 días de antiguedad • Requiere aprobación</p>
-                            </div>
-                        </div>
-                        <Button
-                            variant="ghost"
-                            className={isEmergencyMode
-                                ? "bg-rose-600 hover:bg-rose-700 text-white font-black px-6 shadow-md transition-all active:scale-95"
-                                : "bg-rose-500 hover:bg-rose-600 text-white font-black px-6 shadow-md transition-all active:scale-95"
-                            }
-                            onClick={() => {
-                                setIsEmergencyMode(!isEmergencyMode);
-                                if (isEmergencyMode) setReporte(prev => ({ ...prev, fecha: format(new Date(), 'yyyy-MM-dd') }));
-                            }}
-                        >
-                            {isEmergencyMode ? 'CANCELAR EMERGENCIA' : '🆘 ACTIVAR MODO EMERGENCIA'}
-                        </Button>
-                    </div>
-
-                    {/* Date Selection (Emergency) */}
-                    {isEmergencyMode && (
-                        <Card className="border-2 border-rose-300 shadow-lg overflow-hidden animate-in slide-in-from-top-4 duration-500">
-                            <CardHeader className="bg-rose-50 py-3 px-4 flex flex-row items-center justify-between border-b border-rose-100">
-                                <span className="text-sm font-black text-rose-800 uppercase flex items-center gap-2">
-                                    <CalendarIcon size={18} /> SELECCIONAR FECHA DE REPORTE PASADO
-                                </span>
-                                <Badge className="bg-rose-600 px-3 py-1 text-white font-black">MODO EMERGENCIA</Badge>
-                            </CardHeader>
-                            <CardContent className="p-4 space-y-4">
-                                <div className="flex flex-col sm:flex-row items-center gap-6">
-                                    <Popover>
-                                        <PopoverTrigger asChild>
-                                            <Button type="button" variant="outline" className="w-full sm:w-[280px] justify-start text-left font-black border-rose-300">
-                                                <CalendarIcon className="mr-2 h-4 w-4" />
-                                                {reporte.fecha ? format(new Date(reporte.fecha + 'T12:00:00'), 'PPP', { locale: es }) : <span>Seleccionar fecha</span>}
-                                            </Button>
-                                        </PopoverTrigger>
-                                        <PopoverContent className="w-auto p-0">
-                                            <Calendar
-                                                mode="single"
-                                                selected={new Date(reporte.fecha + 'T12:00:00')}
-                                                onSelect={(date) => date && setReporte(prev => ({ ...prev, fecha: format(date, 'yyyy-MM-dd') }))}
-                                                disabled={(date) => isAfter(date, today) || isBefore(date, minDate)}
-                                                initialFocus
-                                            />
-                                        </PopoverContent>
-                                    </Popover>
-                                    <div className="flex-1 text-xs text-rose-700 font-bold leading-relaxed">
-                                        ⚠️ Recuerda: Este reporte no se activará de inmediato. El administrador debe validarlo antes de que aparezca en el historial oficial.
-                                    </div>
-                                </div>
-
-                                <div className="space-y-2">
-                                    <div className="flex justify-between items-center">
-                                        <label className="text-sm font-bold text-rose-800 uppercase">Motivo / Observación del Cambio (Obligatorio)</label>
-                                        <span className={`text-[10px] font-black uppercase ${reporte.observaciones.length >= 8 ? 'text-emerald-600' : 'text-rose-500'}`}>
-                                            {reporte.observaciones.length} / 8 caracteres
-                                        </span>
-                                    </div>
-                                    <Textarea
-                                        placeholder="Explica detalladamente por qué necesitas actualizar este día pasado..."
-                                        value={reporte.observaciones}
-                                        onChange={e => setReporte(prev => ({ ...prev, observaciones: e.target.value }))}
-                                        className="min-h-[100px] border-rose-300 focus:ring-rose-400 bg-white"
-                                        required
-                                        minLength={8}
-                                    />
-                                </div>
-                            </CardContent>
-                        </Card>
-                    )}
-
-                    {categorias.map(cat => {
-                        const config = CATEGORIA_CONFIG[cat] || CATEGORIA_CONFIG.OTRO;
-                        return (
-                            <Card key={cat} className={`border-l-4 ${config.border} shadow-md overflow-hidden bg-white/50 backdrop-blur-sm`}>
-                                <CardHeader className={`${config.bg} py-3 px-4 flex flex-row items-center justify-between`}>
-                                    <CardTitle className={`text-base font-black uppercase tracking-tight ${config.color}`}>
-                                        {config.label}
-                                    </CardTitle>
-                                    <div className="flex items-center gap-3">
-                                        <div className="text-right">
-                                            <p className="text-[10px] font-bold text-zinc-400 uppercase leading-none">Subtotal Pax</p>
-                                            <p className={`text-sm font-black ${config.color}`}>{subtotalCat(cat)}</p>
-                                        </div>
-                                        <div className="text-right border-l border-zinc-200 pl-3">
-                                            <p className="text-[10px] font-bold text-zinc-400 uppercase leading-none">Monto</p>
-                                            <p className={`text-sm font-black ${config.color}`}>S/ {subtotalMontoCat(cat).toFixed(2)}</p>
-                                        </div>
-                                    </div>
-                                </CardHeader>
-                                <CardContent className="p-0">
-                                    <div className="overflow-x-auto">
-                                        <table className="w-full text-sm">
-                                            <thead className="bg-zinc-50/50 border-b border-zinc-100">
-                                                <tr className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">
-                                                    <th className="px-4 py-2 text-left">Concepto / Servicio</th>
-                                                    <th className="px-4 py-2 text-right w-24">Cantidad</th>
-                                                    <th className="px-4 py-2 text-right w-32">Monto S/</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody className="divide-y divide-zinc-100">
-                                                {campos.filter(c => c.categoria === cat).map(campo => (
-                                                    <tr key={campo.id} className="hover:bg-zinc-50/30 transition-colors">
-                                                        <td className="px-4 py-3">
-                                                            <p className="font-bold text-zinc-700 leading-tight uppercase text-xs">{campo.nombre_campo}</p>
-                                                            {campo.es_readonly && <span className="text-[9px] font-black text-rose-500 uppercase">Calculado Automático</span>}
-                                                        </td>
-                                                        <td className="px-4 py-3 text-right">
-                                                            <Input
-                                                                type="number"
-                                                                className={`w-20 ml-auto h-8 text-right font-black border-zinc-200 focus:ring-1 ${campo.es_readonly ? 'bg-zinc-100 opacity-70' : 'bg-white'}`}
-                                                                value={campo.es_readonly ? getReadonlyCantidad(campo) : (reporte.valores[campo.id]?.cantidad || 0)}
-                                                                onChange={e => handleCantidad(campo.id, parseFloat(e.target.value) || 0)}
-                                                                readOnly={campo.es_readonly}
-                                                            />
-                                                        </td>
-                                                        <td className="px-4 py-3 text-right">
-                                                            <Input
-                                                                type="number"
-                                                                step="0.01"
-                                                                className="w-28 ml-auto h-8 text-right font-black border-zinc-200 focus:ring-1 bg-white"
-                                                                value={reporte.valores[campo.id]?.monto || 0}
-                                                                onChange={e => handleMonto(campo.id, parseFloat(e.target.value) || 0)}
-                                                            />
-                                                        </td>
-                                                    </tr>
-                                                ))}
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        );
-                    })}
-
-                    {/* Coffe Break / Eventos */}
-                    <Card className="border-l-4 border-l-amber-400 shadow-md bg-white/50 backdrop-blur-sm">
-                        <CardHeader className="bg-amber-50 py-3 px-4 flex flex-row items-center justify-between">
-                            <CardTitle className="text-base font-black uppercase tracking-tight text-amber-800">
-                                ☕ Coffe Break / Eventos Especiales
-                            </CardTitle>
-                            <div className="flex items-center gap-2">
-                                <label className="text-xs font-bold text-zinc-500 uppercase">¿Hubo Coffe?</label>
-                                <Switch
-                                    checked={reporte.tiene_coffe_break}
-                                    onCheckedChange={val => setReporte(prev => ({ ...prev, tiene_coffe_break: val }))}
-                                />
-                            </div>
-                        </CardHeader>
-                        {reporte.tiene_coffe_break && (
-                            <CardContent className="p-4 space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
-                                <div className="grid md:grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Descripción del Evento</label>
-                                        <Input
-                                            placeholder="Ej: Coffe Break Capacitación Ransa..."
-                                            value={reporte.descripcion_coffe}
-                                            onChange={e => setReporte(prev => ({ ...prev, descripcion_coffe: e.target.value }))}
-                                            className="font-bold border-zinc-200"
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Monto S/</label>
-                                        <Input
-                                            type="number"
-                                            step="0.01"
-                                            placeholder="0.00"
-                                            value={reporte.monto_coffe}
-                                            onChange={e => setReporte(prev => ({ ...prev, monto_coffe: parseFloat(e.target.value) || 0 }))}
-                                            className="font-black border-zinc-200 text-amber-700"
-                                        />
-                                    </div>
-                                </div>
-                            </CardContent>
-                        )}
-                    </Card>
-
-                    {/* Observaciones Generales */}
-                    <Card className="border-l-4 border-l-zinc-400 shadow-md bg-white/50 backdrop-blur-sm">
-                        <CardHeader className="bg-zinc-50 py-3 px-4">
-                            <CardTitle className="text-base font-black uppercase tracking-tight text-zinc-800">
-                                💬 Observaciones Generales
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="p-4">
-                            <Textarea
-                                placeholder="Cualquier aclaración adicional para este reporte..."
-                                value={reporte.observaciones}
-                                onChange={e => setReporte(prev => ({ ...prev, observaciones: e.target.value }))}
-                                className="font-medium border-zinc-200 min-h-[80px]"
-                            />
-                        </CardContent>
-                    </Card>
-
-                    {/* Sticky Save Bar */}
-                    <div className="fixed bottom-0 left-0 lg:left-64 right-0 z-40 bg-white/90 backdrop-blur-md border-t-2 border-[#1B4332] px-4 sm:px-6 py-4 shadow-[0_-10px_40px_rgba(0,0,0,0.1)] pb-safe-offset-4">
-                        <div className="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-                            <div className="grid grid-cols-3 sm:flex gap-4 sm:gap-6 text-center sm:text-left w-full sm:w-auto">
-                                {categorias.map(cat => {
-                                    const config = CATEGORIA_CONFIG[cat] || CATEGORIA_CONFIG.OTRO;
-                                    const qty = subtotalCat(cat);
-                                    if (qty === 0) return null;
-                                    return (
-                                        <div key={cat} className="flex flex-col items-center">
-                                            <span className={`font-black text-lg ${config.color}`}>{qty}</span>
-                                            <span className="text-[9px] text-zinc-400 font-bold uppercase tracking-tight">{cat.slice(0, 4)}</span>
-                                        </div>
-                                    );
-                                })}
-                                <div className="flex flex-col items-end border-l border-zinc-200 pl-4 sm:ml-2 whitespace-nowrap">
-                                    <span className="font-black text-xl text-[#1B4332] leading-none">S/ {totales.monto.toFixed(2)}</span>
-                                    <span className="text-[10px] text-zinc-400 font-black uppercase tracking-widest mt-1">LIQUIDACIÓN TOTAL</span>
-                                </div>
-                            </div>
-                            <Button
-                                onClick={handleSubmit}
-                                disabled={isSubmitting}
-                                size="lg"
-                                className={`${isEmergencyMode ? 'bg-rose-600 hover:bg-rose-800' : 'bg-[#2D6A4F] hover:bg-[#1B4332]'} text-white gap-2 w-full sm:w-auto font-black shadow-lg transition-all transform active:scale-95`}
-                            >
-                                {isSubmitting ? (
-                                    <span className="flex items-center gap-2">
-                                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                                        Procesando...
-                                    </span>
-                                ) : isEmergencyMode ? (
-                                    <>
-                                        <Send size={18} />
-                                        ENVIAR SOLICITUD DE ACTUALIZACIÓN
-                                    </>
-                                ) : (
-                                    <>
-                                        <Save size={18} />
-                                        GUARDAR REPORTE DIARIO
-                                    </>
-                                )}
-                            </Button>
-                        </div>
-                    </div>
-                </>
             )}
+
+            {/* Sticky Save Bar */}
+            <div className="fixed bottom-0 left-0 lg:left-64 right-0 z-40 bg-white/95 backdrop-blur-md border-t-4 border-[#1B4332] px-4 sm:px-6 py-4 shadow-[0_-10px_50px_rgba(0,0,0,0.15)] pb-safe-offset-4 animate-in slide-in-from-bottom-8 duration-500">
+                <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <div className="flex items-center gap-6 overflow-x-auto w-full sm:w-auto invisible-scrollbar pb-1 sm:pb-0">
+                        {categorias.map(cat => {
+                            const config = CATEGORIA_CONFIG[cat] || CATEGORIA_CONFIG.OTRO;
+                            const qty = subtotalCat(cat);
+                            if (qty === 0) return null;
+                            return (
+                                <div key={cat} className="flex flex-col items-center">
+                                    <span className={`font-black text-xl leading-none ${config.color}`}>{qty}</span>
+                                    <span className="text-[9px] text-zinc-400 font-bold uppercase tracking-tight mt-1">{cat.slice(0, 4)}</span>
+                                </div>
+                            );
+                        })}
+                        <div className="flex flex-col items-end border-l-2 border-zinc-100 pl-6 ml-2 whitespace-nowrap">
+                            <span className="font-black text-2xl text-[#1B4332] tracking-tighter leading-none">S/ {totales.monto.toFixed(2)}</span>
+                            <span className="text-[10px] text-zinc-400 font-black uppercase tracking-widest mt-1">LIQUIDACIÓN TOTAL</span>
+                        </div>
+                    </div>
+                    <Button
+                        onClick={handleSubmit}
+                        disabled={isSubmitting}
+                        size="lg"
+                        className={`${isEmergencyMode ? 'bg-rose-600 hover:bg-rose-800 animate-pulse' : 'bg-[#2D6A4F] hover:bg-[#1B4332]'} text-white flex gap-3 w-full sm:w-80 font-black h-14 shadow-2xl transition-all transform active:scale-95`}
+                    >
+                        {isSubmitting ? (
+                            <div className="flex items-center gap-3">
+                                <div className="w-5 h-5 border-3 border-white border-t-transparent rounded-full animate-spin" />
+                                <span className="uppercase tracking-widest">Procesando...</span>
+                            </div>
+                        ) : isEmergencyMode ? (
+                            <><Send size={20} /><span className="uppercase tracking-wide">Enviar Solicitud</span></>
+                        ) : (
+                            <><Save size={20} /><span className="uppercase tracking-wide">Guardar Reporte Diario</span></>
+                        )}
+                    </Button>
+                </div>
+            </div>
         </div>
     );
 }
