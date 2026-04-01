@@ -354,19 +354,28 @@ export default function ReporteDiario() {
     async function handleCancelarSolicitud() {
         if (!pendingRequest || !confirm('¿Estás seguro de cancelar esta solicitud de actualización?')) return;
         setIsSubmitting(true);
-        const { error } = await supabase.from('reporte_diario_solicitudes').delete().eq('id', pendingRequest.id);
-        if (error) {
-            toast.error('Error al cancelar solicitud');
-            setIsSubmitting(false);
-        } else {
-            toast.success('Solicitud cancelada ✓');
-            setPendingRequest(null);
+        try {
+            // We use .select() because if RLS blocks the delete, PostgREST might return 204 (Success) but with 0 rows affected.
+            // .select() returns the deleted data, so if it's empty, we know it failed.
+            const { data, error } = await (supabase.from('reporte_diario_solicitudes').delete().eq('id', pendingRequest.id).select() as any);
 
-            // Wait slightly for DB to propagate deletion before refreshing
-            setTimeout(async () => {
-                await loadExisting();
-                setIsSubmitting(false);
-            }, 1000);
+            if (error || !data || data.length === 0) {
+                console.error('Delete failed or blocked by RLS:', error);
+                toast.error('❌ Error de Permisos: La base de datos no permitió la eliminación. Es necesario activar la política DELETE en Supabase.');
+            } else {
+                toast.success('Solicitud cancelada ✓');
+                setPendingRequest(null);
+
+                // Wait slightly for DB to propagate deletion before refreshing
+                setTimeout(async () => {
+                    await loadExisting();
+                }, 1000);
+            }
+        } catch (err) {
+            console.error('Cancellation error:', err);
+            toast.error('Error al procesar la cancelación');
+        } finally {
+            setIsSubmitting(false);
         }
     }
 
