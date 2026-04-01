@@ -355,14 +355,19 @@ export default function ReporteDiario() {
         if (!pendingRequest || !confirm('¿Estás seguro de cancelar esta solicitud de actualización?')) return;
         setIsSubmitting(true);
         const { error } = await supabase.from('reporte_diario_solicitudes').delete().eq('id', pendingRequest.id);
-        if (error) toast.error('Error al cancelar solicitud');
-        else {
+        if (error) {
+            toast.error('Error al cancelar solicitud');
+            setIsSubmitting(false);
+        } else {
             toast.success('Solicitud cancelada ✓');
             setPendingRequest(null);
-            // Refresh to be 100% sure sync is clean
-            await loadExisting();
+
+            // Wait slightly for DB to propagate deletion before refreshing
+            setTimeout(async () => {
+                await loadExisting();
+                setIsSubmitting(false);
+            }, 1000);
         }
-        setIsSubmitting(false);
     }
 
     if (loading || !dataLoaded) {

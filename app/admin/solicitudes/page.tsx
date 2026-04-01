@@ -100,7 +100,7 @@ export default function SolicitudesPage() {
 
     async function handleCerrarIncidencia(id: string) {
         setProcessingId(id);
-        const { error } = await supabase.from('incidencias').update({ estado: 'CERRADA' } as any).eq('id', id);
+        const { error } = await (supabase.from('incidencias').update({ estado: 'CERRADA' } as any).eq('id', id) as any);
         if (error) toast.error('Error al cerrar incidencia');
         else {
             toast.success('Incidencia cerrada ✓');
@@ -176,16 +176,16 @@ export default function SolicitudesPage() {
                 };
             });
 
-            await supabase.from('reporte_diario_totales').upsert(totalesInserts as any, { onConflict: 'reporte_id,categoria' });
+            await (supabase.from('reporte_diario_totales').upsert(totalesInserts as any, { onConflict: 'reporte_id,categoria' }) as any);
 
             // 4. Update Solicitud status
-            await supabase
+            await (supabase
                 .from('reporte_diario_solicitudes')
                 .update({
                     estado: 'APROBADO',
                     admin_observacion: (adminComment[sol.id] || 'Aprobado por administración')
                 } as any)
-                .eq('id', sol.id);
+                .eq('id', sol.id) as any);
 
             // 5. Trigger Cruce
             try {
@@ -367,24 +367,42 @@ export default function SolicitudesPage() {
                         </CardContent>
                     </Card>
                 ) : (
-                    <div className="grid gap-4 md:grid-cols-3">
+                    <div className="grid gap-6 md:grid-cols-2">
                         {incidencias.map(inc => (
-                            <Card key={inc.id} className="border-l-4 border-l-amber-500 shadow-sm border border-zinc-100">
-                                <CardContent className="p-4">
-                                    <div className="flex justify-between items-start mb-2">
-                                        <Badge className="bg-amber-100 text-amber-800 border-none text-[10px]">{inc.tipo}</Badge>
-                                        <span className="text-[10px] text-zinc-400 font-bold">{format(new Date(inc.fecha + 'T12:00:00'), 'dd/MM')}</span>
+                            <Card key={inc.id} className="border-l-8 border-l-amber-500 shadow-md border border-zinc-200 bg-white">
+                                <CardContent className="p-6 space-y-4">
+                                    <div className="flex justify-between items-start">
+                                        <div className="space-y-1">
+                                            <Badge className="bg-amber-100 text-amber-900 border-amber-200 px-3 py-1 font-black text-xs uppercase tracking-tight">
+                                                {inc.tipo}
+                                            </Badge>
+                                            <h4 className="font-black text-xl text-zinc-900 uppercase tracking-tighter">
+                                                {inc.comedores?.nombre}
+                                            </h4>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className="text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em]">Reportado el</p>
+                                            <p className="text-xs font-bold text-zinc-600">
+                                                {format(new Date(inc.created_at), "dd/MM/yyyy 'a las' p", { locale: es })}
+                                            </p>
+                                        </div>
                                     </div>
-                                    <h4 className="font-black text-zinc-800 text-sm mb-1 uppercase">{inc.comedores?.nombre}</h4>
-                                    <p className="text-xs text-zinc-600 line-clamp-3 mb-4 italic">"{inc.descripcion}"</p>
+
+                                    <div className="bg-zinc-50 p-4 rounded-xl border border-zinc-100">
+                                        <p className="text-[10px] font-black text-zinc-400 uppercase mb-2 tracking-widest">Detalles de la Incidencia:</p>
+                                        <p className="text-base text-zinc-800 font-medium leading-relaxed italic">
+                                            "{inc.descripcion}"
+                                        </p>
+                                    </div>
+
                                     <Button
-                                        size="sm"
+                                        size="lg"
                                         variant="outline"
-                                        className="w-full h-8 text-[10px] font-black border-amber-200 text-amber-700 hover:bg-amber-50"
+                                        className="w-full h-12 text-sm font-black border-amber-300 text-amber-800 hover:bg-amber-50 shadow-sm active:scale-95 transition-transform"
                                         onClick={() => handleCerrarIncidencia(inc.id)}
                                         disabled={processingId === inc.id}
                                     >
-                                        MARCAR COMO RESUELTA
+                                        {processingId === inc.id ? 'PROCESANDO...' : 'MARCAR COMO SOLUCIONADA ✓'}
                                     </Button>
                                 </CardContent>
                             </Card>
