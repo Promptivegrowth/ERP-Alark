@@ -15,6 +15,7 @@ import { calcularCruceSemanal } from '@/lib/calculations/cruce-semanal';
 import { Save, Coffee, ChevronDown, ChevronUp, AlertCircle, Calendar as CalendarIcon, Send } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
+import { Switch } from '@/components/ui/switch';
 import { subDays, isAfter, isBefore, startOfDay } from 'date-fns';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
