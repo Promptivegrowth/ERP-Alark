@@ -1,4 +1,4 @@
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
 import { format, addDays } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { SupabaseClient } from '@supabase/supabase-js';
@@ -48,68 +48,137 @@ export async function exportResumenExcel(
     const valores = valRes.data || [];
     const totales = totRes.data || [];
 
-    // --- PIVOT DATA ---
-    const headers = [comedorNombre, ...dateRange.map(d => format(new Date(d + 'T12:00:00'), 'dd-MMM', { locale: es }))];
-    const rows: any[] = [];
+    // --- CREATE WORKBOOK ---
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Resumen');
 
-    // Fields rows (Calculated from definitions)
+    // Header Row
+    const headerRowValues = [comedorNombre, ...dateRange.map(d => format(new Date(d + 'T12:00:00'), 'dd-MMM', { locale: es }))];
+    const headerRow = worksheet.addRow(headerRowValues);
+
+    // Style Header
+    headerRow.eachCell((cell) => {
+        cell.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FF1B4332' } // Alark Green
+        };
+        cell.font = {
+            color: { argb: 'FFFFFFFF' },
+            bold: true,
+            name: 'Arial',
+            size: 11
+        };
+        cell.alignment = { vertical: 'middle', horizontal: 'center' };
+        cell.border = {
+            top: { style: 'thin' },
+            left: { style: 'thin' },
+            bottom: { style: 'thin' },
+            right: { style: 'thin' }
+        };
+    });
+
+    // Fields rows
     fields.forEach(field => {
-        const rowData: any = { [comedorNombre]: field.nombre_campo };
+        const rowData = [field.nombre_campo];
         dateRange.forEach(date => {
             const report = reportes?.find(r => r.fecha === date);
             if (report) {
                 const val = valores.find(v => v.reporte_id === report.id && v.campo_id === field.id);
-                rowData[format(new Date(date + 'T12:00:00'), 'dd-MMM', { locale: es })] = val ? val.cantidad : 0;
+                rowData.push(val ? val.cantidad : 0);
             } else {
-                rowData[format(new Date(date + 'T12:00:00'), 'dd-MMM', { locale: es })] = '';
+                rowData.push('');
             }
         });
-        rows.push(rowData);
+        const r = worksheet.addRow(rowData);
+        r.getCell(1).font = { bold: true };
+        r.eachCell((cell, colNumber) => {
+            cell.border = {
+                top: { style: 'thin' },
+                left: { style: 'thin' },
+                bottom: { style: 'thin' },
+                right: { style: 'thin' }
+            };
+            if (colNumber > 1) cell.alignment = { horizontal: 'center' };
+        });
     });
 
     // Spacer
-    rows.push({});
+    worksheet.addRow([]);
 
     // Coffe Break Row
-    const coffeRow: any = { [comedorNombre]: 'COFFE BREAKS / OTROS' };
+    const coffeRowValues = ['COFFE BREAKS / OTROS'];
     dateRange.forEach(date => {
         const report = reportes?.find(r => r.fecha === date);
-        coffeRow[format(new Date(date + 'T12:00:00'), 'dd-MMM', { locale: es })] = report?.tiene_coffe_break ? 'SI' : 'NO';
+        coffeRowValues.push(report?.tiene_coffe_break ? 'SI' : 'NO');
     });
-    rows.push(coffeRow);
+    const cfRow = worksheet.addRow(coffeRowValues);
+    cfRow.eachCell((cell, colNumber) => {
+        cell.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FFE0E7FF' } // Indigo-50
+        };
+        cell.font = { bold: true, color: { argb: 'FF312E81' } };
+        cell.border = {
+            top: { style: 'thin' },
+            left: { style: 'thin' },
+            bottom: { style: 'thin' },
+            right: { style: 'thin' }
+        };
+        if (colNumber > 1) cell.alignment = { horizontal: 'center' };
+    });
 
     // Spacer
-    rows.push({});
+    worksheet.addRow([]);
 
-    // Category Totals (Pivot)
+    // Category Totals
     const categories = Array.from(new Set(fields.map(f => f.categoria)));
     categories.forEach(cat => {
-        const rowData: any = { [comedorNombre]: `TOTAL ${cat}` };
+        const rowData = [`TOTAL ${cat}`];
         dateRange.forEach(date => {
             const report = reportes?.find(r => r.fecha === date);
             if (report) {
                 const tot = totales.find(t => t.reporte_id === report.id && t.categoria === cat);
-                rowData[format(new Date(date + 'T12:00:00'), 'dd-MMM', { locale: es })] = tot ? tot.total_cantidad : 0;
+                rowData.push(tot ? tot.total_cantidad : 0);
             } else {
-                rowData[format(new Date(date + 'T12:00:00'), 'dd-MMM', { locale: es })] = '';
+                rowData.push('');
             }
         });
-        rows.push(rowData);
+        const totalRow = worksheet.addRow(rowData);
+        totalRow.eachCell((cell, colNumber) => {
+            cell.fill = {
+                type: 'pattern',
+                pattern: 'solid',
+                fgColor: { argb: 'FFD1FAE5' } // Emerald-100
+            };
+            cell.font = { bold: true, color: { argb: 'FF065F46' } };
+            cell.border = {
+                top: { style: 'thin' },
+                left: { style: 'thin' },
+                bottom: { style: 'thin' },
+                right: { style: 'thin' }
+            };
+            if (colNumber > 1) cell.alignment = { horizontal: 'center' };
+        });
     });
 
-    // --- CREATE XLSX ---
-    const worksheet = XLSX.utils.json_to_sheet(rows, { header: headers });
+    // Final Styling (Columns)
+    worksheet.getColumn(1).width = 32;
+    for (let i = 2; i <= numDays + 1; i++) {
+        worksheet.getColumn(i).width = 12;
+    }
 
-    // Set widths
-    const wscols = [{ wch: 30 }, ...dateRange.map(() => ({ wch: 12 }))];
-    worksheet['!cols'] = wscols;
-
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Resumen');
-
-    // Export
+    // Export using Buffer and Blob (Client Side safe)
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const url = window.URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
     const fileName = `Resumen_${comedorNombre}_${format(startDate, 'dd-MM-yyyy')}_${numDays}dias.xlsx`;
-    XLSX.writeFile(workbook, fileName);
+    anchor.download = fileName;
+    anchor.click();
+    window.URL.revokeObjectURL(url);
 
     return fileName;
 }
