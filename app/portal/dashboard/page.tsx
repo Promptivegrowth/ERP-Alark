@@ -36,15 +36,14 @@ export default function PortalDashboard() {
             const today = new Date().toISOString().split('T')[0];
 
             // 1. Check liquidation today (new module)
-            const { data: liqData } = await supabase
-                .from('reporte_diario')
-                .select('subtotal')
-                .eq('comedor_id', comedorId as any)
-                .eq('fecha', today);
+            const [liqRes, solRes] = await Promise.all([
+                supabase.from('reporte_diario').select('subtotal').eq('comedor_id', comedorId as any).eq('fecha', today),
+                supabase.from('reporte_diario_solicitudes').select('id').eq('comedor_id', comedorId as any).eq('fecha_reporte', today).eq('estado', 'PENDIENTE').maybeSingle()
+            ]);
 
-            if (liqData && liqData.length > 0) {
+            if ((liqRes.data && liqRes.data.length > 0) || solRes.data) {
                 setHasLiquidationToday(true);
-                const total = (liqData as any[]).reduce((acc, curr) => acc + Number(curr.subtotal || 0), 0);
+                const total = (liqRes.data || []).reduce((acc, curr) => acc + Number(curr.subtotal || 0), 0);
                 setSalesToday(total);
             }
 

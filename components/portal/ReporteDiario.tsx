@@ -209,8 +209,8 @@ export default function ReporteDiario() {
 
         // Validation for Emergency Mode
         if (isEmergencyMode) {
-            if (!reporte.observaciones || reporte.observaciones.trim().length < 10) {
-                toast.error('❌ Para reportes de emergencia, debes ingresar un motivo detallado en Observaciones (mínimo 10 caracteres).');
+            if (!reporte.observaciones || reporte.observaciones.trim().length < 8) {
+                toast.error('❌ Para reportes de emergencia, debes ingresar un motivo detallado en Observaciones (mínimo 8 caracteres).');
                 return;
             }
         }
@@ -537,26 +537,39 @@ export default function ReporteDiario() {
                         </span>
                         <Badge className="bg-rose-600 px-3 py-1 text-white font-black">MODO EMERGENCIA</Badge>
                     </CardHeader>
-                    <CardContent className="p-4 flex flex-col sm:flex-row items-center gap-6">
-                        <Popover>
-                            <PopoverTrigger asChild>
-                                <Button type="button" variant="outline" className="w-full sm:w-[280px] justify-start text-left font-black border-rose-300">
-                                    <CalendarIcon className="mr-2 h-4 w-4" />
-                                    {reporte.fecha ? format(new Date(reporte.fecha + 'T12:00:00'), 'PPP', { locale: es }) : <span>Seleccionar fecha</span>}
-                                </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0">
-                                <Calendar
-                                    mode="single"
-                                    selected={new Date(reporte.fecha + 'T12:00:00')}
-                                    onSelect={(date) => date && setReporte(prev => ({ ...prev, fecha: format(date, 'yyyy-MM-dd') }))}
-                                    disabled={(date) => isAfter(date, today) || isBefore(date, minDate)}
-                                    initialFocus
-                                />
-                            </PopoverContent>
-                        </Popover>
-                        <div className="flex-1 text-xs text-rose-700 font-bold leading-relaxed">
-                            ⚠️ Recuerda: Este reporte no se activará de inmediato. El administrador debe validarlo antes de que aparezca en el historial oficial.
+                    <CardContent className="p-4 space-y-4">
+                        <div className="flex flex-col sm:flex-row items-center gap-6">
+                            <Popover>
+                                <PopoverTrigger asChild>
+                                    <Button type="button" variant="outline" className="w-full sm:w-[280px] justify-start text-left font-black border-rose-300">
+                                        <CalendarIcon className="mr-2 h-4 w-4" />
+                                        {reporte.fecha ? format(new Date(reporte.fecha + 'T12:00:00'), 'PPP', { locale: es }) : <span>Seleccionar fecha</span>}
+                                    </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0">
+                                    <Calendar
+                                        mode="single"
+                                        selected={new Date(reporte.fecha + 'T12:00:00')}
+                                        onSelect={(date) => date && setReporte(prev => ({ ...prev, fecha: format(date, 'yyyy-MM-dd') }))}
+                                        disabled={(date) => isAfter(date, today) || isBefore(date, minDate)}
+                                        initialFocus
+                                    />
+                                </PopoverContent>
+                            </Popover>
+                            <div className="flex-1 text-xs text-rose-700 font-bold leading-relaxed">
+                                ⚠️ Recuerda: Este reporte no se activará de inmediato. El administrador debe validarlo antes de que aparezca en el historial oficial.
+                            </div>
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="text-sm font-bold text-rose-800 uppercase">Motivo / Observación del Cambio (Obligatorio min 8 carac.)</label>
+                            <Textarea
+                                placeholder="Explica detalladamente por qué necesitas actualizar este día pasado..."
+                                value={reporte.observaciones}
+                                onChange={e => setReporte(prev => ({ ...prev, observaciones: e.target.value }))}
+                                className="min-h-[100px] border-rose-300 focus:ring-rose-400 bg-white"
+                                required
+                            />
                         </div>
                     </CardContent>
                 </Card>

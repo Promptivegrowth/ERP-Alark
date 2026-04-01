@@ -36,6 +36,7 @@ export function IncidenceModal() {
                 comedor_id: String(comedorId),
                 tipo: data.tipo,
                 descripcion: data.descripcion,
+                fecha: new Date().toISOString().split('T')[0],
                 estado: 'ABIERTA'
             } as any);
 
