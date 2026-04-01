@@ -471,7 +471,7 @@ export default function ComedorDetallePage() {
             </Tabs>
 
             <Dialog open={openDetalle} onOpenChange={setOpenDetalle}>
-                <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                <DialogContent className="max-w-7xl max-h-[90vh] overflow-y-auto">
                     <DialogHeader className="border-b pb-4">
                         <DialogTitle className="text-2xl font-bold text-[#1B4332] flex items-center gap-3">
                             <Info size={24} /> Resumen Detallado
@@ -516,38 +516,38 @@ export default function ComedorDetallePage() {
 
                                     return (
                                         <Card key={cat} className="overflow-hidden border-zinc-200">
-                                            <CardHeader className="bg-emerald-50/50 py-2 border-b flex flex-row items-center justify-between">
-                                                <CardTitle className="text-xs font-bold tracking-wider text-[#1B4332] uppercase">{cat}</CardTitle>
+                                            <CardHeader className="bg-emerald-50/50 py-3 border-b flex flex-row items-center justify-between">
+                                                <CardTitle className="text-xl font-black tracking-wider text-[#1B4332] uppercase">{cat}</CardTitle>
                                                 {catTotal && (
-                                                    <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">
+                                                    <span className="text-sm font-bold text-emerald-700 bg-emerald-100 px-3 py-1 rounded-full border border-emerald-200">
                                                         {catTotal.total_cantidad} pax
                                                     </span>
                                                 )}
                                             </CardHeader>
                                             <CardContent className="p-0">
                                                 <table className="w-full text-sm">
-                                                    <thead className="bg-zinc-50 text-zinc-400 text-[10px] border-b">
+                                                    <thead className="bg-zinc-50 text-zinc-500 text-xs border-b">
                                                         <tr>
-                                                            <th className="text-left px-4 py-2 font-medium">Concepto</th>
-                                                            <th className="text-center px-4 py-2 font-medium">Cant.</th>
-                                                            <th className="text-right px-4 py-2 font-medium">Subtotal</th>
+                                                            <th className="text-left px-4 py-2.5 font-bold">Concepto</th>
+                                                            <th className="text-center px-4 py-2.5 font-bold">Cant.</th>
+                                                            <th className="text-right px-4 py-2.5 font-bold">Subtotal</th>
                                                         </tr>
                                                     </thead>
                                                     <tbody className="divide-y divide-zinc-100">
                                                         {items.map((item, i) => (
                                                             <tr key={i} className="hover:bg-zinc-50">
-                                                                <td className="px-4 py-2.5 font-semibold text-zinc-900">{item.comedor_campos_reporte?.nombre_campo}</td>
-                                                                <td className="px-4 py-2.5 text-center text-zinc-950 font-bold text-lg">{item.cantidad}</td>
-                                                                <td className="px-4 py-2.5 text-right text-zinc-900 font-bold text-lg">S/. {Number(item.monto || 0).toFixed(2)}</td>
+                                                                <td className="px-4 py-2.5 font-semibold text-zinc-900 border-r border-zinc-50">{item.comedor_campos_reporte?.nombre_campo}</td>
+                                                                <td className="px-4 py-2.5 text-center text-emerald-950 font-black text-2xl bg-emerald-50/30">{item.cantidad}</td>
+                                                                <td className="px-4 py-2.5 text-right text-zinc-900 font-bold text-2xl">S/. {Number(item.monto || 0).toFixed(2)}</td>
                                                             </tr>
                                                         ))}
                                                     </tbody>
                                                     {catTotal && (
                                                         <tfoot className="bg-emerald-50/30 border-t-2 border-emerald-100">
                                                             <tr>
-                                                                <td className="px-4 py-3 font-black text-sm text-emerald-900">TOTAL {cat}</td>
-                                                                <td className="px-4 py-3 text-center font-black text-xl text-emerald-800">{catTotal.total_cantidad}</td>
-                                                                <td className="px-4 py-3 text-right font-black text-xl text-[#1B4332]">S/. {Number(catTotal.total_monto || 0).toFixed(2)}</td>
+                                                                <td className="px-4 py-4 font-black text-base text-emerald-900 uppercase">TOTAL {cat}</td>
+                                                                <td className="px-4 py-4 text-center font-black text-3xl text-emerald-900 bg-emerald-100/50">{catTotal.total_cantidad}</td>
+                                                                <td className="px-4 py-4 text-right font-black text-3xl text-[#1B4332]">S/. {Number(catTotal.total_monto || 0).toFixed(2)}</td>
                                                             </tr>
                                                         </tfoot>
                                                     )}
