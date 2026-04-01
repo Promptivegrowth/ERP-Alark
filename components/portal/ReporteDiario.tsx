@@ -78,7 +78,8 @@ export default function ReporteDiario() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [dataLoaded, setDataLoaded] = useState(false);
     const [isEmergencyMode, setIsEmergencyMode] = useState(false);
-
+    const [hasPendingRequest, setHasPendingRequest] = useState(false);
+    const [activeTab, setActiveTab] = useState('diario');
     const today = startOfDay(new Date());
     const minDate = subDays(today, 7);
 
@@ -106,42 +107,56 @@ export default function ReporteDiario() {
     useEffect(() => {
         if (!comedorId || !reporte.fecha || !dataLoaded) return;
         async function loadExisting() {
-            const { data: rd } = await supabase
-                .from('reporte_diario')
-                .select('*, reporte_diario_valores(*)')
-                .eq('comedor_id', comedorId as any)
-                .eq('fecha', reporte.fecha)
-                .maybeSingle();
+            try {
+                const { data: rd } = await supabase
+                    .from('reporte_diario')
+                    .select('*, reporte_diario_valores(*)')
+                    .eq('comedor_id', comedorId as any)
+                    .eq('fecha', reporte.fecha)
+                    .maybeSingle();
 
-            if (rd) {
-                const valores: Record<string, FieldValue> = {};
-                ((rd as any).reporte_diario_valores || []).forEach((v: any) => {
-                    valores[v.campo_id] = { campo_id: v.campo_id, cantidad: v.cantidad, monto: v.monto };
-                });
-                setReporte(prev => ({
-                    ...prev,
-                    id: (rd as any).id,
-                    tiene_coffe_break: (rd as any).tiene_coffe_break,
-                    descripcion_coffe: (rd as any).descripcion_coffe || '',
-                    monto_coffe: (rd as any).monto_coffe || 0,
-                    observaciones: (rd as any).observaciones || '',
-                    valores,
-                }));
-            } else {
-                setReporte(prev => ({
-                    ...prev,
-                    id: undefined,
-                    tiene_coffe_break: false,
-                    descripcion_coffe: '',
-                    monto_coffe: 0,
-                    observaciones: '',
-                    valores: {},
-                }));
+                if (rd) {
+                    const valores: Record<string, FieldValue> = {};
+                    ((rd as any).reporte_diario_valores || []).forEach((v: any) => {
+                        valores[v.campo_id] = { campo_id: v.campo_id, cantidad: v.cantidad, monto: v.monto };
+                    });
+                    setReporte(prev => ({
+                        ...prev,
+                        id: (rd as any).id,
+                        tiene_coffe_break: (rd as any).tiene_coffe_break,
+                        descripcion_coffe: (rd as any).descripcion_coffe || '',
+                        monto_coffe: (rd as any).monto_coffe || 0,
+                        observaciones: (rd as any).observaciones || '',
+                        valores
+                    }));
+                } else {
+                    setReporte(prev => ({
+                        ...prev,
+                        id: undefined,
+                        tiene_coffe_break: false,
+                        descripcion_coffe: '',
+                        monto_coffe: 0,
+                        observaciones: '',
+                        valores: {}
+                    }));
+                }
+
+                // Check for pending requests for this date
+                const { data: pending } = await supabase
+                    .from('reporte_diario_solicitudes')
+                    .select('id')
+                    .eq('comedor_id', comedorId as any)
+                    .eq('fecha_reporte', reporte.fecha)
+                    .eq('estado', 'PENDIENTE')
+                    .maybeSingle();
+
+                setHasPendingRequest(!!pending);
+            } catch (err) {
+                console.error('Error loading existing report:', err);
             }
         }
         loadExisting();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [comedorId, reporte.fecha, dataLoaded]);
+    }, [comedorId, reporte.fecha, dataLoaded, supabase]);
 
     // Handle value change
     const handleCantidad = useCallback((campoId: string, val: number) => {
@@ -561,6 +576,13 @@ export default function ReporteDiario() {
                             </div>
                         </div>
 
+                        {hasPendingRequest && (
+                            <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg flex items-center gap-3 animate-pulse">
+                                <div className="h-2 w-2 rounded-full bg-amber-500" />
+                                <span className="text-xs font-black text-amber-800 uppercase tracking-tight">Solicitud de actualización en curso</span>
+                            </div>
+                        )}
+
                         <div className="space-y-2">
                             <label className="text-sm font-bold text-rose-800 uppercase">Motivo / Observación del Cambio (Obligatorio min 8 carac.)</label>
                             <Textarea
@@ -575,7 +597,128 @@ export default function ReporteDiario() {
                 </Card>
             )}
 
-            {/* Existing Cards for categories... (Line 160 approx) */}
+            {categorias.map(cat => {
+                const config = CATEGORIA_CONFIG[cat] || CATEGORIA_CONFIG.OTRO;
+                return (
+                    <Card key={cat} className={`border-l-4 ${config.border} shadow-md overflow-hidden bg-white/50 backdrop-blur-sm`}>
+                        <CardHeader className={`${config.bg} py-3 px-4 flex flex-row items-center justify-between`}>
+                            <CardTitle className={`text-base font-black uppercase tracking-tight ${config.color}`}>
+                                {config.label}
+                            </CardTitle>
+                            <div className="flex items-center gap-3">
+                                <div className="text-right">
+                                    <p className="text-[10px] font-bold text-zinc-400 uppercase leading-none">Subtotal Pax</p>
+                                    <p className={`text-sm font-black ${config.color}`}>{subtotalCat(cat)}</p>
+                                </div>
+                                <div className="text-right border-l border-zinc-200 pl-3">
+                                    <p className="text-[10px] font-bold text-zinc-400 uppercase leading-none">Monto</p>
+                                    <p className={`text-sm font-black ${config.color}`}>S/ {subtotalMontoCat(cat).toFixed(2)}</p>
+                                </div>
+                            </div>
+                        </CardHeader>
+                        <CardContent className="p-0">
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-sm">
+                                    <thead className="bg-zinc-50/50 border-b border-zinc-100">
+                                        <tr className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">
+                                            <th className="px-4 py-2 text-left">Concepto / Servicio</th>
+                                            <th className="px-4 py-2 text-right w-24">Cantidad</th>
+                                            <th className="px-4 py-2 text-right w-32">Monto S/</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-zinc-100">
+                                        {campos.filter(c => c.categoria === cat).map(campo => (
+                                            <tr key={campo.id} className="hover:bg-zinc-50/30 transition-colors">
+                                                <td className="px-4 py-3">
+                                                    <p className="font-bold text-zinc-700 leading-tight uppercase text-xs">{campo.nombre_campo}</p>
+                                                    {campo.es_readonly && <span className="text-[9px] font-black text-rose-500 uppercase">Calculado Automático</span>}
+                                                </td>
+                                                <td className="px-4 py-3 text-right">
+                                                    <Input
+                                                        type="number"
+                                                        className={`w-20 ml-auto h-8 text-right font-black border-zinc-200 focus:ring-1 ${campo.es_readonly ? 'bg-zinc-100 opacity-70' : 'bg-white'}`}
+                                                        value={campo.es_readonly ? getReadonlyCantidad(campo) : (reporte.valores[campo.id]?.cantidad || 0)}
+                                                        onChange={e => handleCantidad(campo.id, parseFloat(e.target.value) || 0)}
+                                                        readOnly={campo.es_readonly}
+                                                    />
+                                                </td>
+                                                <td className="px-4 py-3 text-right">
+                                                    <Input
+                                                        type="number"
+                                                        step="0.01"
+                                                        className="w-28 ml-auto h-8 text-right font-black border-zinc-200 focus:ring-1 bg-white"
+                                                        value={reporte.valores[campo.id]?.monto || 0}
+                                                        onChange={e => handleMonto(campo.id, parseFloat(e.target.value) || 0)}
+                                                    />
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </CardContent>
+                    </Card>
+                );
+            })}
+
+            {/* Coffe Break / Eventos */}
+            <Card className="border-l-4 border-l-amber-400 shadow-md bg-white/50 backdrop-blur-sm">
+                <CardHeader className="bg-amber-50 py-3 px-4 flex flex-row items-center justify-between">
+                    <CardTitle className="text-base font-black uppercase tracking-tight text-amber-800">
+                        ☕ Coffe Break / Eventos Especiales
+                    </CardTitle>
+                    <div className="flex items-center gap-2">
+                        <label className="text-xs font-bold text-zinc-500 uppercase">¿Hubo Coffe?</label>
+                        <Switch
+                            checked={reporte.tiene_coffe_break}
+                            onCheckedChange={val => setReporte(prev => ({ ...prev, tiene_coffe_break: val }))}
+                        />
+                    </div>
+                </CardHeader>
+                {reporte.tiene_coffe_break && (
+                    <CardContent className="p-4 space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                        <div className="grid md:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Descripción del Evento</label>
+                                <Input
+                                    placeholder="Ej: Coffe Break Capacitación Ransa..."
+                                    value={reporte.descripcion_coffe}
+                                    onChange={e => setReporte(prev => ({ ...prev, descripcion_coffe: e.target.value }))}
+                                    className="font-bold border-zinc-200"
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Monto S/</label>
+                                <Input
+                                    type="number"
+                                    step="0.01"
+                                    placeholder="0.00"
+                                    value={reporte.monto_coffe}
+                                    onChange={e => setReporte(prev => ({ ...prev, monto_coffe: parseFloat(e.target.value) || 0 }))}
+                                    className="font-black border-zinc-200 text-amber-700"
+                                />
+                            </div>
+                        </div>
+                    </CardContent>
+                )}
+            </Card>
+
+            {/* Observaciones Generales */}
+            <Card className="border-l-4 border-l-zinc-400 shadow-md bg-white/50 backdrop-blur-sm">
+                <CardHeader className="bg-zinc-50 py-3 px-4">
+                    <CardTitle className="text-base font-black uppercase tracking-tight text-zinc-800">
+                        💬 Observaciones Generales
+                    </CardTitle>
+                </CardHeader>
+                <CardContent className="p-4">
+                    <Textarea
+                        placeholder="Cualquier aclaración adicional para este reporte..."
+                        value={reporte.observaciones}
+                        onChange={e => setReporte(prev => ({ ...prev, observaciones: e.target.value }))}
+                        className="font-medium border-zinc-200 min-h-[80px]"
+                    />
+                </CardContent>
+            </Card>
 
             {/* Sticky Save Bar */}
             <div className="fixed bottom-0 left-0 lg:left-64 right-0 z-40 bg-white/90 backdrop-blur-md border-t-2 border-[#1B4332] px-4 sm:px-6 py-4 shadow-[0_-10px_40px_rgba(0,0,0,0.1)] pb-safe-offset-4">

@@ -84,10 +84,10 @@ export function IncidenceModal() {
                                 {...register('tipo')}
                                 required
                             >
-                                <option value="EQUIPAMIENTO">Equipamiento / Máquinas</option>
+                                <option value="EQUIPOS">Equipamiento / Máquinas</option>
                                 <option value="PERSONAL">Falta de Personal</option>
                                 <option value="INSUMOS">Falta de Insumos / Calidad</option>
-                                <option value="SISTEMA">Falla en el Sistema/Internet</option>
+                                <option value="CLIENTE">Atención al Cliente</option>
                                 <option value="OTRO">Otros / Especiales</option>
                             </select>
                         </div>

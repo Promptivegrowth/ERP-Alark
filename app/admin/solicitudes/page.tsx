@@ -36,9 +36,21 @@ interface Solicitud {
     comedores: { nombre: string };
 }
 
+interface Incidencia {
+    id: string;
+    comedor_id: string;
+    fecha: string;
+    tipo: string;
+    descripcion: string;
+    estado: string;
+    created_at: string;
+    comedores: { nombre: string };
+}
+
 export default function SolicitudesPage() {
     const supabase = createClient();
     const [solicitudes, setSolicitudes] = useState<Solicitud[]>([]);
+    const [incidencias, setIncidencias] = useState<Incidencia[]>([]);
     const [loading, setLoading] = useState(true);
     const [processingId, setProcessingId] = useState<string | null>(null);
     const [adminComment, setAdminComment] = useState<Record<string, string>>({});
@@ -49,17 +61,29 @@ export default function SolicitudesPage() {
 
     async function loadSolicitudes() {
         setLoading(true);
-        const { data, error } = await supabase
-            .from('reporte_diario_solicitudes')
-            .select('*, comedores(nombre)')
-            .order('created_at', { ascending: false });
+        const [solRes, incRes] = await Promise.all([
+            supabase.from('reporte_diario_solicitudes').select('*, comedores(nombre)').order('created_at', { ascending: false }),
+            supabase.from('incidencias').select('*, comedores(nombre)').eq('estado', 'ABIERTA').order('created_at', { ascending: false })
+        ]);
 
-        if (error) {
-            toast.error('Error al cargar solicitudes');
-        } else {
-            setSolicitudes(data as any[]);
-        }
+        if (solRes.error) toast.error('Error al cargar solicitudes');
+        else setSolicitudes(solRes.data as any[]);
+
+        if (incRes.error) toast.error('Error al cargar incidencias');
+        else setIncidencias(incRes.data as any[]);
+
         setLoading(false);
+    }
+
+    async function handleCerrarIncidencia(id: string) {
+        setProcessingId(id);
+        const { error } = await supabase.from('incidencias').update({ estado: 'CERRADA' } as any).eq('id', id);
+        if (error) toast.error('Error al cerrar incidencia');
+        else {
+            toast.success('Incidencia cerrada ✓');
+            loadSolicitudes();
+        }
+        setProcessingId(null);
     }
 
     async function handleAprobar(sol: Solicitud) {
@@ -267,6 +291,45 @@ export default function SolicitudesPage() {
                                             </div>
                                         </div>
                                     </div>
+                                </CardContent>
+                            </Card>
+                        ))}
+                    </div>
+                )}
+            </section>
+
+            <section className="space-y-4">
+                <h2 className="text-xl font-black text-amber-600 flex items-center gap-2 uppercase tracking-tight">
+                    <AlertTriangle size={20} />
+                    Incidencias Reportadas ({incidencias.length})
+                </h2>
+
+                {incidencias.length === 0 ? (
+                    <Card className="bg-amber-50/30 border-dashed border-2 border-amber-100">
+                        <CardContent className="py-8 text-center text-amber-400 font-bold italic">
+                            No hay incidencias abiertas.
+                        </CardContent>
+                    </Card>
+                ) : (
+                    <div className="grid gap-4 md:grid-cols-3">
+                        {incidencias.map(inc => (
+                            <Card key={inc.id} className="border-l-4 border-l-amber-500 shadow-sm border border-zinc-100">
+                                <CardContent className="p-4">
+                                    <div className="flex justify-between items-start mb-2">
+                                        <Badge className="bg-amber-100 text-amber-800 border-none text-[10px]">{inc.tipo}</Badge>
+                                        <span className="text-[10px] text-zinc-400 font-bold">{format(new Date(inc.fecha + 'T12:00:00'), 'dd/MM')}</span>
+                                    </div>
+                                    <h4 className="font-black text-zinc-800 text-sm mb-1 uppercase">{inc.comedores?.nombre}</h4>
+                                    <p className="text-xs text-zinc-600 line-clamp-3 mb-4 italic">"{inc.descripcion}"</p>
+                                    <Button
+                                        size="sm"
+                                        variant="outline"
+                                        className="w-full h-8 text-[10px] font-black border-amber-200 text-amber-700 hover:bg-amber-50"
+                                        onClick={() => handleCerrarIncidencia(inc.id)}
+                                        disabled={processingId === inc.id}
+                                    >
+                                        MARCAR COMO RESUELTA
+                                    </Button>
                                 </CardContent>
                             </Card>
                         ))}
