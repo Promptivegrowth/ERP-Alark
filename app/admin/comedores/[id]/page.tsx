@@ -86,7 +86,7 @@ export default function ComedorDetallePage() {
             const [valRes, totRes] = await Promise.all([
                 supabase
                     .from('reporte_diario_valores')
-                    .select('cantidad, monto, comedor_campos_reporte(nombre_campo, categoria)')
+                    .select('cantidad, monto, precio_unitario, comedor_campos_reporte(nombre_campo, categoria)')
                     .eq('reporte_id', reporte.id),
                 supabase
                     .from('reporte_diario_totales')
@@ -530,15 +530,17 @@ export default function ComedorDetallePage() {
                                                         <tr>
                                                             <th className="text-left px-4 py-2.5 font-bold">Concepto</th>
                                                             <th className="text-center px-4 py-2.5 font-bold">Cant.</th>
+                                                            <th className="text-right px-4 py-2.5 font-bold">Precio</th>
                                                             <th className="text-right px-4 py-2.5 font-bold">Subtotal</th>
                                                         </tr>
                                                     </thead>
                                                     <tbody className="divide-y divide-zinc-100">
                                                         {items.map((item, i) => (
-                                                            <tr key={i} className="hover:bg-zinc-50">
-                                                                <td className="px-4 py-2.5 font-semibold text-zinc-900 border-r border-zinc-50">{item.comedor_campos_reporte?.nombre_campo}</td>
-                                                                <td className="px-4 py-2.5 text-center text-emerald-950 font-black text-2xl bg-emerald-50/30">{item.cantidad}</td>
-                                                                <td className="px-4 py-2.5 text-right text-zinc-900 font-bold text-2xl">S/. {Number(item.monto || 0).toFixed(2)}</td>
+                                                            <tr key={i} className="hover:bg-zinc-50 text-xl font-bold">
+                                                                <td className="px-4 py-2.5 text-zinc-900 border-r border-zinc-100">{item.comedor_campos_reporte?.nombre_campo}</td>
+                                                                <td className="px-4 py-2.5 text-center text-emerald-950 font-black bg-emerald-50/30">{item.cantidad}</td>
+                                                                <td className="px-4 py-2.5 text-right text-zinc-500 font-medium">S/. {(item.precio_unitario || (item.monto / (item.cantidad || 1)) || 0).toFixed(2)}</td>
+                                                                <td className="px-4 py-2.5 text-right text-zinc-900 font-black">S/. {Number(item.monto || 0).toFixed(2)}</td>
                                                             </tr>
                                                         ))}
                                                     </tbody>

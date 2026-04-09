@@ -29,14 +29,14 @@ export default function AdminDashboardPage() {
             if (cCount) setActiveComedores(cCount);
 
             // 2. Liquidaciones sum
-            const { data: liqData } = await supabase.from('liquidacion_diaria').select('cantidad, precio_unit, comedor_id');
+            const { data: liqData } = await (supabase.from('liquidacion_diaria') as any).select('cantidad, precio_unit, comedor_id');
 
             let sumSales = 0;
             let sumRaci = 0;
             const comedorTotals: Record<string, { credito: number, contado: number }> = {};
 
             if (liqData) {
-                liqData.forEach(l => {
+                (liqData as any[]).forEach(l => {
                     const monto = l.cantidad * (l.precio_unit || 0);
                     sumSales += monto;
                     sumRaci += l.cantidad;
@@ -53,9 +53,9 @@ export default function AdminDashboardPage() {
             setTotalRaciones(sumRaci);
 
             // 3. Resolve names for charts
-            const { data: comedores } = await supabase.from('comedores').select('id, nombre');
+            const { data: comedores } = await (supabase.from('comedores') as any).select('id, nombre');
             const nameMap: Record<string, string> = {};
-            if (comedores) comedores.forEach(c => nameMap[c.id] = c.nombre);
+            if (comedores) (comedores as any[]).forEach(c => nameMap[c.id] = c.nombre);
 
             const chartData = Object.keys(comedorTotals).map(k => ({
                 name: nameMap[k] || 'Desconocido',

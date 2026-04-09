@@ -34,16 +34,16 @@ interface FieldValue {
     campo_id: string;
     cantidad: number;
     monto: number;
+    precio: number;
 }
 
-interface ReporteData {
-    id?: string;
+interface ReporteDiarioState {
     fecha: string;
+    observaciones: string;
     tiene_coffe_break: boolean;
     descripcion_coffe: string;
     monto_coffe: number;
-    observaciones: string;
-    valores: Record<string, FieldValue>;
+    valores: Record<string, { campo_id: string; cantidad: number; monto: number; precio: number }>;
 }
 
 // ─── Category styles ──────────────────────────────────────────────────────────
@@ -66,7 +66,7 @@ export default function ReporteDiario() {
 
     const [campos, setCampos] = useState<Campo[]>([]);
     const [comedorNombre, setComedorNombre] = useState('');
-    const [reporte, setReporte] = useState<ReporteData>({
+    const [reporte, setReporte] = useState<ReporteDiarioState>({
         fecha: format(new Date(), 'yyyy-MM-dd'),
         tiene_coffe_break: false,
         descripcion_coffe: '',
@@ -78,7 +78,6 @@ export default function ReporteDiario() {
     const [dataLoaded, setDataLoaded] = useState(false);
     const [isEmergencyMode, setIsEmergencyMode] = useState(false);
     const [pendingRequest, setPendingRequest] = useState<any>(null);
-    const [activeTab, setActiveTab] = useState('diario');
     const [reportingEmergency, setReportingEmergency] = useState(false);
     const today = startOfDay(new Date());
     const minDate = subDays(today, 7);
@@ -108,19 +107,29 @@ export default function ReporteDiario() {
         try {
             const { data: rd } = await supabase
                 .from('reporte_diario')
-                .select('*, reporte_diario_valores(*)')
+                .select(`
+                    *,
+                    reporte_diario_valores(
+                        *,
+                        comedor_campos_reporte(*)
+                    )
+                `)
                 .eq('comedor_id', comedorId as any)
                 .eq('fecha', reporte.fecha)
                 .maybeSingle();
 
             if (rd) {
-                const valores: Record<string, FieldValue> = {};
+                const valores: Record<string, { campo_id: string; cantidad: number; monto: number; precio: number }> = {};
                 ((rd as any).reporte_diario_valores || []).forEach((v: any) => {
-                    valores[v.campo_id] = { campo_id: v.campo_id, cantidad: v.cantidad, monto: v.monto };
+                    valores[v.campo_id] = {
+                        campo_id: v.campo_id,
+                        cantidad: v.cantidad,
+                        monto: v.monto,
+                        precio: v.precio_unitario || (v.monto / (v.cantidad || 1))
+                    };
                 });
                 setReporte(prev => ({
                     ...prev,
-                    id: (rd as any).id,
                     tiene_coffe_break: (rd as any).tiene_coffe_break,
                     descripcion_coffe: (rd as any).descripcion_coffe || '',
                     monto_coffe: (rd as any).monto_coffe || 0,
@@ -130,7 +139,6 @@ export default function ReporteDiario() {
             } else {
                 setReporte(prev => ({
                     ...prev,
-                    id: undefined,
                     tiene_coffe_break: false,
                     descripcion_coffe: '',
                     monto_coffe: 0,
@@ -139,7 +147,6 @@ export default function ReporteDiario() {
                 }));
             }
 
-            // Check for pending requests for any date (to show the status card)
             const { data: pending } = await supabase
                 .from('reporte_diario_solicitudes')
                 .select('*')
@@ -181,25 +188,43 @@ export default function ReporteDiario() {
     }, [comedorId, loadExisting, supabase]);
 
     // Handle value change
-    const handleCantidad = useCallback((campoId: string, val: number) => {
-        setReporte(prev => ({
-            ...prev,
-            valores: {
-                ...prev.valores,
-                [campoId]: { ...prev.valores[campoId], campo_id: campoId, cantidad: val, monto: prev.valores[campoId]?.monto || 0 },
-            },
-        }));
-    }, []);
+    const handleCantidad = (campoId: string, val: number) => {
+        setReporte(prev => {
+            const currentPrecio = prev.valores[campoId]?.precio || 0;
+            return {
+                ...prev,
+                valores: {
+                    ...prev.valores,
+                    [campoId]: {
+                        ...prev.valores[campoId],
+                        campo_id: campoId,
+                        cantidad: val,
+                        precio: currentPrecio,
+                        monto: val * currentPrecio
+                    }
+                }
+            };
+        });
+    };
 
-    const handleMonto = useCallback((campoId: string, val: number) => {
-        setReporte(prev => ({
-            ...prev,
-            valores: {
-                ...prev.valores,
-                [campoId]: { ...prev.valores[campoId], campo_id: campoId, monto: val, cantidad: prev.valores[campoId]?.cantidad || 0 },
-            },
-        }));
-    }, []);
+    const handlePrecio = (campoId: string, val: number) => {
+        setReporte(prev => {
+            const currentCant = prev.valores[campoId]?.cantidad || 0;
+            return {
+                ...prev,
+                valores: {
+                    ...prev.valores,
+                    [campoId]: {
+                        ...prev.valores[campoId],
+                        campo_id: campoId,
+                        precio: val,
+                        cantidad: currentCant,
+                        monto: val * currentCant
+                    }
+                }
+            };
+        });
+    };
 
     // Computed readonly
     function getReadonlyCantidad(campo: Campo): number {
@@ -234,9 +259,11 @@ export default function ReporteDiario() {
     function grandTotal() {
         return {
             cantidad: categorias.reduce((acc, cat) => acc + subtotalCat(cat), 0),
-            monto: categorias.reduce((acc, cat) => acc + subtotalMontoCat(cat), 0) + reporte.monto_coffe,
+            monto: categorias.reduce((acc, cat) => acc + subtotalMontoCat(cat), 0) + (reporte.monto_coffe || 0),
         };
     }
+
+    const totales = grandTotal();
 
     async function handleSubmit() {
         if (!comedorId) return;
@@ -272,7 +299,6 @@ export default function ReporteDiario() {
 
                 if (solErr) throw solErr;
 
-                // Force state update before feedback
                 await loadExisting();
 
                 toast.success('Solicitud de emergencia enviada para revisión del administrador ✓');
@@ -280,17 +306,14 @@ export default function ReporteDiario() {
                 setReportingEmergency(true);
                 setReporte(prev => ({ ...prev, fecha: format(new Date(), 'yyyy-MM-dd') }));
 
-                // Scroll to bottom to see pending request card
                 setTimeout(() => {
                     window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
                 }, 500);
 
-                // Hide success message after 5s
                 setTimeout(() => setReportingEmergency(false), 5000);
                 return;
             }
 
-            let reporteId = reporte.id;
             const headerData = {
                 comedor_id: comedorId,
                 fecha: reporte.fecha,
@@ -302,14 +325,21 @@ export default function ReporteDiario() {
                 updated_at: new Date().toISOString(),
             };
 
+            const { data: existingReport } = await (supabase
+                .from('reporte_diario') as any)
+                .select('id')
+                .eq('comedor_id', comedorId)
+                .eq('fecha', reporte.fecha)
+                .maybeSingle();
+
+            let reporteId = existingReport?.id;
+
             if (reporteId) {
-                const { error } = await (supabase.from('reporte_diario').update(headerData as any) as any).eq('id', reporteId);
-                if (error) throw error;
+                await (supabase.from('reporte_diario') as any).update(headerData).eq('id', reporteId);
             } else {
-                const { data, error } = await (supabase.from('reporte_diario').insert(headerData as any) as any).select('id').single();
+                const { data, error } = await (supabase.from('reporte_diario') as any).insert(headerData).select('id').single();
                 if (error) throw error;
-                reporteId = (data as any).id;
-                setReporte(prev => ({ ...prev, id: reporteId } as any));
+                reporteId = data?.id;
             }
 
             const valoresInserts = campos.map(campo => ({
@@ -317,10 +347,10 @@ export default function ReporteDiario() {
                 campo_id: campo.id,
                 cantidad: campo.es_readonly ? getReadonlyCantidad(campo) : (reporte.valores[campo.id]?.cantidad || 0),
                 monto: reporte.valores[campo.id]?.monto || 0,
+                precio_unitario: reporte.valores[campo.id]?.precio || 0
             }));
 
-            const { error: vErr } = await (supabase.from('reporte_diario_valores').upsert(valoresInserts as any, { onConflict: 'reporte_id,campo_id' }) as any);
-            if (vErr) throw vErr;
+            await (supabase.from('reporte_diario_valores').upsert(valoresInserts as any, { onConflict: 'reporte_id,campo_id' }) as any);
 
             const totalesInserts = categorias.map(cat => ({
                 reporte_id: reporteId,
@@ -356,7 +386,6 @@ export default function ReporteDiario() {
         if (!pendingRequest || !confirm('¿Estás seguro de cancelar esta solicitud de actualización?')) return;
         setIsSubmitting(true);
         try {
-            // We use a Server Action that uses the service_role key to bypass RLS.
             const result = await cancelarSolicitudEmergencia(pendingRequest.id);
 
             if (!result.success) {
@@ -366,7 +395,6 @@ export default function ReporteDiario() {
                 toast.success('Solicitud cancelada ✓');
                 setPendingRequest(null);
 
-                // Refresh local state
                 setTimeout(async () => {
                     await loadExisting();
                 }, 1000);
@@ -400,11 +428,8 @@ export default function ReporteDiario() {
         );
     }
 
-    const totales = grandTotal();
-
     return (
         <div className="space-y-6 pb-40">
-            {/* Header Unified */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                     <p className="text-zinc-500 font-bold uppercase tracking-widest text-[10px] mb-1">Panel de Control</p>
@@ -418,68 +443,61 @@ export default function ReporteDiario() {
                         value={reporte.fecha}
                         onChange={e => setReporte(prev => ({ ...prev, fecha: e.target.value }))}
                     />
-                    {reporte.id && !pendingRequest && <Badge className="bg-emerald-100 text-emerald-800 text-[10px] font-black">GUARDADO</Badge>}
-                    {pendingRequest && <Badge className="bg-amber-100 text-amber-800 text-[10px] font-black animate-pulse">PENDIENTE AUDITORÍA</Badge>}
                 </div>
             </div>
 
-            {/* Main Form Cards */}
             {categorias.map(cat => {
                 const config = CATEGORIA_CONFIG[cat] || CATEGORIA_CONFIG.OTRO;
+                const camposCat = campos.filter(c => c.categoria === cat);
                 return (
                     <Card key={cat} className={`border-l-4 ${config.border} shadow-md overflow-hidden bg-white/50 backdrop-blur-sm`}>
                         <CardHeader className={`${config.bg} py-3 px-4 flex flex-row items-center justify-between`}>
                             <CardTitle className={`text-base font-black uppercase tracking-tight ${config.color}`}>
                                 {config.label}
                             </CardTitle>
-                            <div className="flex items-center gap-3">
-                                <div className="text-right">
-                                    <p className="text-[10px] font-bold text-zinc-400 uppercase leading-none">Subtotal Pax</p>
-                                    <p className={`text-sm font-black ${config.color}`}>{subtotalCat(cat)}</p>
-                                </div>
-                                <div className="text-right border-l border-zinc-200 pl-3">
-                                    <p className="text-[10px] font-bold text-zinc-400 uppercase leading-none">Monto</p>
-                                    <p className={`text-sm font-black ${config.color}`}>S/ {subtotalMontoCat(cat).toFixed(2)}</p>
-                                </div>
-                            </div>
                         </CardHeader>
                         <CardContent className="p-0">
                             <div className="overflow-x-auto">
                                 <table className="w-full text-sm">
-                                    <thead className="bg-zinc-50/50 border-b border-zinc-100">
-                                        <tr className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">
+                                    <thead className="bg-[#1B4332]/5 text-[#1B4332] text-xs">
+                                        <tr>
                                             <th className="px-4 py-2 text-left">Concepto / Servicio</th>
                                             <th className="px-4 py-2 text-right w-24">Cant.</th>
-                                            <th className="px-4 py-2 text-right w-32">Monto S/</th>
+                                            <th className="px-4 py-2 text-right w-24">Precio S/</th>
+                                            <th className="px-4 py-2 text-right w-32 font-bold bg-[#1B4332]/10">Total S/</th>
                                         </tr>
                                     </thead>
-                                    <tbody className="divide-y divide-zinc-100 font-medium">
-                                        {campos.filter(c => c.categoria === cat).map(campo => (
-                                            <tr key={campo.id} className="hover:bg-zinc-50/30 transition-colors">
-                                                <td className="px-4 py-3">
-                                                    <p className="font-bold text-zinc-700 leading-tight uppercase text-xs">{campo.nombre_campo}</p>
-                                                    {campo.es_readonly && <span className="text-[9px] font-black text-rose-500 uppercase">Calculado</span>}
-                                                </td>
-                                                <td className="px-4 py-3 text-right">
-                                                    <Input
-                                                        type="number"
-                                                        className={`w-20 ml-auto h-8 text-right font-black border-zinc-200 ${campo.es_readonly ? 'bg-zinc-100' : 'bg-white'}`}
-                                                        value={campo.es_readonly ? getReadonlyCantidad(campo) : (reporte.valores[campo.id]?.cantidad || 0)}
-                                                        onChange={e => handleCantidad(campo.id, parseFloat(e.target.value) || 0)}
-                                                        readOnly={campo.es_readonly}
-                                                    />
-                                                </td>
-                                                <td className="px-4 py-3 text-right">
-                                                    <Input
-                                                        type="number"
-                                                        step="0.01"
-                                                        className="w-28 ml-auto h-8 text-right font-black border-zinc-200 bg-white"
-                                                        value={reporte.valores[campo.id]?.monto || 0}
-                                                        onChange={e => handleMonto(campo.id, parseFloat(e.target.value) || 0)}
-                                                    />
-                                                </td>
-                                            </tr>
-                                        ))}
+                                    <tbody className="divide-y">
+                                        {camposCat.map((campo) => {
+                                            const val = reporte.valores[campo.id];
+                                            return (
+                                                <tr key={campo.id} className="hover:bg-zinc-50 border-zinc-100">
+                                                    <td className="px-4 py-3 font-medium text-zinc-900 border-r border-zinc-100">{campo.nombre_campo}</td>
+                                                    <td className="px-2 py-2 border-r border-zinc-100">
+                                                        <Input
+                                                            type="number"
+                                                            value={val?.cantidad || ''}
+                                                            onChange={(e) => handleCantidad(campo.id, Number(e.target.value))}
+                                                            className="h-9 text-right font-black text-lg border-emerald-100 focus:ring-emerald-500"
+                                                            placeholder="0"
+                                                        />
+                                                    </td>
+                                                    <td className="px-2 py-2 border-r border-zinc-100">
+                                                        <Input
+                                                            type="number"
+                                                            step="0.01"
+                                                            value={val?.precio || ''}
+                                                            onChange={(e) => handlePrecio(campo.id, Number(e.target.value))}
+                                                            className="h-9 text-right font-medium text-emerald-800 bg-emerald-50/30 border-emerald-100 focus:ring-emerald-500"
+                                                            placeholder="0.00"
+                                                        />
+                                                    </td>
+                                                    <td className="px-4 py-3 text-right font-black text-xl text-[#1B4332] bg-[#1B4332]/5">
+                                                        {(val?.monto || 0).toFixed(2)}
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
                                     </tbody>
                                 </table>
                             </div>

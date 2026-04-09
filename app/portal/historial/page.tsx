@@ -100,7 +100,7 @@ export default function HistorialPage() {
             const [valRes, totRes] = await Promise.all([
                 supabase
                     .from('reporte_diario_valores')
-                    .select('cantidad, monto, comedor_campos_reporte(nombre_campo, categoria)')
+                    .select('cantidad, monto, precio_unitario, comedor_campos_reporte(nombre_campo, categoria)')
                     .eq('reporte_id', reporte.id),
                 supabase
                     .from('reporte_diario_totales')
@@ -378,7 +378,10 @@ export default function HistorialPage() {
                                                         {items.map((item, idx) => (
                                                             <tr key={idx} className="hover:bg-emerald-50/30 transition-colors">
                                                                 <td className="px-4 py-2.5 font-semibold text-zinc-700 text-xs">{item.comedor_campos_reporte?.nombre_campo}</td>
-                                                                <td className="px-4 py-2.5 text-center font-black text-lg bg-zinc-50/50 text-zinc-800 whitespace-nowrap w-24">{item.cantidad}</td>
+                                                                <td className="px-4 py-2.5 text-center font-black text-lg bg-zinc-50/50 text-zinc-800 whitespace-nowrap w-24">
+                                                                    {item.cantidad}
+                                                                    <div className="text-[9px] font-normal text-zinc-400">S/ {(item.precio_unitario || (item.monto / (item.cantidad || 1))).toFixed(2)} c/u</div>
+                                                                </td>
                                                                 <td className="px-4 py-2.5 text-right font-black text-lg text-emerald-700 whitespace-nowrap w-32">S/ {Number(item.monto || 0).toFixed(2)}</td>
                                                             </tr>
                                                         ))}

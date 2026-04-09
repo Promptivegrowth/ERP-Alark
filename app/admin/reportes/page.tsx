@@ -13,21 +13,34 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { FileText, Download, Filter } from 'lucide-react';
+import { FileText, Download, Filter, FileSpreadsheet } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+
+interface ComedorSimple {
+    id: string;
+    nombre: string;
+}
+
+interface ReportAgg {
+    comedor: string;
+    liquidadoTotal: number;
+    consolidadoTotal: number;
+    gap: number;
+    status: string;
+}
 
 export default function ReportesPage() {
     const { loading } = useUser();
     const supabase = createClient();
     const [dataLoaded, setDataLoaded] = useState(false);
-    const [comedores, setComedores] = useState<any[]>([]);
+    const [comedores, setComedores] = useState<ComedorSimple[]>([]);
 
     // Filters
     const [selectedComedor, setSelectedComedor] = useState<string>('all');
     const [month, setMonth] = useState<string>(new Date().getMonth().toString()); // 0-11
 
     // Data
-    const [reportData, setReportData] = useState<any[]>([]);
+    const [reportData, setReportData] = useState<ReportAgg[]>([]);
     const [summary, setSummary] = useState({ liquidado: 0, consolidado: 0, gap: 0 });
 
     useEffect(() => {
@@ -57,25 +70,25 @@ export default function ReportesPage() {
         const { data: repData } = await repQuery;
 
         // Aggregate by Comedor
-        const agg: Record<string, any> = {};
+        const agg: Record<string, Omit<ReportAgg, 'gap' | 'status'>> = {};
 
         if (liqData) {
-            (liqData as any[]).forEach(l => {
-                const cName = (l.comedores as any)?.nombre || 'General';
+            (liqData as { quantity?: number; amount?: number; cantidad?: number; precio_unit?: number; comedores: { nombre: string } | null }[]).forEach(l => {
+                const cName = l.comedores?.nombre || 'General';
                 if (!agg[cName]) agg[cName] = { comedor: cName, liquidadoTotal: 0, consolidadoTotal: 0 };
                 agg[cName].liquidadoTotal += Number(l.cantidad || 0) * (Number(l.precio_unit) || 0);
             });
         }
 
         if (repData) {
-            (repData as any[]).forEach(r => {
-                const cName = (r.comedores as any)?.nombre || 'General';
+            (repData as { valor_empresa?: number; valor_empleado?: number; comedores: { nombre: string } | null }[]).forEach(r => {
+                const cName = r.comedores?.nombre || 'General';
                 if (!agg[cName]) agg[cName] = { comedor: cName, liquidadoTotal: 0, consolidadoTotal: 0 };
                 agg[cName].consolidadoTotal += (Number(r.valor_empresa) || 0) + (Number(r.valor_empleado) || 0);
             });
         }
 
-        const arr = Object.values(agg).map(a => ({
+        const arr: ReportAgg[] = Object.values(agg).map(a => ({
             ...a,
             gap: a.liquidadoTotal - a.consolidadoTotal,
             status: (a.liquidadoTotal - a.consolidadoTotal) > 0 ? 'Faltante en cobro' : 'OK / Conciliado'
@@ -158,6 +171,11 @@ export default function ReportesPage() {
                         <FileText /> Reportes Ejecutivos
                     </h2>
                     <p className="text-zinc-500">Genera reportes PDF consolidados de ventas vs validaciones de clientes.</p>
+                </div>
+                <div className="flex gap-2">
+                    <Button onClick={() => window.location.href = '/admin/reportes/diario-masivo'} className="bg-emerald-600 hover:bg-emerald-700">
+                        <FileSpreadsheet className="mr-2 h-4 w-4" /> Reporte Diario Masivo
+                    </Button>
                 </div>
             </div>
 
