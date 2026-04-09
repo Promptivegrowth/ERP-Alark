@@ -381,6 +381,9 @@ export default function ReporteDiario() {
             }
 
             toast.success('Reporte diario guardado ✓');
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
         } catch (err: any) {
             console.error(err);
             toast.error(`Error al procesar: ${err.message || 'Intenta nuevamente'}`);
