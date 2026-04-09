@@ -41,6 +41,8 @@ export default function ConfiguracionPage() {
     const [isSubmittingCampo, setIsSubmittingCampo] = useState(false);
     const [editingCampoId, setEditingCampoId] = useState<string | null>(null);
     const [editingPrecio, setEditingPrecio] = useState<number>(0);
+    const [editingNombre, setEditingNombre] = useState<string>('');
+    const [editingCategoria, setEditingCategoria] = useState<string>('ALMUERZO');
 
     // Password Reset
     const [resetUser, setResetUser] = useState<any>(null);
@@ -200,16 +202,28 @@ export default function ConfiguracionPage() {
         setIsSubmittingCampo(false);
     }
 
-    async function actualizarPrecio(id: string, precio: number) {
-        const { error } = await (supabase.from('comedor_campos_reporte') as any).update({ precio_unitario: precio }).eq('id', id);
+    async function guardarEdicionCampo(id: string) {
+        if (!editingNombre) {
+            toast.error('Nombre no puede estar vacío');
+            return;
+        }
+
+        const { error } = await (supabase.from('comedor_campos_reporte') as any)
+            .update({
+                nombre_campo: editingNombre.toUpperCase(),
+                categoria: editingCategoria,
+                precio_unitario: editingPrecio
+            })
+            .eq('id', id);
+
         if (error) {
-            console.error('Error updating price:', error);
-            toast.error('Error al actualizar precio');
+            console.error('Error updating field:', error);
+            toast.error('Error al actualizar campo');
         }
         else {
-            toast.success('Precio actualizado');
-            setCamposComedor(prev => prev.map(c => c.id === id ? { ...c, precio_unitario: precio } : c));
+            toast.success('Campo actualizado');
             setEditingCampoId(null);
+            loadCamposComedor(selectedComedorId);
         }
     }
 
@@ -486,38 +500,77 @@ export default function ConfiguracionPage() {
                                                 {camposComedor.map((campo, idx) => (
                                                     <TableRow key={campo.id} className={!campo.activo ? 'opacity-50' : ''}>
                                                         <TableCell className="text-zinc-400 text-xs">{campo.orden}</TableCell>
-                                                        <TableCell className="font-medium">{campo.nombre_campo}</TableCell>
-                                                        <TableCell><Badge variant="outline" className="text-xs">{campo.categoria}</Badge></TableCell>
-                                                        <TableCell className="text-right">
+                                                        <TableCell className="font-medium">
                                                             {editingCampoId === campo.id ? (
-                                                                <div className="flex items-center justify-end gap-1">
-                                                                    <Input
-                                                                        type="number"
-                                                                        step="0.01"
-                                                                        className="w-20 h-7 text-right text-xs"
-                                                                        value={editingPrecio}
-                                                                        onChange={e => setEditingPrecio(parseFloat(e.target.value) || 0)}
-                                                                        autoFocus
-                                                                    />
-                                                                    <Button size="icon" className="h-7 w-7 bg-emerald-600" onClick={() => actualizarPrecio(campo.id, editingPrecio)}>
-                                                                        <Plus size={12} />
-                                                                    </Button>
-                                                                </div>
+                                                                <Input
+                                                                    disabled={campo.es_readonly}
+                                                                    className="h-8 text-xs font-bold uppercase"
+                                                                    value={editingNombre}
+                                                                    onChange={e => setEditingNombre(e.target.value)}
+                                                                />
                                                             ) : (
                                                                 <button
-                                                                    onClick={() => { setEditingCampoId(campo.id); setEditingPrecio(campo.precio_unitario || 0); }}
-                                                                    className="font-bold text-emerald-700 hover:underline"
+                                                                    onClick={() => {
+                                                                        if (campo.es_readonly) return;
+                                                                        setEditingCampoId(campo.id);
+                                                                        setEditingNombre(campo.nombre_campo);
+                                                                        setEditingCategoria(campo.categoria);
+                                                                        setEditingPrecio(campo.precio_unitario || 0);
+                                                                    }}
+                                                                    className="hover:underline text-left cursor-text"
                                                                 >
-                                                                    S/. {(campo.precio_unitario || 0).toFixed(2)}
+                                                                    {campo.nombre_campo}
                                                                 </button>
                                                             )}
                                                         </TableCell>
+                                                        <TableCell>
+                                                            {editingCampoId === campo.id ? (
+                                                                <Select value={editingCategoria} onValueChange={v => setEditingCategoria(v || 'ALMUERZO')}>
+                                                                    <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                                                                    <SelectContent>
+                                                                        {['DESAYUNO', 'ALMUERZO', 'CENA', 'AMANECIDA', 'LONCHE', 'PAN', 'BEBIDA', 'EXTRA', 'OTRO'].map(cat => (
+                                                                            <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                                                                        ))}
+                                                                    </SelectContent>
+                                                                </Select>
+                                                            ) : (
+                                                                <Badge variant="outline" className="text-xs">{campo.categoria}</Badge>
+                                                            )}
+                                                        </TableCell>
+                                                        <TableCell className="text-right">
+                                                            {editingCampoId === campo.id ? (
+                                                                <Input
+                                                                    type="number"
+                                                                    step="0.01"
+                                                                    className="w-24 h-8 text-right text-xs ml-auto"
+                                                                    value={editingPrecio}
+                                                                    onChange={e => setEditingPrecio(parseFloat(e.target.value) || 0)}
+                                                                />
+                                                            ) : (
+                                                                <span className="font-bold text-zinc-600">
+                                                                    S/. {(campo.precio_unitario || 0).toFixed(2)}
+                                                                </span>
+                                                            )}
+                                                        </TableCell>
                                                         <TableCell className="text-center">
-                                                            <button onClick={() => toggleCampoActivo(campo.id, campo.activo)} className="transition-colors">
-                                                                {campo.activo
-                                                                    ? <ToggleRight size={24} className="text-[#2D6A4F]" />
-                                                                    : <ToggleLeft size={24} className="text-zinc-400" />}
-                                                            </button>
+                                                            {editingCampoId === campo.id ? (
+                                                                <div className="flex items-center justify-center gap-1">
+                                                                    <Button size="icon" className="h-8 w-8 bg-emerald-600" onClick={() => guardarEdicionCampo(campo.id)}>
+                                                                        <Plus size={14} />
+                                                                    </Button>
+                                                                    <Button size="icon" variant="outline" className="h-8 w-8 text-zinc-400" onClick={() => setEditingCampoId(null)}>
+                                                                        <Plus size={14} className="rotate-45" />
+                                                                    </Button>
+                                                                </div>
+                                                            ) : (
+                                                                <div className="flex items-center justify-center gap-2">
+                                                                    <button onClick={() => toggleCampoActivo(campo.id, campo.activo)} title={campo.activo ? 'Desactivar' : 'Activar'}>
+                                                                        {campo.activo
+                                                                            ? <ToggleRight size={24} className="text-[#2D6A4F]" />
+                                                                            : <ToggleLeft size={24} className="text-zinc-400" />}
+                                                                    </button>
+                                                                </div>
+                                                            )}
                                                         </TableCell>
                                                         <TableCell className="text-center">
                                                             {campo.es_readonly ? <Badge className="text-xs bg-zinc-100 text-zinc-600">calc.</Badge> : <span className="text-zinc-300 text-xs">—</span>}
