@@ -28,6 +28,7 @@ interface Campo {
     activo: boolean;
     es_readonly: boolean;
     formula: string | null;
+    precio_unitario: number;
 }
 
 interface FieldValue {
@@ -190,7 +191,8 @@ export default function ReporteDiario() {
     // Handle value change
     const handleCantidad = (campoId: string, val: number) => {
         setReporte(prev => {
-            const currentPrecio = prev.valores[campoId]?.precio || 0;
+            const campo = campos.find(c => c.id === campoId);
+            const currentPrecio = prev.valores[campoId]?.precio ?? campo?.precio_unitario ?? 0;
             return {
                 ...prev,
                 valores: {

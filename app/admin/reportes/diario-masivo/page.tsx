@@ -281,7 +281,38 @@ export default function DiarioMasivoPage() {
                     r4.font = { bold: true };
                     r4.fill = totalFill;
                     r4.alignment = { horizontal: 'right' };
+                    r4.fill = totalFill;
+                    r4.alignment = { horizontal: 'right' };
                 });
+
+                // Add Total General row
+                rowIdx++;
+                const tg1 = sheet.getCell(rowIdx, startCol);
+                tg1.value = 'TOTAL GENERAL DEL DÍA';
+                tg1.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+                tg1.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1B4332' } };
+                tg1.border = border;
+
+                const globalMonto = Object.values(totalsMonto).reduce((a, b) => a + (b || 0), 0) + (comData.reporte?.monto_coffe || 0);
+                const globalCant = Object.values(totalsCant).reduce((a, b) => a + (b || 0), 0);
+
+                const tg2 = sheet.getCell(rowIdx, startCol + 1);
+                tg2.value = globalCant;
+                tg2.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+                tg2.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1B4332' } };
+                tg2.border = border;
+                tg2.alignment = { horizontal: 'right' };
+
+                sheet.getCell(rowIdx, startCol + 2).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1B4332' } };
+                sheet.getCell(rowIdx, startCol + 2).border = border;
+
+                const tg4 = sheet.getCell(rowIdx, startCol + 3);
+                tg4.value = globalMonto;
+                tg4.numFmt = '"S/" #,##0.00';
+                tg4.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+                tg4.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1B4332' } };
+                tg4.border = border;
+                tg4.alignment = { horizontal: 'right' };
             } else {
                 sheet.getCell(6, startCol).value = '(Sin Reporte)';
                 sheet.getCell(6, startCol).font = { italic: true, color: { argb: 'FFAAAAAA' } };

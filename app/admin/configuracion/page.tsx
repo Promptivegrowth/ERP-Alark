@@ -37,8 +37,10 @@ export default function ConfiguracionPage() {
     const [selectedComedorId, setSelectedComedorId] = useState('');
     const [camposComedor, setCamposComedor] = useState<any[]>([]);
     const [loadingCampos, setLoadingCampos] = useState(false);
-    const [newCampo, setNewCampo] = useState({ nombre_campo: '', categoria: 'ALMUERZO' as string, orden: 0 });
+    const [newCampo, setNewCampo] = useState({ nombre_campo: '', categoria: 'ALMUERZO' as string, orden: 0, precio_unitario: 0 });
     const [isSubmittingCampo, setIsSubmittingCampo] = useState(false);
+    const [editingCampoId, setEditingCampoId] = useState<string | null>(null);
+    const [editingPrecio, setEditingPrecio] = useState<number>(0);
 
     // Password Reset
     const [resetUser, setResetUser] = useState<any>(null);
@@ -178,11 +180,22 @@ export default function ConfiguracionPage() {
             nombre_campo: newCampo.nombre_campo.toUpperCase(),
             categoria: newCampo.categoria,
             orden: newCampo.orden || (camposComedor.length + 1),
+            precio_unitario: newCampo.precio_unitario || 0,
             activo: true,
         } as any);
         if (error) { toast.error('Error al agregar campo'); }
-        else { toast.success('Campo agregado'); setNewCampo({ nombre_campo: '', categoria: 'ALMUERZO', orden: 0 }); loadCamposComedor(selectedComedorId); }
+        else { toast.success('Campo agregado'); setNewCampo({ nombre_campo: '', categoria: 'ALMUERZO', orden: 0, precio_unitario: 0 }); loadCamposComedor(selectedComedorId); }
         setIsSubmittingCampo(false);
+    }
+
+    async function actualizarPrecio(id: string, precio: number) {
+        const { error } = await (supabase.from('comedor_campos_reporte') as any).update({ precio_unitario: precio }).eq('id', id);
+        if (error) { toast.error('Error al actualizar precio'); }
+        else {
+            toast.success('Precio actualizado');
+            setCamposComedor(prev => prev.map(c => c.id === id ? { ...c, precio_unitario: precio } : c));
+            setEditingCampoId(null);
+        }
     }
 
     if (loading || !dataLoaded) return <div className="p-8 text-center text-zinc-500">Cargando configuración...</div>;
@@ -426,6 +439,10 @@ export default function ConfiguracionPage() {
                                                 </SelectContent>
                                             </Select>
                                         </div>
+                                        <div className="space-y-1 w-24">
+                                            <label className="text-xs font-medium text-zinc-600">Precio S/</label>
+                                            <Input type="number" step="0.01" placeholder="0.00" value={newCampo.precio_unitario || ''} onChange={e => setNewCampo({ ...newCampo, precio_unitario: parseFloat(e.target.value) || 0 })} />
+                                        </div>
                                         <div className="space-y-1 w-20">
                                             <label className="text-xs font-medium text-zinc-600">Orden</label>
                                             <Input type="number" min={0} placeholder="0" value={newCampo.orden || ''} onChange={e => setNewCampo({ ...newCampo, orden: Number(e.target.value) })} />
@@ -445,6 +462,7 @@ export default function ConfiguracionPage() {
                                                     <TableHead className="w-8">#</TableHead>
                                                     <TableHead>Nombre del Campo</TableHead>
                                                     <TableHead>Categoría</TableHead>
+                                                    <TableHead className="text-right">Precio Unit.</TableHead>
                                                     <TableHead className="text-center">Activo</TableHead>
                                                     <TableHead className="text-center">Auto</TableHead>
                                                 </TableRow>
@@ -455,6 +473,30 @@ export default function ConfiguracionPage() {
                                                         <TableCell className="text-zinc-400 text-xs">{campo.orden}</TableCell>
                                                         <TableCell className="font-medium">{campo.nombre_campo}</TableCell>
                                                         <TableCell><Badge variant="outline" className="text-xs">{campo.categoria}</Badge></TableCell>
+                                                        <TableCell className="text-right">
+                                                            {editingCampoId === campo.id ? (
+                                                                <div className="flex items-center justify-end gap-1">
+                                                                    <Input
+                                                                        type="number"
+                                                                        step="0.01"
+                                                                        className="w-20 h-7 text-right text-xs"
+                                                                        value={editingPrecio}
+                                                                        onChange={e => setEditingPrecio(parseFloat(e.target.value) || 0)}
+                                                                        autoFocus
+                                                                    />
+                                                                    <Button size="icon" className="h-7 w-7 bg-emerald-600" onClick={() => actualizarPrecio(campo.id, editingPrecio)}>
+                                                                        <Plus size={12} />
+                                                                    </Button>
+                                                                </div>
+                                                            ) : (
+                                                                <button
+                                                                    onClick={() => { setEditingCampoId(campo.id); setEditingPrecio(campo.precio_unitario || 0); }}
+                                                                    className="font-bold text-emerald-700 hover:underline"
+                                                                >
+                                                                    S/. {(campo.precio_unitario || 0).toFixed(2)}
+                                                                </button>
+                                                            )}
+                                                        </TableCell>
                                                         <TableCell className="text-center">
                                                             <button onClick={() => toggleCampoActivo(campo.id, campo.activo)} className="transition-colors">
                                                                 {campo.activo
