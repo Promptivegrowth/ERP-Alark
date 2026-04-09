@@ -78,10 +78,13 @@ export default function ReporteDiario() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [dataLoaded, setDataLoaded] = useState(false);
     const [isEmergencyMode, setIsEmergencyMode] = useState(false);
+    const [hasExistingReport, setHasExistingReport] = useState(false);
     const [pendingRequest, setPendingRequest] = useState<any>(null);
     const [reportingEmergency, setReportingEmergency] = useState(false);
     const today = startOfDay(new Date());
     const minDate = subDays(today, 7);
+
+    const isLocked = hasExistingReport && !isEmergencyMode;
 
     // Load fields
     useEffect(() => {
@@ -137,6 +140,7 @@ export default function ReporteDiario() {
                     observaciones: (rd as any).observaciones || '',
                     valores
                 }));
+                setHasExistingReport(true);
             } else {
                 setReporte(prev => ({
                     ...prev,
@@ -146,6 +150,7 @@ export default function ReporteDiario() {
                     observaciones: '',
                     valores: {}
                 }));
+                setHasExistingReport(false);
             }
 
             const { data: pending } = await supabase
@@ -480,8 +485,9 @@ export default function ReporteDiario() {
                                                             type="number"
                                                             value={val?.cantidad || ''}
                                                             onChange={(e) => handleCantidad(campo.id, Number(e.target.value))}
-                                                            className="h-9 text-right font-black text-lg border-emerald-100 focus:ring-emerald-500"
+                                                            className={`h-9 text-right font-black text-lg border-emerald-100 focus:ring-emerald-500 ${isLocked ? 'bg-zinc-100 text-zinc-400 border-zinc-200 cursor-not-allowed shadow-inner' : ''}`}
                                                             placeholder="0"
+                                                            disabled={isLocked}
                                                         />
                                                     </td>
                                                     <td className="px-2 py-2 border-r border-zinc-100">
@@ -490,8 +496,9 @@ export default function ReporteDiario() {
                                                             step="0.01"
                                                             value={val?.precio || ''}
                                                             onChange={(e) => handlePrecio(campo.id, Number(e.target.value))}
-                                                            className="h-9 text-right font-medium text-emerald-800 bg-emerald-50/30 border-emerald-100 focus:ring-emerald-500"
+                                                            className={`h-9 text-right font-medium text-emerald-800 border-emerald-100 focus:ring-emerald-500 ${isLocked ? 'bg-zinc-100/50 text-zinc-400 border-zinc-200 cursor-not-allowed shadow-inner' : 'bg-emerald-50/30'}`}
                                                             placeholder="0.00"
+                                                            disabled={isLocked}
                                                         />
                                                     </td>
                                                     <td className="px-4 py-3 text-right font-black text-xl text-[#1B4332] bg-[#1B4332]/5">
@@ -529,6 +536,7 @@ export default function ReporteDiario() {
                         <Switch
                             checked={reporte.tiene_coffe_break}
                             onCheckedChange={val => setReporte(prev => ({ ...prev, tiene_coffe_break: val }))}
+                            disabled={isLocked}
                         />
                     </div>
                 </CardHeader>
@@ -540,7 +548,8 @@ export default function ReporteDiario() {
                                 <Input
                                     value={reporte.descripcion_coffe}
                                     onChange={e => setReporte(prev => ({ ...prev, descripcion_coffe: e.target.value }))}
-                                    className="font-bold border-zinc-200"
+                                    className={`font-bold border-zinc-200 ${isLocked ? 'bg-zinc-100 text-zinc-400 shadow-inner' : ''}`}
+                                    disabled={isLocked}
                                 />
                             </div>
                             <div className="space-y-2">
@@ -550,7 +559,8 @@ export default function ReporteDiario() {
                                     step="0.01"
                                     value={reporte.monto_coffe}
                                     onChange={e => setReporte(prev => ({ ...prev, monto_coffe: parseFloat(e.target.value) || 0 }))}
-                                    className="font-black border-zinc-200 text-amber-700"
+                                    className={`font-black border-zinc-200 text-amber-700 ${isLocked ? 'bg-zinc-100 text-zinc-400 shadow-inner' : ''}`}
+                                    disabled={isLocked}
                                 />
                             </div>
                         </div>
@@ -570,7 +580,8 @@ export default function ReporteDiario() {
                         placeholder="Cualquier aclaración adicional..."
                         value={reporte.observaciones}
                         onChange={e => setReporte(prev => ({ ...prev, observaciones: e.target.value }))}
-                        className="font-medium border-zinc-200 min-h-[80px]"
+                        className={`font-medium border-zinc-200 min-h-[80px] ${isLocked ? 'bg-zinc-100 text-zinc-400 shadow-inner' : ''}`}
+                        disabled={isLocked}
                     />
                 </CardContent>
             </Card>
@@ -728,9 +739,9 @@ export default function ReporteDiario() {
                     </div>
                     <Button
                         onClick={handleSubmit}
-                        disabled={isSubmitting}
+                        disabled={isSubmitting || (hasExistingReport && !isEmergencyMode)}
                         size="lg"
-                        className={`${isEmergencyMode ? 'bg-rose-600 hover:bg-rose-800 animate-pulse' : 'bg-[#2D6A4F] hover:bg-[#1B4332]'} text-white flex gap-3 w-full sm:w-80 font-black h-14 shadow-2xl transition-all transform active:scale-95`}
+                        className={`${isEmergencyMode ? 'bg-rose-600 hover:bg-rose-800 animate-pulse' : (hasExistingReport ? 'bg-zinc-400 cursor-not-allowed' : 'bg-[#2D6A4F] hover:bg-[#1B4332]')} text-white flex gap-3 w-full sm:w-80 font-black h-14 shadow-2xl transition-all transform active:scale-95`}
                     >
                         {isSubmitting ? (
                             <div className="flex items-center gap-3">
@@ -739,6 +750,8 @@ export default function ReporteDiario() {
                             </div>
                         ) : isEmergencyMode ? (
                             <><Send size={20} /><span className="uppercase tracking-wide">Enviar Solicitud</span></>
+                        ) : hasExistingReport ? (
+                            <><CheckCircle2 size={20} /><span className="uppercase tracking-wide">Reporte Enviada ✓</span></>
                         ) : (
                             <><Save size={20} /><span className="uppercase tracking-wide">Guardar Reporte Diario</span></>
                         )}
