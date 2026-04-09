@@ -173,24 +173,53 @@ export default function ConfiguracionPage() {
 
     async function agregarCampo(e: React.FormEvent) {
         e.preventDefault();
-        if (!selectedComedorId || !newCampo.nombre_campo) { toast.error('Completa todos los campos'); return; }
+        if (!selectedComedorId || !newCampo.nombre_campo) {
+            toast.error('Completa todos los campos');
+            return;
+        }
         setIsSubmittingCampo(true);
-        const { error } = await supabase.from('comedor_campos_reporte').insert({
+
+        const payload: any = {
             comedor_id: selectedComedorId,
             nombre_campo: newCampo.nombre_campo.toUpperCase(),
             categoria: newCampo.categoria,
             orden: newCampo.orden || (camposComedor.length + 1),
-            precio_unitario: newCampo.precio_unitario || 0,
             activo: true,
-        } as any);
-        if (error) { toast.error('Error al agregar campo'); }
-        else { toast.success('Campo agregado'); setNewCampo({ nombre_campo: '', categoria: 'ALMUERZO', orden: 0, precio_unitario: 0 }); loadCamposComedor(selectedComedorId); }
+        };
+
+        // Incluir precio solo si no es 0 para minimizar errores si la db no ha migrado
+        if (newCampo.precio_unitario !== 0) {
+            payload.precio_unitario = newCampo.precio_unitario;
+        }
+
+        const { error } = await supabase.from('comedor_campos_reporte').insert(payload);
+
+        if (error) {
+            console.error('Error insert:', error);
+            if (error.message.includes('precio_unitario')) {
+                toast.error('Error: La DB no tiene la columna de Precio. Por favor ejecuta el comando SQL.');
+            } else {
+                toast.error('Error al agregar campo');
+            }
+        }
+        else {
+            toast.success('Campo agregado');
+            setNewCampo({ nombre_campo: '', categoria: 'ALMUERZO', orden: 0, precio_unitario: 0 });
+            loadCamposComedor(selectedComedorId);
+        }
         setIsSubmittingCampo(false);
     }
 
     async function actualizarPrecio(id: string, precio: number) {
         const { error } = await (supabase.from('comedor_campos_reporte') as any).update({ precio_unitario: precio }).eq('id', id);
-        if (error) { toast.error('Error al actualizar precio'); }
+        if (error) {
+            console.error('Error updating price:', error);
+            if (error.message.includes('precio_unitario')) {
+                toast.error('Falta la columna Precio en la DB. Por favor ejecuta el SQL.');
+            } else {
+                toast.error('Error al actualizar precio');
+            }
+        }
         else {
             toast.success('Precio actualizado');
             setCamposComedor(prev => prev.map(c => c.id === id ? { ...c, precio_unitario: precio } : c));
