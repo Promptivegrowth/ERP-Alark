@@ -370,7 +370,11 @@ export default function HistorialPage() {
                     ) : (
                         <div className="space-y-8 py-4">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                {['DESAYUNO', 'ALMUERZO', 'CENA', 'AMANECIDA', 'LONCHE', 'PAN', 'BEBIDA', 'EXTRA'].map(cat => {
+                                {(() => {
+                                    const definedOrder = ['DESAYUNO', 'ALMUERZO', 'CENA', 'AMANECIDA', 'LONCHE', 'PAN', 'BEBIDA', 'EXTRA', 'OTRO'];
+                                    const actualCats = Array.from(new Set(reporteDetalles.map(d => d.comedor_campos_reporte?.categoria))).filter(Boolean) as string[];
+                                    return definedOrder.filter(cat => actualCats.includes(cat)).concat(actualCats.filter(cat => !definedOrder.includes(cat)));
+                                })().map(cat => {
                                     const items = reporteDetalles.filter(d => d.comedor_campos_reporte?.categoria === cat);
                                     if (items.length === 0) return null;
                                     const catTotal = selectedReporte?.totales?.find((t: any) => t.categoria === cat);
@@ -439,8 +443,21 @@ export default function HistorialPage() {
                             )}
 
                             <div className="bg-emerald-900 text-white p-6 rounded-2xl flex items-center justify-between shadow-xl shadow-emerald-900/20">
-                                <span className="text-lg font-black uppercase tracking-tighter">Liquidación Total del Día</span>
-                                <span className="text-4xl font-black">S/ {Number(selectedReporte?.subtotal || 0).toFixed(2)}</span>
+                                <div className="flex flex-col">
+                                    <span className="text-[10px] font-black uppercase tracking-widest opacity-60 mb-1">Resumen Consolidado</span>
+                                    <span className="text-lg font-black uppercase tracking-tighter">Liquidación Total del Día</span>
+                                </div>
+                                <div className="flex flex-col md:flex-row items-center gap-4 md:gap-8">
+                                    <div className="flex flex-col items-end">
+                                        <span className="text-[10px] font-black opacity-60 uppercase">Total Pax</span>
+                                        <span className="text-3xl font-black">{reporteDetalles.reduce((acc, curr) => acc + (curr.cantidad || 0), 0)}</span>
+                                    </div>
+                                    <div className="hidden md:block h-10 w-px bg-white/20" />
+                                    <div className="flex flex-col items-end">
+                                        <span className="text-[10px] font-black opacity-60 uppercase">Monto Final</span>
+                                        <span className="text-4xl font-black">S/ {Number(selectedReporte?.subtotal || 0).toFixed(2)}</span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     )}

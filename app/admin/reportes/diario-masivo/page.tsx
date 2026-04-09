@@ -398,33 +398,71 @@ export default function DiarioMasivoPage() {
             ) : reporteData ? (
                 <div className="space-y-8">
                     {/* Consolidated Summary Bar */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    {/* Consolidated Summary Bar */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                         {(() => {
-                            const cats = ['DESAYUNO', 'ALMUERZO', 'CENA', 'TOTAL'];
-                            const totals: Record<string, number> = { DESAYUNO: 0, ALMUERZO: 0, CENA: 0, TOTAL: 0 };
+                            // Detect all active categories in the result set
+                            const activeCats = Array.from(new Set(
+                                Object.values(reporteData.data)
+                                    .flatMap((row: any) => row.valores.map((v: any) => v.comedor_campos_reporte?.categoria))
+                            )).filter(Boolean) as string[];
+
+                            // Sort categories for consistent display
+                            const definedOrder = ['DESAYUNO', 'ALMUERZO', 'CENA', 'AMANECIDA', 'LONCHE', 'PAN', 'BEBIDA', 'EXTRA', 'OTRO'];
+                            const displayCats = definedOrder.filter(c => activeCats.includes(c))
+                                .concat(activeCats.filter(c => !definedOrder.includes(c)));
+
+                            const totals: Record<string, number> = { TOTAL_CASH: 0, TOTAL_PAX: 0 };
+                            displayCats.forEach(c => totals[c] = 0);
 
                             Object.values(reporteData.data).forEach((comRow: any) => {
                                 comRow.valores.forEach((v: any) => {
                                     const c = v.comedor_campos_reporte?.categoria;
-                                    if (totals.hasOwnProperty(c)) totals[c] += (v.cantidad || 0);
+                                    const q = v.cantidad || 0;
+                                    if (c && totals.hasOwnProperty(c)) totals[c] += q;
+                                    totals.TOTAL_PAX += q;
                                 });
-                                totals.TOTAL += Number(comRow.reporte?.subtotal || 0);
+                                totals.TOTAL_CASH += Number(comRow.reporte?.subtotal || 0);
                             });
 
-                            return cats.map(c => (
-                                <Card key={c} className="border-none shadow-md overflow-hidden bg-white/80 backdrop-blur-sm">
-                                    <div className={`h-1 w-full ${c === 'TOTAL' ? 'bg-[#1B4332]' : 'bg-emerald-500'}`} />
-                                    <CardContent className="p-4 pt-5">
-                                        <p className="text-[10px] font-black uppercase text-zinc-400 tracking-widest">{c === 'TOTAL' ? 'Monto Total Día' : `Total ${c}s`}</p>
-                                        <div className="flex items-end justify-between mt-1">
-                                            <h3 className="text-2xl font-black text-[#1B4332]">
-                                                {c === 'TOTAL' ? `S/ ${totals[c].toFixed(2)}` : totals[c]}
-                                            </h3>
-                                            {c !== 'TOTAL' && <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded">Pax</span>}
-                                        </div>
-                                    </CardContent>
-                                </Card>
-                            ));
+                            return (
+                                <>
+                                    {/* Global Total Pax Card First */}
+                                    <Card className="border-none shadow-md overflow-hidden bg-emerald-900 text-white">
+                                        <CardContent className="p-4 pt-5">
+                                            <p className="text-[10px] font-black uppercase text-emerald-200 tracking-widest">TOTAL PAX GLOBAL</p>
+                                            <div className="flex items-end justify-between mt-1">
+                                                <h3 className="text-3xl font-black">{totals.TOTAL_PAX}</h3>
+                                                <span className="text-xs font-bold text-emerald-300 opacity-60">Servicios</span>
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+
+                                    {/* Each Category Total */}
+                                    {displayCats.map(c => (
+                                        <Card key={c} className="border-none shadow-sm overflow-hidden bg-white/80 backdrop-blur-sm group hover:shadow-md transition-all">
+                                            <div className="h-1 w-full bg-emerald-500" />
+                                            <CardContent className="p-3 pt-4">
+                                                <p className="text-[9px] font-black uppercase text-zinc-400 tracking-tight truncate">{c}S TOTALES</p>
+                                                <div className="flex items-end justify-between mt-0.5">
+                                                    <h3 className="text-xl font-black text-[#1B4332]">{totals[c]}</h3>
+                                                    <span className="text-[10px] font-bold text-zinc-300 group-hover:text-emerald-500 transition-colors uppercase">Pax</span>
+                                                </div>
+                                            </CardContent>
+                                        </Card>
+                                    ))}
+
+                                    {/* Global Cash Total Last */}
+                                    <Card className="border-none shadow-md overflow-hidden bg-[#122c21] text-white">
+                                        <CardContent className="p-4 pt-5">
+                                            <p className="text-[10px] font-black uppercase text-emerald-200 tracking-widest">MONTO TOTAL DÍA</p>
+                                            <div className="flex items-end justify-between mt-1">
+                                                <h3 className="text-2xl font-black">S/ {totals.TOTAL_CASH.toFixed(2)}</h3>
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+                                </>
+                            );
                         })()}
                     </div>
 
@@ -456,11 +494,11 @@ export default function DiarioMasivoPage() {
                                     <CardContent className="p-4">
                                         {hasData ? (
                                             <div className="space-y-3">
-                                                <div className="grid grid-cols-2 gap-2">
-                                                    {Object.entries(catTotals).slice(0, 4).map(([cat, val]) => (
-                                                        <div key={cat} className="bg-emerald-50/50 p-2 rounded-lg border border-emerald-100/50">
-                                                            <p className="text-[8px] font-black text-emerald-800 uppercase tracking-tighter truncate">{cat}</p>
-                                                            <p className="text-sm font-black text-[#1B4332]">{val}</p>
+                                                <div className="grid grid-cols-2 gap-2 max-h-[160px] overflow-y-auto pr-1 custom-scrollbar">
+                                                    {Object.entries(catTotals).map(([cat, val]) => (
+                                                        <div key={cat} className="bg-emerald-50/50 p-2 rounded-lg border border-emerald-100/50 flex flex-col justify-center">
+                                                            <p className="text-[7px] font-black text-emerald-800 uppercase tracking-tighter truncate leading-tight">{cat}</p>
+                                                            <p className="text-xs font-black text-[#1B4332]">{val}</p>
                                                         </div>
                                                     ))}
                                                 </div>

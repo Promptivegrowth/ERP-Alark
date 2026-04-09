@@ -517,7 +517,11 @@ export default function ComedorDetallePage() {
 
                             {/* Detailed Table grouped by category */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                {['DESAYUNO', 'ALMUERZO', 'CENA', 'AMANECIDA', 'LONCHE', 'PAN', 'BEBIDA', 'EXTRA'].map(cat => {
+                                {(() => {
+                                    const definedOrder = ['DESAYUNO', 'ALMUERZO', 'CENA', 'AMANECIDA', 'LONCHE', 'PAN', 'BEBIDA', 'EXTRA', 'OTRO'];
+                                    const actualCats = Array.from(new Set(reporteDetalles.map(d => d.comedor_campos_reporte?.categoria))).filter(Boolean) as string[];
+                                    return definedOrder.filter(cat => actualCats.includes(cat)).concat(actualCats.filter(cat => !definedOrder.includes(cat)));
+                                })().map(cat => {
                                     const items = reporteDetalles.filter(d => d.comedor_campos_reporte?.categoria === cat);
                                     if (items.length === 0) return null;
 
@@ -575,9 +579,22 @@ export default function ComedorDetallePage() {
 
                             <Separator />
 
-                            <div className="flex justify-between items-center p-4 bg-[#1B4332] text-white rounded-xl">
-                                <span className="font-medium">TOTAL GENERAL DEL DÍA</span>
-                                <span className="text-2xl font-bold">S/. {Number(selectedReporte?.subtotal || 0).toFixed(2)}</span>
+                            <div className="bg-[#1B4332] text-white p-6 rounded-2xl flex items-center justify-between shadow-xl shadow-emerald-900/20">
+                                <div className="flex flex-col">
+                                    <span className="text-xs font-black uppercase tracking-widest opacity-80 mb-1">Resumen General</span>
+                                    <span className="text-xl font-black uppercase tracking-tighter">Total Liquidación del Día</span>
+                                </div>
+                                <div className="flex flex-col md:flex-row items-center gap-4 md:gap-8">
+                                    <div className="flex flex-col items-end">
+                                        <span className="text-[10px] font-black opacity-60 uppercase">Total Pax</span>
+                                        <span className="text-3xl font-black">{reporteDetalles.reduce((acc, curr) => acc + (curr.cantidad || 0), 0)}</span>
+                                    </div>
+                                    <div className="hidden md:block h-10 w-px bg-white/20" />
+                                    <div className="flex flex-col items-end">
+                                        <span className="text-[10px] font-black opacity-60 uppercase">Monto Final</span>
+                                        <span className="text-4xl font-black">S/ {Number(selectedReporte?.subtotal || 0).toFixed(2)}</span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     )}
