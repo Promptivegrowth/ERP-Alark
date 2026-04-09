@@ -95,7 +95,16 @@ export default function ComedorDetallePage() {
             ]);
 
             if (valRes.error) throw valRes.error;
-            setReporteDetalles(valRes.data || []);
+
+            // Format data to ensure comedor_campos_reporte is an object
+            const formattedValores = (valRes.data || []).map((v: any) => ({
+                ...v,
+                comedor_campos_reporte: Array.isArray(v.comedor_campos_reporte)
+                    ? v.comedor_campos_reporte[0]
+                    : v.comedor_campos_reporte
+            }));
+
+            setReporteDetalles(formattedValores);
 
             // We can attach totals to the selectedReporte or keep local
             setSelectedReporte({ ...reporte, totales: totRes.data || [] });
@@ -498,10 +507,10 @@ export default function ComedorDetallePage() {
                                 <div className="bg-indigo-50 border border-indigo-100 p-4 rounded-lg flex justify-between items-center">
                                     <div>
                                         <p className="font-bold text-indigo-900">Servicio Coffee Break</p>
-                                        <p className="text-xs text-indigo-700">{selectedReporte.coffe_break_descripcion}</p>
+                                        <p className="text-xs text-indigo-700">{selectedReporte.descripcion_coffe}</p>
                                     </div>
                                     <div className="text-lg font-bold text-indigo-900">
-                                        S/. {Number(selectedReporte.coffe_break_monto || 0).toFixed(2)}
+                                        S/. {Number(selectedReporte.monto_coffe || 0).toFixed(2)}
                                     </div>
                                 </div>
                             )}

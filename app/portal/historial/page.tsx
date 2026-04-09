@@ -109,7 +109,16 @@ export default function HistorialPage() {
             ]);
 
             if (valRes.error) throw valRes.error;
-            setReporteDetalles(valRes.data || []);
+
+            // Ensure comedor_campos_reporte is an object
+            const formattedValores = (valRes.data || []).map((v: any) => ({
+                ...v,
+                comedor_campos_reporte: Array.isArray(v.comedor_campos_reporte)
+                    ? v.comedor_campos_reporte[0]
+                    : v.comedor_campos_reporte
+            }));
+
+            setReporteDetalles(formattedValores);
             setSelectedReporte({ ...reporte, totales: totRes.data || [] });
         } catch (err) {
             console.error(err);

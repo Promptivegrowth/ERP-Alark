@@ -254,13 +254,23 @@ export default function DiarioMasivoPage() {
 
         // Export
         const buffer = await workbook.xlsx.writeBuffer();
-        const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        const fileName = `Reporte_Masivo_${fecha}.xlsx`;
+        const blob = new Blob([new Uint8Array(buffer)], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
         const url = window.URL.createObjectURL(blob);
         const anchor = document.createElement('a');
+
+        anchor.style.display = 'none';
         anchor.href = url;
-        anchor.download = `Reporte_Masivo_${fecha}.xlsx`;
+        anchor.download = fileName;
+
+        document.body.appendChild(anchor);
         anchor.click();
-        window.URL.revokeObjectURL(url);
+
+        setTimeout(() => {
+            document.body.removeChild(anchor);
+            window.URL.revokeObjectURL(url);
+        }, 100);
+
         toast.success('Excel exportado correctamente');
     }
 

@@ -174,14 +174,22 @@ export async function exportResumenExcel(
 
     // Export using Buffer and Blob (Client Side safe)
     const buffer = await workbook.xlsx.writeBuffer();
-    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const fileName = `Resumen_${comedorNombre}_${format(startDate, 'dd-MM-yyyy')}_${numDays}dias.xlsx`;
+    const blob = new Blob([new Uint8Array(buffer)], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
     const url = window.URL.createObjectURL(blob);
     const anchor = document.createElement('a');
+
+    anchor.style.display = 'none';
     anchor.href = url;
-    const fileName = `Resumen_${comedorNombre}_${format(startDate, 'dd-MM-yyyy')}_${numDays}dias.xlsx`;
     anchor.download = fileName;
+
+    document.body.appendChild(anchor);
     anchor.click();
-    window.URL.revokeObjectURL(url);
+
+    setTimeout(() => {
+        document.body.removeChild(anchor);
+        window.URL.revokeObjectURL(url);
+    }, 100);
 
     return fileName;
 }
