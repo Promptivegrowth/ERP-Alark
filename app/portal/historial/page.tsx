@@ -386,15 +386,19 @@ export default function HistorialPage() {
                                                             </tr>
                                                         ))}
                                                     </tbody>
-                                                    {catTotal && (
-                                                        <tfoot className="bg-emerald-50/50 border-t-2 border-emerald-100 uppercase">
-                                                            <tr className="text-emerald-900 font-black">
-                                                                <td className="px-4 py-2 text-[10px] tracking-widest">Subtotal {cat}</td>
-                                                                <td className="px-4 py-2 text-center text-xl whitespace-nowrap">{catTotal.total_cantidad}</td>
-                                                                <td className="px-4 py-2 text-right text-xl whitespace-nowrap">S/ {Number(catTotal.total_monto || 0).toFixed(2)}</td>
-                                                            </tr>
-                                                        </tfoot>
-                                                    )}
+                                                    {(() => {
+                                                        const totalCant = items.reduce((acc, curr) => acc + (curr.cantidad || 0), 0);
+                                                        const totalMonto = items.reduce((acc, curr) => acc + (Number(curr.monto) || 0), 0);
+                                                        return (
+                                                            <tfoot className="bg-emerald-50/50 border-t-2 border-emerald-100 uppercase">
+                                                                <tr className="text-emerald-900 font-black">
+                                                                    <td className="px-4 py-2 text-[10px] tracking-widest">Subtotal {cat}</td>
+                                                                    <td className="px-4 py-2 text-center text-xl whitespace-nowrap">{totalCant}</td>
+                                                                    <td className="px-4 py-2 text-right text-xl whitespace-nowrap">S/ {totalMonto.toFixed(2)}</td>
+                                                                </tr>
+                                                            </tfoot>
+                                                        );
+                                                    })()}
                                                 </table>
                                             </CardContent>
                                         </Card>

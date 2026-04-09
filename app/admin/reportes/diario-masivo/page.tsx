@@ -36,6 +36,7 @@ interface ReporteDiario {
     fecha: string;
     tiene_coffe_break: boolean;
     monto_coffe: number;
+    subtotal?: number;
     reporte_diario_valores?: ValorReporte[];
 }
 
@@ -302,48 +303,90 @@ export default function DiarioMasivoPage() {
                     <p className="text-emerald-600/60 text-sm">Esto puede tardar unos segundos dado el volumen de datos.</p>
                 </div>
             ) : reporteData ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                    {reporteData.comedores.map(c => {
-                        const hasData = !!reporteData.data[c.id];
-                        return (
-                            <Card key={c.id} className={`overflow-hidden transition-all hover:shadow-lg border-2 ${hasData ? 'border-emerald-100' : 'border-zinc-100 opacity-60'}`}>
-                                <CardHeader className={`py-3 ${hasData ? 'bg-emerald-50' : 'bg-zinc-50'}`}>
-                                    <CardTitle className="text-sm font-black flex items-center justify-between">
-                                        {c.nombre}
-                                        {hasData ? (
-                                            <span className="text-[10px] bg-emerald-600 text-white px-2 py-0.5 rounded-full uppercase">Reportado</span>
-                                        ) : (
-                                            <span className="text-[10px] bg-zinc-300 text-zinc-600 px-2 py-0.5 rounded-full uppercase">Pendiente</span>
-                                        )}
-                                    </CardTitle>
-                                </CardHeader>
-                                <CardContent className="p-4">
-                                    {hasData ? (
-                                        <div className="space-y-2">
-                                            <div className="flex justify-between text-xs font-bold border-b pb-1 text-zinc-400 uppercase tracking-tighter">
-                                                <span>Servicio</span>
-                                                <span>Cant.</span>
-                                            </div>
-                                            {reporteData.data[c.id].valores.slice(0, 5).map((v: any) => (
-                                                <div key={v.id} className="flex justify-between text-xs py-0.5 border-b border-zinc-50 last:border-0">
-                                                    <span className="truncate pr-4">{v.comedor_campos_reporte?.nombre_campo}</span>
-                                                    <span className="font-black text-emerald-700">{v.cantidad}</span>
-                                                </div>
-                                            ))}
-                                            {reporteData.data[c.id].valores.length > 5 && (
-                                                <p className="text-[10px] text-center text-zinc-400 font-medium italic">+{reporteData.data[c.id].valores.length - 5} conceptos más...</p>
+                <div className="space-y-8">
+                    {/* Consolidated Summary Bar */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        {(() => {
+                            const cats = ['DESAYUNO', 'ALMUERZO', 'CENA', 'TOTAL'];
+                            const totals: Record<string, number> = { DESAYUNO: 0, ALMUERZO: 0, CENA: 0, TOTAL: 0 };
+
+                            Object.values(reporteData.data).forEach((comRow: any) => {
+                                comRow.valores.forEach((v: any) => {
+                                    const c = v.comedor_campos_reporte?.categoria;
+                                    if (totals.hasOwnProperty(c)) totals[c] += (v.cantidad || 0);
+                                });
+                                totals.TOTAL += Number(comRow.reporte?.subtotal || 0);
+                            });
+
+                            return cats.map(c => (
+                                <Card key={c} className="border-none shadow-md overflow-hidden bg-white/80 backdrop-blur-sm">
+                                    <div className={`h-1 w-full ${c === 'TOTAL' ? 'bg-[#1B4332]' : 'bg-emerald-500'}`} />
+                                    <CardContent className="p-4 pt-5">
+                                        <p className="text-[10px] font-black uppercase text-zinc-400 tracking-widest">{c === 'TOTAL' ? 'Monto Total Día' : `Total ${c}s`}</p>
+                                        <div className="flex items-end justify-between mt-1">
+                                            <h3 className="text-2xl font-black text-[#1B4332]">
+                                                {c === 'TOTAL' ? `S/ ${totals[c].toFixed(2)}` : totals[c]}
+                                            </h3>
+                                            {c !== 'TOTAL' && <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded">Pax</span>}
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            ));
+                        })()}
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                        {reporteData.comedores.map(c => {
+                            const comRow = reporteData.data[c.id];
+                            const hasData = !!comRow;
+
+                            const catTotals: Record<string, number> = {};
+                            if (hasData) {
+                                comRow.valores.forEach((v: any) => {
+                                    const cat = v.comedor_campos_reporte?.categoria || 'OTROS';
+                                    catTotals[cat] = (catTotals[cat] || 0) + (v.cantidad || 0);
+                                });
+                            }
+
+                            return (
+                                <Card key={c.id} className={`overflow-hidden transition-all hover:shadow-lg border-2 ${hasData ? 'border-emerald-100' : 'border-zinc-100 opacity-60'}`}>
+                                    <CardHeader className={`py-3 ${hasData ? 'bg-emerald-50' : 'bg-zinc-50'}`}>
+                                        <CardTitle className="text-sm font-black flex items-center justify-between">
+                                            <span className="truncate pr-2">{c.nombre}</span>
+                                            {hasData ? (
+                                                <span className="text-[10px] bg-emerald-600 text-white px-2 py-0.5 rounded-full uppercase shrink-0">Reportado</span>
+                                            ) : (
+                                                <span className="text-[10px] bg-zinc-300 text-zinc-600 px-2 py-0.5 rounded-full uppercase shrink-0">Pendiente</span>
                                             )}
-                                        </div>
-                                    ) : (
-                                        <div className="flex flex-col items-center justify-center py-6 text-zinc-300">
-                                            <FileSpreadsheet className="w-8 h-8 mb-2 opacity-20" />
-                                            <p className="text-[10px] font-bold uppercase tracking-widest">Sin datos para hoy</p>
-                                        </div>
-                                    )}
-                                </CardContent>
-                            </Card>
-                        );
-                    })}
+                                        </CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="p-4">
+                                        {hasData ? (
+                                            <div className="space-y-3">
+                                                <div className="grid grid-cols-2 gap-2">
+                                                    {Object.entries(catTotals).slice(0, 4).map(([cat, val]) => (
+                                                        <div key={cat} className="bg-emerald-50/50 p-2 rounded-lg border border-emerald-100/50">
+                                                            <p className="text-[8px] font-black text-emerald-800 uppercase tracking-tighter truncate">{cat}</p>
+                                                            <p className="text-sm font-black text-[#1B4332]">{val}</p>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                                <div className="pt-2 border-t border-dashed flex justify-between items-center">
+                                                    <span className="text-[10px] font-bold text-zinc-400 uppercase">Subtotal</span>
+                                                    <span className="text-sm font-black text-emerald-900">S/ {Number(comRow.reporte?.subtotal || 0).toFixed(2)}</span>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div className="flex flex-col items-center justify-center py-6 text-zinc-300">
+                                                <FileSpreadsheet className="w-8 h-8 mb-2 opacity-20" />
+                                                <p className="text-[10px] font-bold uppercase tracking-widest">Sin datos</p>
+                                            </div>
+                                        )}
+                                    </CardContent>
+                                </Card>
+                            );
+                        })}
+                    </div>
                 </div>
             ) : null}
         </div>

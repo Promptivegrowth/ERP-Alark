@@ -544,15 +544,19 @@ export default function ComedorDetallePage() {
                                                             </tr>
                                                         ))}
                                                     </tbody>
-                                                    {catTotal && (
-                                                        <tfoot className="bg-emerald-50/30 border-t-2 border-emerald-100">
-                                                            <tr>
-                                                                <td className="px-4 py-4 font-black text-base text-emerald-900 uppercase">TOTAL {cat}</td>
-                                                                <td className="px-4 py-4 text-center font-black text-3xl text-emerald-900 bg-emerald-100/50">{catTotal.total_cantidad}</td>
-                                                                <td className="px-4 py-4 text-right font-black text-3xl text-[#1B4332]">S/. {Number(catTotal.total_monto || 0).toFixed(2)}</td>
-                                                            </tr>
-                                                        </tfoot>
-                                                    )}
+                                                    {(() => {
+                                                        const totalCant = items.reduce((acc, curr) => acc + (curr.cantidad || 0), 0);
+                                                        const totalMonto = items.reduce((acc, curr) => acc + (Number(curr.monto) || 0), 0);
+                                                        return (
+                                                            <tfoot className="bg-emerald-50/30 border-t-2 border-emerald-100">
+                                                                <tr>
+                                                                    <td className="px-4 py-4 font-black text-base text-emerald-900 uppercase">TOTAL {cat}</td>
+                                                                    <td className="px-4 py-4 text-center font-black text-3xl text-emerald-900 bg-emerald-100/50">{totalCant}</td>
+                                                                    <td className="px-4 py-4 text-right font-black text-3xl text-[#1B4332]">S/. {totalMonto.toFixed(2)}</td>
+                                                                </tr>
+                                                            </tfoot>
+                                                        );
+                                                    })()}
                                                 </table>
                                             </CardContent>
                                         </Card>

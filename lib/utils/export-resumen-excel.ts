@@ -139,8 +139,11 @@ export async function exportResumenExcel(
         dateRange.forEach(date => {
             const report = reportes?.find(r => r.fecha === date);
             if (report) {
-                const tot = totales.find(t => t.reporte_id === report.id && t.categoria === cat);
-                rowData.push(tot ? tot.total_cantidad : 0);
+                const catFields = fields.filter(f => f.categoria === cat);
+                const catSum = valores
+                    .filter(v => v.reporte_id === report.id && catFields.some(f => f.id === v.campo_id))
+                    .reduce((acc, curr) => acc + (curr.cantidad || 0), 0);
+                rowData.push(catSum);
             } else {
                 rowData.push('');
             }

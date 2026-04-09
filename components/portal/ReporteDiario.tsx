@@ -499,6 +499,16 @@ export default function ReporteDiario() {
                                             );
                                         })}
                                     </tbody>
+                                    <tfoot className={`${config.bg} font-black`}>
+                                        <tr>
+                                            <td className="px-4 py-2 text-right">TOTAL {config.label.split(' ')[1]}</td>
+                                            <td className="px-4 py-2 text-right text-lg border-x border-zinc-200">{subtotalCat(cat)}</td>
+                                            <td className="px-4 py-2 border-r border-zinc-200"></td>
+                                            <td className="px-4 py-2 text-right text-lg text-[#1B4332] bg-[#1B4332]/10">
+                                                S/. {subtotalMontoCat(cat).toFixed(2)}
+                                            </td>
+                                        </tr>
+                                    </tfoot>
                                 </table>
                             </div>
                         </CardContent>
