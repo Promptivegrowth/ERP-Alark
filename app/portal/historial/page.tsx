@@ -349,7 +349,7 @@ export default function HistorialPage() {
 
             {/* DIALOG DETALLE - Similar al admin para consistencia */}
             <Dialog open={openDetalle} onOpenChange={setOpenDetalle}>
-                <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                <DialogContent className="sm:max-w-7xl w-full max-h-[90vh] overflow-y-auto p-6 md:p-8">
                     <DialogHeader className="border-b pb-4">
                         <DialogTitle className="text-2xl font-black text-[#1B4332] flex items-center justify-between">
                             <span>Resumen de Reporte Diario</span>

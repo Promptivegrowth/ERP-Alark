@@ -136,31 +136,44 @@ export default function DiarioMasivoPage() {
         let currentCol = 1;
 
         reporteData.comedores.forEach((comedor) => {
+            // Merge title per comedor (Servicios, Cant, Precio, Total)
             const startCol = currentCol;
-            const endCol = currentCol + 1;
-
-            // Header: Comedor Name
+            const endCol = currentCol + 3;
             sheet.mergeCells(4, startCol, 4, endCol);
-            const cometell = sheet.getCell(4, startCol);
-            cometell.value = comedor.nombre.toUpperCase();
-            cometell.fill = headerFill;
-            cometell.font = headerFont;
-            cometell.alignment = { horizontal: 'center' };
-            cometell.border = border;
+            const titleCell = sheet.getCell(4, startCol);
+            titleCell.value = comedor.nombre;
+            titleCell.font = headerFont;
+            titleCell.fill = headerFill;
+            titleCell.alignment = { horizontal: 'center' };
+            titleCell.border = border;
 
-            // SubHeaders: Servicio, Cant
-            const subH1 = sheet.getCell(5, startCol);
-            subH1.value = 'SERVICIOS';
-            subH1.font = { bold: true };
-            subH1.fill = categoryFill;
-            subH1.border = border;
+            // SubHeaders: Servicio, Cant, Precio, Total
+            const h1 = sheet.getCell(5, startCol);
+            h1.value = 'SERVICIOS';
+            h1.font = { bold: true };
+            h1.fill = categoryFill;
+            h1.border = border;
 
-            const subH2 = sheet.getCell(5, endCol);
-            subH2.value = 'CANT.';
-            subH2.font = { bold: true };
-            subH2.fill = categoryFill;
-            subH2.alignment = { horizontal: 'right' };
-            subH2.border = border;
+            const h2 = sheet.getCell(5, startCol + 1);
+            h2.value = 'CANT.';
+            h2.font = { bold: true };
+            h2.fill = categoryFill;
+            h2.alignment = { horizontal: 'right' };
+            h2.border = border;
+
+            const h3 = sheet.getCell(5, startCol + 2);
+            h3.value = 'PRECIO';
+            h3.font = { bold: true };
+            h3.fill = categoryFill;
+            h3.alignment = { horizontal: 'right' };
+            h3.border = border;
+
+            const h4 = sheet.getCell(5, startCol + 3);
+            h4.value = 'TOTAL';
+            h4.font = { bold: true };
+            h4.fill = categoryFill;
+            h4.alignment = { horizontal: 'right' };
+            h4.border = border;
 
             // Data rows
             const comData = reporteData.data[comedor.id];
@@ -178,11 +191,25 @@ export default function DiarioMasivoPage() {
                     c1.value = v.comedor_campos_reporte?.nombre_campo || 'Sin Nombre';
                     c1.border = border;
 
-                    const c2 = sheet.getCell(rowIdx, endCol);
+                    const c2 = sheet.getCell(rowIdx, startCol + 1);
                     c2.value = v.cantidad || 0;
                     c2.border = border;
                     c2.alignment = { horizontal: 'right' };
                     c2.font = { bold: true };
+
+                    const precio = v.monto / (v.cantidad || 1);
+                    const c3 = sheet.getCell(rowIdx, startCol + 2);
+                    c3.value = precio;
+                    c3.numFmt = '"S/" #,##0.00';
+                    c3.border = border;
+                    c3.alignment = { horizontal: 'right' };
+
+                    const c4 = sheet.getCell(rowIdx, startCol + 3);
+                    c4.value = v.monto || 0;
+                    c4.numFmt = '"S/" #,##0.00';
+                    c4.border = border;
+                    c4.alignment = { horizontal: 'right' };
+                    c4.font = { bold: true };
 
                     rowIdx++;
                 });
@@ -194,10 +221,18 @@ export default function DiarioMasivoPage() {
                     c1.font = { italic: true };
                     c1.border = border;
 
-                    const c2 = sheet.getCell(rowIdx, endCol);
+                    const c2 = sheet.getCell(rowIdx, startCol + 1);
                     c2.value = 'SI';
                     c2.border = border;
                     c2.alignment = { horizontal: 'right' };
+
+                    const c4 = sheet.getCell(rowIdx, startCol + 3);
+                    c4.value = comData.reporte.monto_coffe || 0;
+                    c4.numFmt = '"S/" #,##0.00';
+                    c4.border = border;
+                    c4.alignment = { horizontal: 'right' };
+                    c4.font = { bold: true };
+
                     rowIdx++;
                 }
 
@@ -210,45 +245,62 @@ export default function DiarioMasivoPage() {
                 subTCell.font = headerFont;
                 subTCell.border = border;
 
-                const subTVal = sheet.getCell(rowIdx, endCol);
-                subTVal.fill = headerFill;
-                subTVal.border = border;
+                sheet.getCell(rowIdx, startCol + 1).fill = headerFill;
+                sheet.getCell(rowIdx, startCol + 1).border = border;
+                sheet.getCell(rowIdx, startCol + 2).fill = headerFill;
+                sheet.getCell(rowIdx, startCol + 2).border = border;
+                sheet.getCell(rowIdx, startCol + 3).fill = headerFill;
+                sheet.getCell(rowIdx, startCol + 3).border = border;
 
-                const totals: Record<string, number> = {};
+                const totalsCant: Record<string, number> = {};
+                const totalsMonto: Record<string, number> = {};
                 sortedValores.forEach(v => {
                     const cat = v.comedor_campos_reporte?.categoria || 'OTROS';
-                    totals[cat] = (totals[cat] || 0) + (v.cantidad || 0);
+                    totalsCant[cat] = (totalsCant[cat] || 0) + (v.cantidad || 0);
+                    totalsMonto[cat] = (totalsMonto[cat] || 0) + (v.monto || 0);
                 });
 
-                Object.entries(totals).forEach(([cat, sum]) => {
+                Object.entries(totalsCant).forEach(([cat, sum]) => {
                     rowIdx++;
                     const r1 = sheet.getCell(rowIdx, startCol);
                     r1.value = `TOTAL ${cat}`;
                     r1.border = border;
                     r1.font = { bold: true };
 
-                    const r2 = sheet.getCell(rowIdx, endCol);
+                    const r2 = sheet.getCell(rowIdx, startCol + 1);
                     r2.value = sum;
                     r2.border = border;
                     r2.font = { bold: true };
                     r2.fill = totalFill;
                     r2.alignment = { horizontal: 'right' };
+
+                    const r4 = sheet.getCell(rowIdx, startCol + 3);
+                    r4.value = totalsMonto[cat] || 0;
+                    r4.numFmt = '"S/" #,##0.00';
+                    r4.border = border;
+                    r4.font = { bold: true };
+                    r4.fill = totalFill;
+                    r4.alignment = { horizontal: 'right' };
                 });
             } else {
                 sheet.getCell(6, startCol).value = '(Sin Reporte)';
                 sheet.getCell(6, startCol).font = { italic: true, color: { argb: 'FFAAAAAA' } };
                 sheet.getCell(6, startCol).border = border;
-                sheet.getCell(6, endCol).border = border;
+                sheet.getCell(6, startCol + 1).border = border;
+                sheet.getCell(6, startCol + 2).border = border;
+                sheet.getCell(6, startCol + 3).border = border;
             }
 
-            currentCol += 3;
+            currentCol += 5;
         });
 
         // Column widths
         for (let i = 1; i <= currentCol; i++) {
             const column = sheet.getColumn(i);
-            if (i % 3 === 1) column.width = 25;
-            else if (i % 3 === 2) column.width = 8;
+            if (i % 5 === 1) column.width = 25;
+            else if (i % 5 === 2) column.width = 8;
+            else if (i % 5 === 3) column.width = 12;
+            else if (i % 5 === 4) column.width = 15;
             else column.width = 2; // Spacer column
         }
 
