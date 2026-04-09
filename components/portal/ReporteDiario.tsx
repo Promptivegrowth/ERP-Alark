@@ -195,6 +195,7 @@ export default function ReporteDiario() {
 
     // Handle value change
     const handleCantidad = (campoId: string, val: number) => {
+        const sanitizedVal = Math.max(0, val);
         setReporte(prev => {
             const campo = campos.find(c => c.id === campoId);
             const currentPrecio = prev.valores[campoId]?.precio ?? campo?.precio_unitario ?? 0;
@@ -205,9 +206,9 @@ export default function ReporteDiario() {
                     [campoId]: {
                         ...prev.valores[campoId],
                         campo_id: campoId,
-                        cantidad: val,
+                        cantidad: sanitizedVal,
                         precio: currentPrecio,
-                        monto: val * currentPrecio
+                        monto: sanitizedVal * currentPrecio
                     }
                 }
             };
@@ -215,6 +216,7 @@ export default function ReporteDiario() {
     };
 
     const handlePrecio = (campoId: string, val: number) => {
+        const sanitizedVal = Math.max(0, val);
         setReporte(prev => {
             const currentCant = prev.valores[campoId]?.cantidad || 0;
             return {
@@ -224,9 +226,9 @@ export default function ReporteDiario() {
                     [campoId]: {
                         ...prev.valores[campoId],
                         campo_id: campoId,
-                        precio: val,
+                        precio: sanitizedVal,
                         cantidad: currentCant,
-                        monto: val * currentCant
+                        monto: sanitizedVal * currentCant
                     }
                 }
             };
@@ -486,6 +488,7 @@ export default function ReporteDiario() {
                                                     <td className="px-2 py-2 border-r border-zinc-100">
                                                         <Input
                                                             type="number"
+                                                            min="0"
                                                             value={val?.cantidad || ''}
                                                             onChange={(e) => handleCantidad(campo.id, Number(e.target.value))}
                                                             className={`h-9 text-right font-black text-lg border-emerald-100 focus:ring-emerald-500 ${isLocked ? 'bg-zinc-100 text-zinc-400 border-zinc-200 cursor-not-allowed shadow-inner' : ''}`}
@@ -497,6 +500,7 @@ export default function ReporteDiario() {
                                                         <Input
                                                             type="number"
                                                             step="0.01"
+                                                            min="0"
                                                             value={val?.precio || ''}
                                                             onChange={(e) => handlePrecio(campo.id, Number(e.target.value))}
                                                             className={`h-9 text-right font-medium text-emerald-800 border-emerald-100 focus:ring-emerald-500 ${isLocked ? 'bg-zinc-100/50 text-zinc-400 border-zinc-200 cursor-not-allowed shadow-inner' : 'bg-emerald-50/30'}`}
@@ -560,8 +564,9 @@ export default function ReporteDiario() {
                                 <Input
                                     type="number"
                                     step="0.01"
+                                    min="0"
                                     value={reporte.monto_coffe}
-                                    onChange={e => setReporte(prev => ({ ...prev, monto_coffe: parseFloat(e.target.value) || 0 }))}
+                                    onChange={e => setReporte(prev => ({ ...prev, monto_coffe: Math.max(0, parseFloat(e.target.value) || 0) }))}
                                     className={`font-black border-zinc-200 text-amber-700 ${isLocked ? 'bg-zinc-100 text-zinc-400 shadow-inner' : ''}`}
                                     disabled={isLocked}
                                 />
