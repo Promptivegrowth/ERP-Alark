@@ -87,11 +87,11 @@ export default function LoginPage() {
                 <div className="max-w-xl text-center relative z-10">
                     <div className="inline-block p-3 bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 mb-8 shadow-2xl">
                         <div className="w-16 h-16 bg-white rounded-xl flex items-center justify-center shadow-lg">
-                            <span className="text-[#1B4332] text-4xl font-black">A</span>
+                            <span className="text-[#1B4332] text-4xl font-black">AM</span>
                         </div>
                     </div>
                     <h1 className="text-6xl font-black mb-6 tracking-tighter leading-tight drop-shadow-sm uppercase">
-                        Plataforma <br /> <span className="text-emerald-300">Auditoría Alark</span>
+                        Plataforma <br /> <span className="text-emerald-300">Auditoría Almark Peru</span>
                     </h1>
                     <div className="h-1.5 w-24 bg-emerald-400 mx-auto rounded-full mb-8 shadow-sm" />
                     <p className="text-xl text-emerald-50/80 font-bold max-w-sm mx-auto leading-relaxed italic">
@@ -107,10 +107,10 @@ export default function LoginPage() {
                     <CardHeader className="space-y-4 text-center pt-10 px-8">
                         <div className="lg:hidden mb-4">
                             <div className="w-12 h-12 bg-[#1B4332] rounded-xl flex items-center justify-center shadow-lg mx-auto mb-2">
-                                <span className="text-white text-2xl font-black">A</span>
+                                <span className="text-white text-2xl font-black">AM</span>
                             </div>
                             <h2 className="text-2xl font-black text-zinc-800 tracking-tighter uppercase">
-                                Auditoría Alark
+                                Auditoría Almark Peru
                             </h2>
                         </div>
                         <CardTitle className="text-3xl font-black text-zinc-800 tracking-tight">Iniciar Sesión</CardTitle>
@@ -123,7 +123,7 @@ export default function LoginPage() {
                             <div className="space-y-1.5">
                                 <label className="text-[12px] font-black text-zinc-400 uppercase tracking-widest pl-1">Correo Electrónico</label>
                                 <Input
-                                    placeholder="ejemplo@alark.com"
+                                    placeholder="ejemplo@almarkperu.com"
                                     className="h-12 bg-zinc-50 border-zinc-200 rounded-xl px-4 font-medium transition-all focus:ring-emerald-500 focus:border-emerald-500"
                                     disabled={isLoading}
                                     {...form.register('email')}

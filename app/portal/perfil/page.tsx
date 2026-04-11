@@ -26,7 +26,7 @@ export default function PerfilPage() {
             <Card>
                 <CardHeader>
                     <CardTitle>Datos del Usuario</CardTitle>
-                    <CardDescription>Detalles de tu cuenta registrada en Alark ERP.</CardDescription>
+                    <CardDescription>Detalles de tu cuenta registrada en Almark Peru ERP.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                     <div className="flex items-center gap-3 p-3 rounded-lg border border-zinc-100 bg-zinc-50">

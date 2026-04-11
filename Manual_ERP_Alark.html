@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manual de Usuario — ERP ALARK v2.0</title>
+    <style>
+        @page {
+            margin: 20mm;
+            size: A4;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            background: #fff;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            border-bottom: 3px solid #1B4332;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            color: #1B4332;
+            margin: 0;
+            text-transform: uppercase;
+            font-size: 24px;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+
+        .section {
+            margin-bottom: 40px;
+            page-break-inside: avoid;
+        }
+
+        .section-title {
+            background: #1B4332;
+            color: #fff;
+            padding: 10px 15px;
+            font-size: 18px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+        }
+
+        .icon {
+            width: 20px;
+            height: 20px;
+            fill: currentColor;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+            font-size: 12px;
+        }
+
+        th,
+        td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f4f4f4;
+            color: #1B4332;
+            font-weight: bold;
+        }
+
+        .highlight {
+            color: #1B4332;
+            font-weight: bold;
+        }
+
+        .step {
+            margin-bottom: 15px;
+        }
+
+        .step-title {
+            font-weight: bold;
+            color: #2D6A4F;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .footer {
+            text-align: center;
+            font-size: 10px;
+            color: #999;
+            margin-top: 50px;
+            border-top: 1px solid #eee;
+            padding-top: 10px;
+        }
+
+        .alert {
+            background: #e9f5ee;
+            border-left: 4px solid #1B4332;
+            padding: 15px;
+            margin-bottom: 20px;
+            font-size: 13px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Manual de Operaciones ERP ALARK</h1>
+            <p>Plataforma de Gestión de Comedores Industriales — v2.0</p>
+        </div>
+
+        <div class="alert">
+            <strong>AVISO DE CONFIDENCIALIDAD:</strong> Este documento contiene credenciales de acceso sensibles. No
+            compartir con personas ajenas a la operación de ALARK.
+        </div>
+
+        <!-- 1. CREDENCIALES -->
+        <div class="section">
+            <div class="section-title">
+                <svg class="icon" viewBox="0 0 24 24">
+                    <path
+                        d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 6c1.4 0 2.5 1.1 2.5 2.5S13.4 12 12 12s-2.5-1.1-2.5-2.5S10.6 7 12 7zm0 10c-2.33 0-4.31-1.33-5.34-3.23.03-1.78 3.56-2.77 5.34-2.77s5.31.99 5.34 2.77C16.31 15.67 14.33 17 12 17z" />
+                </svg>
+                1. Credenciales de Acceso
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Nivel</th>
+                        <th>Entidad / Rol</th>
+                        <th>Email de Usuario</th>
+                        <th>Contraseña Inicial</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="highlight">ADMIN</td>
+                        <td>Administrador General</td>
+                        <td>admin@alark.com</td>
+                        <td>password123</td>
+                    </tr>
+                    <tr>
+                        <td>COMEDOR</td>
+                        <td>RANSA</td>
+                        <td>comedor.ransa@almarkperu.com</td>
+                        <td>AlarkGCI2025!</td>
+                    </tr>
+                    <tr>
+                        <td>COMEDOR</td>
+                        <td>ICH</td>
+                        <td>comedor.ich@almarkperu.com</td>
+                        <td>AlarkGCI2025!</td>
+                    </tr>
+                    <tr>
+                        <td>COMEDOR</td>
+                        <td>FADESA</td>
+                        <td>comedor.fadesa@almarkperu.com</td>
+                        <td>AlarkGCI2025!</td>
+                    </tr>
+                    <tr>
+                        <td>COMEDOR</td>
+                        <td>FITESA</td>
+                        <td>comedor.fitesa@almarkperu.com</td>
+                        <td>AlarkGCI2025!</td>
+                    </tr>
+                    <tr>
+                        <td>COMEDOR</td>
+                        <td>FUNDICIÓN</td>
+                        <td>comedor.fundicion@almarkperu.com</td>
+                        <td>AlarkGCI2025!</td>
+                    </tr>
+                    <tr>
+                        <td>COMEDOR</td>
+                        <td>MACHU PICCHU</td>
+                        <td>comedor.machupicchu@almarkperu.com</td>
+                        <td>AlarkGCI2025!</td>
+                    </tr>
+                    <tr>
+                        <td>COMEDOR</td>
+                        <td>MEDLOG</td>
+                        <td>comedor.medlog@almarkperu.com</td>
+                        <td>AlarkGCI2025!</td>
+                    </tr>
+                    <tr>
+                        <td>COMEDOR</td>
+                        <td>METALPREN</td>
+                        <td>comedor.metalpren@almarkperu.com</td>
+                        <td>AlarkGCI2025!</td>
+                    </tr>
+                    <tr>
+                        <td>COMEDOR</td>
+                        <td>MOLICENTRO</td>
+                        <td>comedor.molicentro@almarkperu.com</td>
+                        <td>AlarkGCI2025!</td>
+                    </tr>
+                    <tr>
+                        <td>COMEDOR</td>
+                        <td>SAN JORGE</td>
+                        <td>comedor.sanjorge@almarkperu.com</td>
+                        <td>AlarkGCI2025!</td>
+                    </tr>
+                    <tr>
+                        <td>COMEDOR</td>
+                        <td>TECSUR</td>
+                        <td>comedor.tecsur@almarkperu.com</td>
+                        <td>AlarkGCI2025!</td>
+                    </tr>
+                    <tr>
+                        <td>COMEDOR</td>
+                        <td>VOLCAN</td>
+                        <td>comedor.volcan@almarkperu.com</td>
+                        <td>AlarkGCI2025!</td>
+                    </tr>
+                    <tr>
+                        <td>COMEDOR</td>
+                        <td>PAMOLSA</td>
+                        <td>comedor.pamolsa@almarkperu.com</td>
+                        <td>AlarkGCI2025!</td>
+                    </tr>
+                    <tr>
+                        <td>COMEDOR</td>
+                        <td>TOTTUS-CDF</td>
+                        <td>comedor.tottuscdf@almarkperu.com</td>
+                        <td>AlarkGCI2025!</td>
+                    </tr>
+                    <tr>
+                        <td>COMEDOR</td>
+                        <td>GCI</td>
+                        <td>comedor.gci@almarkperu.com</td>
+                        <td>AlarkGCI2025!</td>
+                    </tr>
+                    <tr>
+                        <td>COMEDOR</td>
+                        <td>TOTTUS-CDS</td>
+                        <td>comedor.tottuscds@almarkperu.com</td>
+                        <td>AlarkGCI2025!</td>
+                    </tr>
+                    <tr>
+                        <td>COMEDOR</td>
+                        <td>TOTTUS-PPA</td>
+                        <td>comedor.tottusppa@almarkperu.com</td>
+                        <td>AlarkGCI2025!</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 2. GUIA COMEDOR -->
+        <div class="section">
+            <div class="section-title">
+                <svg class="icon" viewBox="0 0 24 24">
+                    <path
+                        d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z" />
+                </svg>
+                2. Guía para el Personal del Comedor
+            </div>
+
+            <div class="step">
+                <span class="step-title">Llenado del Reporte Diario:</span>
+                Entrar al menú <span class="highlight">"Reporte Diario"</span>. Llene las cantidades de cada producto
+                del día (Desayuno, Almuerzo, Cena, etc.). El sistema multiplicará automáticamente por el precio
+                configurado. Haga clic en <span class="highlight">"Enviar Reporte del Día"</span> al finalizar.
+            </div>
+
+            <div class="step">
+                <span class="step-title">Consulta de Historial:</span>
+                Vaya a <span class="highlight">"Historial"</span>. Los reportes se agrupan por Mes y Semana. Haga clic
+                en <span class="highlight">"Ver Detalle"</span> en cualquier fecha para revisar el desglose exacto de lo
+                reportado y el monto final.
+            </div>
+
+            <div class="step">
+                <span class="step-title">Correcciones (Modo Emergencia):</span>
+                Si desea reportar una fecha pasada o corregir un reporte ya enviado (bloqueado), baje al final de la
+                página y active el interruptor <span class="highlight">"Modo Emergencia / Edición"</span>. Seleccione la
+                fecha, escriba el motivo de la corrección y envíe. El administrador recibirá la solicitud para su
+                aprobación.
+            </div>
+        </div>
+
+        <!-- 3. GUIA ADMIN -->
+        <div class="section">
+            <div class="section-title">
+                <svg class="icon" viewBox="0 0 24 24">
+                    <path
+                        d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z" />
+                </svg>
+                3. Guía para el Administrador
+            </div>
+
+            <div class="step">
+                <span class="step-title">Auditoría por Comedor:</span>
+                En el menú <span class="highlight">"Comedores"</span>, seleccione la sede que desea revisar. Verá la
+                lista de todos sus reportes. Use <span class="highlight">"Ver Detalle"</span> para entrar a la
+                liquidación de un día específico.
+            </div>
+
+            <div class="step">
+                <span class="step-title">Reporte Diario Masivo (Consolidado):</span>
+                Vaya a <span class="highlight">"Reporte Diario Masivo"</span>. Aquí podrá ver de un vistazo el resumen
+                global de los 17 comedores para el día actual. Muestra el total de ventas y el total de Pax (servicios)
+                de toda la operación.
+            </div>
+
+            <div class="step">
+                <span class="step-title">Exportación a Excel:</span>
+                Dentro del "Reporte Diario Masivo", utilice el botón <span class="highlight">"Exportar Excel
+                    Consolidado"</span>. Se generará un archivo profesional con el branding de Alark, incluyendo
+                columnas de precios y totales de cada comedor.
+            </div>
+
+            <div class="step">
+                <span class="step-title">Configuración de Precios:</span>
+                En <span class="highlight">"Configuración"</span>, puede editar los nombres de los productos y sus
+                precios unitarios. Cualquier cambio aquí se reflejará automáticamente en los reportes que los comedores
+                llenen a partir de ese momento.
+            </div>
+        </div>
+
+        <div class="footer">
+            ERP ALARK — Soluciones de Alimentación en Tiempo Real<br>
+            &copy; 2026 Almark Perú. Todos los derechos reservados.
+        </div>
+    </div>
+</body>
+
+</html>

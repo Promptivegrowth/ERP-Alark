@@ -609,8 +609,10 @@ export default function ReporteDiario() {
                             <AlertCircle size={20} />
                         </div>
                         <div>
-                            <h4 className="font-bold text-sm">¿Necesitas reportar un día pasado?</h4>
-                            <p className="text-[10px] text-zinc-400 uppercase tracking-wider">Máximo 7 días de antiguedad • Requiere aprobación</p>
+                            <h4 className="font-bold text-sm tracking-tight">¿Necesitas corregir tu reporte de liquidación?</h4>
+                            <p className="text-[10px] text-zinc-400 font-medium leading-relaxed max-w-md">
+                                Presiona el botón, llena la observación y envía tu solicitud. Espera que el administrador la acepte para actualizar tu reporte. Comunícate con administración si es necesario.
+                            </p>
                         </div>
                     </div>
                     <Button

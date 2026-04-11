@@ -81,7 +81,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     }`}
             >
                 <div className="h-16 flex items-center justify-between px-4 border-b border-emerald-800">
-                    <span className="font-black text-lg tracking-tight uppercase">Alark Admin</span>
+                    <span className="font-black text-lg tracking-tight uppercase">Almark Peru Admin</span>
                     <button onClick={() => setIsMobileMenuOpen(false)} className="text-white p-1.5">
                         <Menu size={24} />
                     </button>
@@ -95,7 +95,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     } bg-[#1B4332] text-white transition-all duration-300 flex flex-col hidden lg:flex shadow-xl`}
             >
                 <div className="h-16 flex items-center justify-between px-4 border-b border-emerald-800">
-                    {!collapsed && <span className="font-black text-lg tracking-tight uppercase">Alark Admin</span>}
+                    {!collapsed && <span className="font-black text-lg tracking-tight uppercase">Almark Peru Admin</span>}
                     <button onClick={() => setCollapsed(!collapsed)} className="text-white hover:bg-emerald-800 p-1.5 rounded-lg transition-colors">
                         <Menu size={20} />
                     </button>
