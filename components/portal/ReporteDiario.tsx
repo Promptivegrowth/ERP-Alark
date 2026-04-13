@@ -242,15 +242,31 @@ export default function ReporteDiario() {
 
     const categorias = Array.from(new Set(campos.map(c => c.categoria)));
 
+    const isMachuPicchu = comedorId === '7aa14f4e-b005-445e-a51f-b0f298c26d7a';
+
     function subtotalCat(cat: string) {
         return campos
-            .filter(c => c.categoria === cat)
+            .filter(c => {
+                if (c.categoria !== cat) return false;
+                // Excepción Machu Picchu: Solo sumamos 'SOLICITADOS' para Almuerzo y Cena
+                if (isMachuPicchu && (cat === 'ALMUERZO' || cat === 'CENA')) {
+                    return c.nombre_campo.toUpperCase().includes('SOLICITADO');
+                }
+                return true;
+            })
             .reduce((acc, c) => acc + (reporte.valores[c.id]?.cantidad || 0), 0);
     }
 
     function subtotalMontoCat(cat: string) {
         return campos
-            .filter(c => c.categoria === cat)
+            .filter(c => {
+                if (c.categoria !== cat) return false;
+                // Excepción Machu Picchu: Solo sumamos 'SOLICITADOS' para Almuerzo y Cena
+                if (isMachuPicchu && (cat === 'ALMUERZO' || cat === 'CENA')) {
+                    return c.nombre_campo.toUpperCase().includes('SOLICITADO');
+                }
+                return true;
+            })
             .reduce((acc, c) => acc + (reporte.valores[c.id]?.monto || 0), 0);
     }
 
