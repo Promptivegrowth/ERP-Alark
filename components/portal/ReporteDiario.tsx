@@ -252,16 +252,16 @@ export default function ReporteDiario() {
 
     function subtotalCat(cat: string) {
         return campos
-            .filter(c => c.categoria === cat)
+            .filter(c => c.categoria === cat && !c.es_readonly)
             .reduce((acc, c) => {
-                const qty = c.es_readonly ? getReadonlyCantidad(c) : (reporte.valores[c.id]?.cantidad || 0);
+                const qty = reporte.valores[c.id]?.cantidad || 0;
                 return acc + qty;
             }, 0);
     }
 
     function subtotalMontoCat(cat: string) {
         return campos
-            .filter(c => c.categoria === cat)
+            .filter(c => c.categoria === cat && !c.es_readonly)
             .reduce((acc, c) => acc + (reporte.valores[c.id]?.monto || 0), 0);
     }
 
