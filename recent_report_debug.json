@@ -1,0 +1,68 @@
+[
+  {
+    "id": "2b990a97-4dbd-4ddc-aeff-3755ea8c06d6",
+    "reporte_id": "d8532ad0-1e1e-4da8-9d35-5badebebd874",
+    "campo_id": "2d130031-f18f-4ec5-ac5a-792c1580e655",
+    "cantidad": 1100,
+    "monto": 11000,
+    "precio_unitario": 10,
+    "comedor_campos_reporte": {
+      "nombre_campo": "ALMUERZOS SOLICITADOS"
+    }
+  },
+  {
+    "id": "2b60dc18-b026-41e2-ab12-d0eb8c918bcd",
+    "reporte_id": "d8532ad0-1e1e-4da8-9d35-5badebebd874",
+    "campo_id": "cb83dc1b-3c50-47a3-b047-67064573eaa3",
+    "cantidad": 0,
+    "monto": 0,
+    "precio_unitario": 0,
+    "comedor_campos_reporte": {
+      "nombre_campo": "ALMUERZOS CONSUMIDOS"
+    }
+  },
+  {
+    "id": "d12b92ff-1001-455c-a48e-4252505f01c2",
+    "reporte_id": "d8532ad0-1e1e-4da8-9d35-5badebebd874",
+    "campo_id": "b67fb98b-aa59-424e-b2a1-0df582d3ac6a",
+    "cantidad": 1100,
+    "monto": 0,
+    "precio_unitario": 0,
+    "comedor_campos_reporte": {
+      "nombre_campo": "ALMUERZOS QUEBRADO"
+    }
+  },
+  {
+    "id": "6a6a4020-15b4-4f41-acd8-f05abeb0963f",
+    "reporte_id": "d8532ad0-1e1e-4da8-9d35-5badebebd874",
+    "campo_id": "3a2a8ca0-99a2-4fdb-9dcd-f92ea5183071",
+    "cantidad": 50,
+    "monto": 0,
+    "precio_unitario": 0,
+    "comedor_campos_reporte": {
+      "nombre_campo": "CENAS SOLICITADOS"
+    }
+  },
+  {
+    "id": "6dfa4bc2-e6be-44cd-a996-094ee3fcb1c8",
+    "reporte_id": "d8532ad0-1e1e-4da8-9d35-5badebebd874",
+    "campo_id": "37ac241e-2e73-4da1-a0cd-fc82cc4c8704",
+    "cantidad": 0,
+    "monto": 0,
+    "precio_unitario": 0,
+    "comedor_campos_reporte": {
+      "nombre_campo": "CENAS CONSUMIDOS"
+    }
+  },
+  {
+    "id": "b370734c-c22e-448e-8c51-4b8aba1c5f3e",
+    "reporte_id": "d8532ad0-1e1e-4da8-9d35-5badebebd874",
+    "campo_id": "78773b5b-6efa-44c8-8375-802fb811c978",
+    "cantidad": 50,
+    "monto": 0,
+    "precio_unitario": 0,
+    "comedor_campos_reporte": {
+      "nombre_campo": "CENAS QUEBRADO"
+    }
+  }
+]

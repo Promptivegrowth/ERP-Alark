@@ -1,0 +1,253 @@
+{
+  "auth": [
+    {
+      "id": "ea8affc7-06d6-4c5c-ae9b-e7e095cff48f",
+      "email": "comedor.tottusppa@almarkperu.com"
+    },
+    {
+      "id": "09006add-8fa5-413c-9dde-33794695ea39",
+      "email": "comedor.tottuscds@almarkperu.com"
+    },
+    {
+      "id": "2031b165-b328-4a75-aaad-e32d20930af7",
+      "email": "comedor.gci@almarkperu.com"
+    },
+    {
+      "id": "7d7ed442-09ec-439b-aa7f-f537da50ac96",
+      "email": "comedor.tottuscdf@almarkperu.com"
+    },
+    {
+      "id": "c757aa4a-b14a-4de0-ad8b-534e1ab8eebc",
+      "email": "comedor.pamolsa@almarkperu.com"
+    },
+    {
+      "id": "f77b957d-2537-4f6f-b085-6d1d69c1d758",
+      "email": "comedor.volcan@almarkperu.com"
+    },
+    {
+      "id": "abc3f061-b0e5-4873-abb4-8e9ac2eed3e7",
+      "email": "comedor.tecsur@almarkperu.com"
+    },
+    {
+      "id": "bd8c77f0-4c2b-40d8-9e99-d041c451bedc",
+      "email": "comedor.sanjorge@almarkperu.com"
+    },
+    {
+      "id": "b9e43c88-6275-41c2-817c-54ea8bfffc1a",
+      "email": "comedor.molicentro@almarkperu.com"
+    },
+    {
+      "id": "f8e79a3d-c200-4cd8-ac45-40d14ef9db34",
+      "email": "comedor.metalpren@almarkperu.com"
+    },
+    {
+      "id": "2914e092-5a3c-4dc6-9125-2cf9596b6580",
+      "email": "comedor.medlog@almarkperu.com"
+    },
+    {
+      "id": "d008c540-7685-457c-b181-0bb0624153ae",
+      "email": "comedor.machupicchu@almarkperu.com"
+    },
+    {
+      "id": "cb594ccf-3fcb-4f6f-a619-12b09a42b59e",
+      "email": "comedor.fundicion@almarkperu.com"
+    },
+    {
+      "id": "065093ab-bad6-460f-9e77-41a1161e7fc8",
+      "email": "comedor.fitesa@almarkperu.com"
+    },
+    {
+      "id": "818cc26c-311a-421c-b8b8-678dce44dc4b",
+      "email": "comedor.fadesa@almarkperu.com"
+    },
+    {
+      "id": "5b614eed-bd7f-44e1-b19c-187bb0914892",
+      "email": "comedor.ich@almarkperu.com"
+    },
+    {
+      "id": "fa2654f9-62a5-4f39-bd8e-abd8ac3d5888",
+      "email": "comedor.ransa@almarkperu.com"
+    },
+    {
+      "id": "d4dcba77-a291-44be-8077-3262e0ac8b6a",
+      "email": "comedor1@alark.com"
+    },
+    {
+      "id": "c4df6eab-83c0-4639-8920-51bf76b1bb45",
+      "email": "admin@almarkperu.com"
+    }
+  ],
+  "db": [
+    {
+      "id": "d4dcba77-a291-44be-8077-3262e0ac8b6a",
+      "comedor_id": "4bf4fc94-6044-4db7-aff6-289a7b564ebd",
+      "rol": "COMEDOR",
+      "nombre": "Encargado Ransa",
+      "email": "comedor1@alark.com",
+      "activo": true,
+      "created_at": "2026-03-25T03:52:15.484463+00:00"
+    },
+    {
+      "id": "fa2654f9-62a5-4f39-bd8e-abd8ac3d5888",
+      "comedor_id": "4bf4fc94-6044-4db7-aff6-289a7b564ebd",
+      "rol": "COMEDOR",
+      "nombre": null,
+      "email": "comedor.ransa@almarkperu.com",
+      "activo": true,
+      "created_at": "2026-03-31T14:39:40.848564+00:00"
+    },
+    {
+      "id": "5b614eed-bd7f-44e1-b19c-187bb0914892",
+      "comedor_id": "2ac5ecf3-8e25-4dd5-a461-ad5804bd0b42",
+      "rol": "COMEDOR",
+      "nombre": null,
+      "email": "comedor.ich@almarkperu.com",
+      "activo": true,
+      "created_at": "2026-03-31T14:39:42.453493+00:00"
+    },
+    {
+      "id": "818cc26c-311a-421c-b8b8-678dce44dc4b",
+      "comedor_id": "035a54ff-2d04-441d-be14-fbc88081bc96",
+      "rol": "COMEDOR",
+      "nombre": null,
+      "email": "comedor.fadesa@almarkperu.com",
+      "activo": true,
+      "created_at": "2026-03-31T14:39:43.827283+00:00"
+    },
+    {
+      "id": "065093ab-bad6-460f-9e77-41a1161e7fc8",
+      "comedor_id": "4ed893ca-b59e-440c-ad9a-68f8cef67676",
+      "rol": "COMEDOR",
+      "nombre": null,
+      "email": "comedor.fitesa@almarkperu.com",
+      "activo": true,
+      "created_at": "2026-03-31T14:39:45.20342+00:00"
+    },
+    {
+      "id": "cb594ccf-3fcb-4f6f-a619-12b09a42b59e",
+      "comedor_id": "5ad0e9a0-4c1e-4b4a-a42b-9d0232013f85",
+      "rol": "COMEDOR",
+      "nombre": null,
+      "email": "comedor.fundicion@almarkperu.com",
+      "activo": true,
+      "created_at": "2026-03-31T14:39:46.55343+00:00"
+    },
+    {
+      "id": "d008c540-7685-457c-b181-0bb0624153ae",
+      "comedor_id": "7aa14f4e-b005-445e-a51f-b0f298c26d7a",
+      "rol": "COMEDOR",
+      "nombre": null,
+      "email": "comedor.machupicchu@almarkperu.com",
+      "activo": true,
+      "created_at": "2026-03-31T14:39:47.922768+00:00"
+    },
+    {
+      "id": "2914e092-5a3c-4dc6-9125-2cf9596b6580",
+      "comedor_id": "12ad1853-0e56-4390-809f-027dd792f12c",
+      "rol": "COMEDOR",
+      "nombre": null,
+      "email": "comedor.medlog@almarkperu.com",
+      "activo": true,
+      "created_at": "2026-03-31T14:39:49.322714+00:00"
+    },
+    {
+      "id": "f8e79a3d-c200-4cd8-ac45-40d14ef9db34",
+      "comedor_id": "3de8ac84-b448-41b0-9c2c-fe18494d4305",
+      "rol": "COMEDOR",
+      "nombre": null,
+      "email": "comedor.metalpren@almarkperu.com",
+      "activo": true,
+      "created_at": "2026-03-31T14:39:50.689668+00:00"
+    },
+    {
+      "id": "b9e43c88-6275-41c2-817c-54ea8bfffc1a",
+      "comedor_id": "62c7d7a2-b999-41fb-b8a1-c1cc00d0a316",
+      "rol": "COMEDOR",
+      "nombre": null,
+      "email": "comedor.molicentro@almarkperu.com",
+      "activo": true,
+      "created_at": "2026-03-31T14:39:52.05234+00:00"
+    },
+    {
+      "id": "bd8c77f0-4c2b-40d8-9e99-d041c451bedc",
+      "comedor_id": "ced94bb0-a566-41cb-a966-9c105c872a0c",
+      "rol": "COMEDOR",
+      "nombre": null,
+      "email": "comedor.sanjorge@almarkperu.com",
+      "activo": true,
+      "created_at": "2026-03-31T14:39:53.474649+00:00"
+    },
+    {
+      "id": "abc3f061-b0e5-4873-abb4-8e9ac2eed3e7",
+      "comedor_id": "3e7708a2-0de3-44e9-aadd-22c96f1aec9a",
+      "rol": "COMEDOR",
+      "nombre": null,
+      "email": "comedor.tecsur@almarkperu.com",
+      "activo": true,
+      "created_at": "2026-03-31T14:39:54.834117+00:00"
+    },
+    {
+      "id": "f77b957d-2537-4f6f-b085-6d1d69c1d758",
+      "comedor_id": "2660489e-9a3d-473c-a860-fcd1f57a9dec",
+      "rol": "COMEDOR",
+      "nombre": null,
+      "email": "comedor.volcan@almarkperu.com",
+      "activo": true,
+      "created_at": "2026-03-31T14:39:56.298159+00:00"
+    },
+    {
+      "id": "c757aa4a-b14a-4de0-ad8b-534e1ab8eebc",
+      "comedor_id": "0b83587b-aa1e-46cd-ad78-29a21b418286",
+      "rol": "COMEDOR",
+      "nombre": null,
+      "email": "comedor.pamolsa@almarkperu.com",
+      "activo": true,
+      "created_at": "2026-03-31T14:39:57.644182+00:00"
+    },
+    {
+      "id": "7d7ed442-09ec-439b-aa7f-f537da50ac96",
+      "comedor_id": "d5adddd5-6323-4e19-97f3-ec7c2ab3a8c6",
+      "rol": "COMEDOR",
+      "nombre": null,
+      "email": "comedor.tottuscdf@almarkperu.com",
+      "activo": true,
+      "created_at": "2026-03-31T14:39:58.963587+00:00"
+    },
+    {
+      "id": "2031b165-b328-4a75-aaad-e32d20930af7",
+      "comedor_id": "0289e381-86ad-441c-a3ed-d2c0784ed0d0",
+      "rol": "COMEDOR",
+      "nombre": null,
+      "email": "comedor.gci@almarkperu.com",
+      "activo": true,
+      "created_at": "2026-03-31T14:40:00.326856+00:00"
+    },
+    {
+      "id": "09006add-8fa5-413c-9dde-33794695ea39",
+      "comedor_id": "4c3b1077-97b4-4eae-9c36-62268e36d928",
+      "rol": "COMEDOR",
+      "nombre": null,
+      "email": "comedor.tottuscds@almarkperu.com",
+      "activo": true,
+      "created_at": "2026-03-31T14:40:01.783971+00:00"
+    },
+    {
+      "id": "ea8affc7-06d6-4c5c-ae9b-e7e095cff48f",
+      "comedor_id": "e7da036f-2fb6-48f3-974c-b0029233c00c",
+      "rol": "COMEDOR",
+      "nombre": null,
+      "email": "comedor.tottusppa@almarkperu.com",
+      "activo": true,
+      "created_at": "2026-03-31T14:40:03.200209+00:00"
+    },
+    {
+      "id": "c4df6eab-83c0-4639-8920-51bf76b1bb45",
+      "comedor_id": null,
+      "rol": "ADMIN",
+      "nombre": "Super Admin",
+      "email": "admin@almarkperu.com",
+      "activo": true,
+      "created_at": "2026-03-25T03:52:14.408676+00:00"
+    }
+  ]
+}

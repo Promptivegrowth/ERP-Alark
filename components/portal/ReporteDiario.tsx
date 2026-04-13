@@ -235,33 +235,22 @@ export default function ReporteDiario() {
         });
     };
 
-    // Computed readonly
+    // Computed readonly (Legacy, kept for type safety but return manual value)
     function getReadonlyCantidad(campo: Campo): number {
-        if (!campo.es_readonly || !campo.formula) return reporte.valores[campo.id]?.cantidad || 0;
-        const cat = campo.categoria;
-        const camposCat = campos.filter(c => c.categoria === cat && !c.es_readonly);
-        const prefix = campo.nombre_campo.split(' ')[0];
-        const solicitado = camposCat.find(c => c.nombre_campo.includes(prefix) && c.nombre_campo.includes('SOLICITADOS'));
-        const consumido = camposCat.find(c => c.nombre_campo.includes(prefix) && c.nombre_campo.includes('CONSUMIDOS'));
-        const s = solicitado ? (reporte.valores[solicitado.id]?.cantidad || 0) : 0;
-        const c = consumido ? (reporte.valores[consumido.id]?.cantidad || 0) : 0;
-        return s - c;
+        return reporte.valores[campo.id]?.cantidad || 0;
     }
 
     const categorias = Array.from(new Set(campos.map(c => c.categoria)));
 
     function subtotalCat(cat: string) {
         return campos
-            .filter(c => c.categoria === cat && !c.es_readonly)
-            .reduce((acc, c) => {
-                const qty = reporte.valores[c.id]?.cantidad || 0;
-                return acc + qty;
-            }, 0);
+            .filter(c => c.categoria === cat)
+            .reduce((acc, c) => acc + (reporte.valores[c.id]?.cantidad || 0), 0);
     }
 
     function subtotalMontoCat(cat: string) {
         return campos
-            .filter(c => c.categoria === cat && !c.es_readonly)
+            .filter(c => c.categoria === cat)
             .reduce((acc, c) => acc + (reporte.valores[c.id]?.monto || 0), 0);
     }
 
@@ -293,7 +282,7 @@ export default function ReporteDiario() {
                         id: c.id,
                         nombre: c.nombre_campo,
                         categoria: c.categoria,
-                        cantidad: c.es_readonly ? getReadonlyCantidad(c) : (reporte.valores[c.id]?.cantidad || 0),
+                        cantidad: reporte.valores[c.id]?.cantidad || 0,
                         monto: reporte.valores[c.id]?.monto || 0
                     }))
                 };

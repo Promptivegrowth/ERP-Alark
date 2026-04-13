@@ -1,0 +1,44 @@
+[
+  {
+    "id": "2d130031-f18f-4ec5-ac5a-792c1580e655",
+    "nombre_campo": "ALMUERZOS SOLICITADOS",
+    "categoria": "ALMUERZO",
+    "es_readonly": false,
+    "formula": null
+  },
+  {
+    "id": "cb83dc1b-3c50-47a3-b047-67064573eaa3",
+    "nombre_campo": "ALMUERZOS CONSUMIDOS",
+    "categoria": "ALMUERZO",
+    "es_readonly": false,
+    "formula": null
+  },
+  {
+    "id": "b67fb98b-aa59-424e-b2a1-0df582d3ac6a",
+    "nombre_campo": "ALMUERZOS QUEBRADO",
+    "categoria": "ALMUERZO",
+    "es_readonly": true,
+    "formula": "SOLICITADOS - CONSUMIDOS"
+  },
+  {
+    "id": "3a2a8ca0-99a2-4fdb-9dcd-f92ea5183071",
+    "nombre_campo": "CENAS SOLICITADOS",
+    "categoria": "CENA",
+    "es_readonly": false,
+    "formula": null
+  },
+  {
+    "id": "37ac241e-2e73-4da1-a0cd-fc82cc4c8704",
+    "nombre_campo": "CENAS CONSUMIDOS",
+    "categoria": "CENA",
+    "es_readonly": false,
+    "formula": null
+  },
+  {
+    "id": "78773b5b-6efa-44c8-8375-802fb811c978",
+    "nombre_campo": "CENAS QUEBRADO",
+    "categoria": "CENA",
+    "es_readonly": true,
+    "formula": "SOLICITADOS - CONSUMIDOS"
+  }
+]
