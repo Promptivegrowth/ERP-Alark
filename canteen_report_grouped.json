@@ -1,0 +1,337 @@
+{
+  "RANSA": {
+    "DESAYUNO": [
+      "DESAYUNO SISTEMA"
+    ],
+    "ALMUERZO": [
+      "ALMUERZO SISTEMA",
+      "ALMUERZO CONT. 13",
+      "ALMUERZO CONT. 12",
+      "SEGUNDO SOLO CONT 10",
+      "ALMUERZO ÝAPE. 13",
+      "ALMUERZO YAPE. 12",
+      "SEGUNDO SOLO YAPE 10",
+      "ALMUERZO TERCEROS"
+    ],
+    "CENA": [
+      "CENA "
+    ],
+    "AMANECIDA": [
+      "AMANECIDA"
+    ]
+  },
+  "ICH": {
+    "ALMUERZO": [
+      "ALMUERZOS SISTEMA",
+      "ALMUERZOS INVITADOS",
+      "ALMUERZOS VIGILANCIA"
+    ],
+    "CENA": [
+      "CENAS SISTEMA",
+      "CENAS INVITADOS",
+      "CENAS VIGILANCIA"
+    ]
+  },
+  "FADESA": {
+    "ALMUERZO": [
+      "ALMUERZOS SISTEMA",
+      "ALMUERZOS INVITADOS",
+      "ALMUERZOS OTROS"
+    ],
+    "CENA": [
+      "CENAS SISTEMA",
+      "CENAS INVITADOS",
+      "CENAS OTROS"
+    ]
+  },
+  "FITESA": {
+    "DESAYUNO": [
+      "DESAYUNOS SISTEMA",
+      "DESAYUNOS OTROS"
+    ],
+    "ALMUERZO": [
+      "ALMUERZOS SISTEMA",
+      "ALMUERZOS OTROS"
+    ],
+    "CENA": [
+      "CENAS SISTEMA",
+      "CENAS OTROS"
+    ],
+    "AMANECIDA": [
+      "AMANECIDAS SISTEMA",
+      "AMANECIDAS OTROS"
+    ]
+  },
+  "FUNDICION": {
+    "DESAYUNO": [
+      "DESAYUNOS SISTEMA"
+    ],
+    "ALMUERZO": [
+      "ALMUERZOS SISTEMA",
+      "ALMUERZOS VIGILANTES",
+      "ALMUERZOS ENFERMERAS",
+      "ALMUERZOS OTROS"
+    ],
+    "CENA": [
+      "CENAS",
+      "CENAS OTROS"
+    ],
+    "LONCHE": [
+      "LONCHES"
+    ]
+  },
+  "MACHU PICCHU": {
+    "ALMUERZO": [
+      "ALMUERZOS SOLICITADOS",
+      "ALMUERZOS CONSUMIDOS",
+      "ALMUERZOS QUEBRADO"
+    ],
+    "CENA": [
+      "CENAS SOLICITADOS",
+      "CENAS CONSUMIDOS",
+      "CENAS QUEBRADO"
+    ]
+  },
+  "MEDLOG": {
+    "ALMUERZO": [
+      "ALMUERZOS TICKETS",
+      "ALMUERZOS SISTEMA"
+    ],
+    "CENA": [
+      "CENAS TICKETS",
+      "CENAS SISTEMA"
+    ]
+  },
+  "METALPREN": {
+    "ALMUERZO": [
+      "ALMUERZOS TERCEROS",
+      "ALMUERZOS SISTEMA",
+      "ALMUERZOS VIGILANTE",
+      "ALMUERZOS CONTADO",
+      "ALMUERZOS YAPE",
+      "ALMUERZOS INVITADOS",
+      "ALM DIETA"
+    ],
+    "DESAYUNO": [
+      "DESAYUNOS SISTEMA"
+    ],
+    "BEBIDA": [
+      "BEBIDAS"
+    ],
+    "PAN": [
+      "PAN"
+    ],
+    "CENA": [
+      "CENA SISTEMA",
+      "CENA INVITADO",
+      "CENA DIETA"
+    ],
+    "EXTRA": [
+      "CARTA 1",
+      "CARTA 2",
+      "CARTA 3"
+    ]
+  },
+  "MOLICENTRO": {
+    "DESAYUNO": [
+      "DESAYUNO CUPON",
+      "DES. ESPECIAL",
+      "DESAYUNOS"
+    ],
+    "PAN": [
+      "PAN VARIADOS"
+    ],
+    "ALMUERZO": [
+      "ALMUERZO SUBV",
+      "ALMUERZO NORMAL",
+      "ALMUERZO INVITADOS",
+      "ALM CONTADO/YAPE",
+      "ALM CUMPLEAÑERO"
+    ],
+    "CENA": [
+      "CENA",
+      "CENA INVITADO",
+      "CENA CUMPLEAÑERO"
+    ],
+    "EXTRA": [
+      "CAFÉ",
+      "CUPON HELADOS"
+    ]
+  },
+  "SAN JORGE": {
+    "BEBIDA": [
+      "BEBIDA"
+    ],
+    "PAN": [
+      "PAN"
+    ],
+    "DESAYUNO": [
+      "VALES DESAYUNO"
+    ],
+    "ALMUERZO": [
+      "ALM OTROS",
+      "ALM MANPOWER",
+      "ALM CONTADOS",
+      "ALM YAPES"
+    ],
+    "CENA": [
+      "CENA SISTEMA",
+      "CENA OTROS"
+    ]
+  },
+  "TECSUR": {
+    "OTRO": [
+      "PORCION DE HUEVO SANCOCHADO",
+      "SALAD BAR",
+      "ENSALADAS DE FRUTAS",
+      "TAMAL",
+      "SOPA / ENTRADA",
+      "PACK DESCARTABLES",
+      "COMBO 1",
+      "COMBO 2",
+      "REFRIGERIOS",
+      "FRUTAS UN",
+      "POSTRE",
+      "TAPER DESCARTABLES"
+    ],
+    "BEBIDA": [
+      "BEBIDAS 2.5",
+      "BEBIDA",
+      "JUGO",
+      "CAFÉ "
+    ],
+    "ALMUERZO": [
+      "SEGUNDO SOLO",
+      "ALMUERZO ADICIONAL",
+      "ALMUERZO SISTEMA",
+      "ALMUERZOS CLEAN",
+      "ALMUERZOS CONTADOS",
+      "ALMUERZOS 10",
+      "ALMUERZOS CAPACITACIÓN",
+      "CARTA 18",
+      "CARTA 20"
+    ],
+    "PAN": [
+      "PAN 5",
+      "PAN",
+      "PAN 2"
+    ],
+    "LONCHE": [
+      "LONCHE DOBLE ",
+      "LONCHERA SIMPLE",
+      "LONCHERA SIMPLE 2"
+    ]
+  },
+  "VOLCAN": {
+    "ALMUERZO": [
+      "ALMUERZO SISTEMA",
+      "ALM SEGURIDAD",
+      "ALM. TERCEROS"
+    ],
+    "CENA": [
+      "CENAS SISTEMA"
+    ],
+    "DESAYUNO": [
+      "DESAYUNO SISTEMA"
+    ]
+  },
+  "PAMOLSA": {
+    "ALMUERZO": [
+      "ALMUERZOS FAUCETT",
+      "ALMUERZOS GAMBETTA"
+    ],
+    "CENA": [
+      "CENA GAMBETTA",
+      "CENA FAUCETT"
+    ],
+    "AMANECIDA": [
+      "AMANECIDA FAUCETT",
+      "AMANECIDA GAMBETTA"
+    ]
+  },
+  "TOTTUS-CDF": {
+    "DESAYUNO": [
+      "DESAYUNO ALMARK"
+    ],
+    "CENA": [
+      "CENA ALMARK"
+    ],
+    "ALMUERZO": [
+      "ALMUERZO ALMARK",
+      "MERIENDAS DIA Y NOCHE ALMARK",
+      "BEBIDAS + 2 PANES ALMARK",
+      "SOLO 2 PANES ALMARK"
+    ],
+    "EXTRA": [
+      "PANES TOTTUS",
+      "BEBIDAS TOTTUS",
+      "ALMUERZOS TOTTUS",
+      "CENAS TOTTUS"
+    ]
+  },
+  "GCI": {
+    "DESAYUNO": [
+      "DESAYUNOS SISTEMA",
+      "DESAYUNO TECSUR",
+      "DESAYUNO GCI"
+    ],
+    "ALMUERZO": [
+      "ALMUERZO SEGURIDAD",
+      "ALMUERZO SISTEMA",
+      "ALMUERZO ADICIONAL",
+      "ALM FAC TECSUR"
+    ],
+    "PAN": [
+      "PAN DEBIL",
+      "PAN FUERTE"
+    ],
+    "EXTRA": [
+      "TOTAL PACK DESC",
+      "TOTAL DESCARTABLES",
+      "CAFÉ",
+      "COMBO 1",
+      "COMBO 2"
+    ]
+  },
+  "TOTTUS-CDS": {
+    "DESAYUNO": [
+      "DESAYUNO ALMARK"
+    ],
+    "CENA": [
+      "CENA ALMARK"
+    ],
+    "ALMUERZO": [
+      "ALMUERZO ALMARK",
+      "MERIENDAS DIA Y NOCHE ALMARK",
+      "BEBIDAS + 2 PANES ALMARK",
+      "SOLO 2 PANES ALMARK",
+      "ALMUERZOS RGIS"
+    ],
+    "EXTRA": [
+      "PANES TOTTUS",
+      "BEBIDAS TOTTUS",
+      "ALMUERZOS TOTTUS",
+      "CENAS TOTTUS"
+    ]
+  },
+  "TOTTUS-PPA": {
+    "DESAYUNO": [
+      "DESAYUNO ALMARK"
+    ],
+    "CENA": [
+      "CENA ALMARK"
+    ],
+    "ALMUERZO": [
+      "ALMUERZO ALMARK",
+      "MERIENDAS DIA Y NOCHE ALMARK",
+      "BEBIDAS + 2 PANES ALMARK",
+      "SOLO 2 PANES ALMARK"
+    ],
+    "EXTRA": [
+      "PANES TOTTUS",
+      "BEBIDAS TOTTUS",
+      "ALMUERZOS TOTTUS",
+      "CENAS TOTTUS"
+    ]
+  }
+}

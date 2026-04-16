@@ -15,6 +15,9 @@ import {
     LogOut,
     Menu,
     AlertTriangle,
+    CalendarDays,
+    RefreshCw,
+    UploadCloud,
 } from 'lucide-react';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -39,6 +42,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         { name: 'Logística', href: '/admin/logistica', icon: Truck },
         { name: 'Recursos Humanos', href: '/admin/rrhh', icon: Users },
         { name: 'Reportes', href: '/admin/reportes', icon: FileText },
+        { name: '↳ Semanal', href: '/admin/reportes/semanal', icon: CalendarDays, sub: true },
+        { name: '↳ Cruce Diario', href: '/admin/reportes/cruce', icon: RefreshCw, sub: true },
+        { name: '↳ Sistema Interno', href: '/admin/reportes/sistema', icon: UploadCloud, sub: true },
         { name: 'Configuración', href: '/admin/configuracion', icon: Settings },
     ];
 
@@ -46,17 +52,18 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <nav className="flex-1 overflow-y-auto py-6">
             <ul className="space-y-2 px-3">
                 {menuItems.map((item) => {
-                    const isActive = pathname.startsWith(item.href);
+                    const isActive = pathname === item.href || (item.href !== '/admin/reportes' && pathname.startsWith(item.href));
+                    const isSub = (item as any).sub;
                     return (
                         <li key={item.name}>
                             <Link
                                 href={item.href}
                                 onClick={() => mobile && setIsMobileMenuOpen(false)}
-                                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group ${isActive ? 'bg-[#2D6A4F] shadow-lg scale-[1.02]' : 'hover:bg-[#2D6A4F]/40'
-                                    }`}
+                                className={`flex items-center gap-3 rounded-lg transition-all duration-200 group ${isSub ? 'px-3 py-1.5 ml-3' : 'px-3 py-2.5'
+                                    } ${isActive ? 'bg-[#2D6A4F] shadow-lg' : 'hover:bg-[#2D6A4F]/40'}`}
                             >
-                                <item.icon size={20} className={isActive ? 'text-white' : 'text-emerald-300 group-hover:text-white'} />
-                                {(!collapsed || mobile) && <span className={`text-sm font-bold ${isActive ? 'text-white' : 'text-emerald-100'}`}>{item.name}</span>}
+                                <item.icon size={isSub ? 15 : 20} className={isActive ? 'text-white' : 'text-emerald-300 group-hover:text-white'} />
+                                {(!collapsed || mobile) && <span className={`${isSub ? 'text-xs' : 'text-sm font-bold'} ${isActive ? 'text-white' : 'text-emerald-100'}`}>{item.name}</span>}
                             </Link>
                         </li>
                     );

@@ -1,0 +1,949 @@
+{
+  "comedores": [
+    {
+      "id": "4bf4fc94-6044-4db7-aff6-289a7b564ebd",
+      "nombre": "RANSA"
+    },
+    {
+      "id": "2ac5ecf3-8e25-4dd5-a461-ad5804bd0b42",
+      "nombre": "ICH"
+    },
+    {
+      "id": "035a54ff-2d04-441d-be14-fbc88081bc96",
+      "nombre": "FADESA"
+    },
+    {
+      "id": "4ed893ca-b59e-440c-ad9a-68f8cef67676",
+      "nombre": "FITESA"
+    },
+    {
+      "id": "5ad0e9a0-4c1e-4b4a-a42b-9d0232013f85",
+      "nombre": "FUNDICION"
+    },
+    {
+      "id": "7aa14f4e-b005-445e-a51f-b0f298c26d7a",
+      "nombre": "MACHU PICCHU"
+    },
+    {
+      "id": "12ad1853-0e56-4390-809f-027dd792f12c",
+      "nombre": "MEDLOG"
+    },
+    {
+      "id": "3de8ac84-b448-41b0-9c2c-fe18494d4305",
+      "nombre": "METALPREN"
+    },
+    {
+      "id": "62c7d7a2-b999-41fb-b8a1-c1cc00d0a316",
+      "nombre": "MOLICENTRO"
+    },
+    {
+      "id": "ced94bb0-a566-41cb-a966-9c105c872a0c",
+      "nombre": "SAN JORGE"
+    },
+    {
+      "id": "3e7708a2-0de3-44e9-aadd-22c96f1aec9a",
+      "nombre": "TECSUR"
+    },
+    {
+      "id": "2660489e-9a3d-473c-a860-fcd1f57a9dec",
+      "nombre": "VOLCAN"
+    },
+    {
+      "id": "0b83587b-aa1e-46cd-ad78-29a21b418286",
+      "nombre": "PAMOLSA"
+    },
+    {
+      "id": "d5adddd5-6323-4e19-97f3-ec7c2ab3a8c6",
+      "nombre": "TOTTUS-CDF"
+    },
+    {
+      "id": "0289e381-86ad-441c-a3ed-d2c0784ed0d0",
+      "nombre": "GCI"
+    },
+    {
+      "id": "4c3b1077-97b4-4eae-9c36-62268e36d928",
+      "nombre": "TOTTUS-CDS"
+    },
+    {
+      "id": "e7da036f-2fb6-48f3-974c-b0029233c00c",
+      "nombre": "TOTTUS-PPA"
+    }
+  ],
+  "fields": [
+    {
+      "comedor_id": "62c7d7a2-b999-41fb-b8a1-c1cc00d0a316",
+      "nombre_campo": "DESAYUNO CUPON",
+      "categoria": "DESAYUNO"
+    },
+    {
+      "comedor_id": "3e7708a2-0de3-44e9-aadd-22c96f1aec9a",
+      "nombre_campo": "PORCION DE HUEVO SANCOCHADO",
+      "categoria": "OTRO"
+    },
+    {
+      "comedor_id": "3e7708a2-0de3-44e9-aadd-22c96f1aec9a",
+      "nombre_campo": "BEBIDAS 2.5",
+      "categoria": "BEBIDA"
+    },
+    {
+      "comedor_id": "3e7708a2-0de3-44e9-aadd-22c96f1aec9a",
+      "nombre_campo": "SALAD BAR",
+      "categoria": "OTRO"
+    },
+    {
+      "comedor_id": "3e7708a2-0de3-44e9-aadd-22c96f1aec9a",
+      "nombre_campo": "SEGUNDO SOLO",
+      "categoria": "ALMUERZO"
+    },
+    {
+      "comedor_id": "2ac5ecf3-8e25-4dd5-a461-ad5804bd0b42",
+      "nombre_campo": "ALMUERZOS SISTEMA",
+      "categoria": "ALMUERZO"
+    },
+    {
+      "comedor_id": "3de8ac84-b448-41b0-9c2c-fe18494d4305",
+      "nombre_campo": "ALMUERZOS TERCEROS",
+      "categoria": "ALMUERZO"
+    },
+    {
+      "comedor_id": "3e7708a2-0de3-44e9-aadd-22c96f1aec9a",
+      "nombre_campo": "ALMUERZO ADICIONAL",
+      "categoria": "ALMUERZO"
+    },
+    {
+      "comedor_id": "62c7d7a2-b999-41fb-b8a1-c1cc00d0a316",
+      "nombre_campo": "PAN VARIADOS",
+      "categoria": "PAN"
+    },
+    {
+      "comedor_id": "3e7708a2-0de3-44e9-aadd-22c96f1aec9a",
+      "nombre_campo": "ENSALADAS DE FRUTAS",
+      "categoria": "OTRO"
+    },
+    {
+      "comedor_id": "3e7708a2-0de3-44e9-aadd-22c96f1aec9a",
+      "nombre_campo": "TAMAL",
+      "categoria": "OTRO"
+    },
+    {
+      "comedor_id": "3e7708a2-0de3-44e9-aadd-22c96f1aec9a",
+      "nombre_campo": "SOPA / ENTRADA",
+      "categoria": "OTRO"
+    },
+    {
+      "comedor_id": "3e7708a2-0de3-44e9-aadd-22c96f1aec9a",
+      "nombre_campo": "PACK DESCARTABLES",
+      "categoria": "OTRO"
+    },
+    {
+      "comedor_id": "2ac5ecf3-8e25-4dd5-a461-ad5804bd0b42",
+      "nombre_campo": "ALMUERZOS INVITADOS",
+      "categoria": "ALMUERZO"
+    },
+    {
+      "comedor_id": "2ac5ecf3-8e25-4dd5-a461-ad5804bd0b42",
+      "nombre_campo": "ALMUERZOS VIGILANCIA",
+      "categoria": "ALMUERZO"
+    },
+    {
+      "comedor_id": "2ac5ecf3-8e25-4dd5-a461-ad5804bd0b42",
+      "nombre_campo": "CENAS SISTEMA",
+      "categoria": "CENA"
+    },
+    {
+      "comedor_id": "2ac5ecf3-8e25-4dd5-a461-ad5804bd0b42",
+      "nombre_campo": "CENAS INVITADOS",
+      "categoria": "CENA"
+    },
+    {
+      "comedor_id": "2ac5ecf3-8e25-4dd5-a461-ad5804bd0b42",
+      "nombre_campo": "CENAS VIGILANCIA",
+      "categoria": "CENA"
+    },
+    {
+      "comedor_id": "035a54ff-2d04-441d-be14-fbc88081bc96",
+      "nombre_campo": "ALMUERZOS SISTEMA",
+      "categoria": "ALMUERZO"
+    },
+    {
+      "comedor_id": "035a54ff-2d04-441d-be14-fbc88081bc96",
+      "nombre_campo": "ALMUERZOS INVITADOS",
+      "categoria": "ALMUERZO"
+    },
+    {
+      "comedor_id": "035a54ff-2d04-441d-be14-fbc88081bc96",
+      "nombre_campo": "ALMUERZOS OTROS",
+      "categoria": "ALMUERZO"
+    },
+    {
+      "comedor_id": "035a54ff-2d04-441d-be14-fbc88081bc96",
+      "nombre_campo": "CENAS SISTEMA",
+      "categoria": "CENA"
+    },
+    {
+      "comedor_id": "035a54ff-2d04-441d-be14-fbc88081bc96",
+      "nombre_campo": "CENAS INVITADOS",
+      "categoria": "CENA"
+    },
+    {
+      "comedor_id": "035a54ff-2d04-441d-be14-fbc88081bc96",
+      "nombre_campo": "CENAS OTROS",
+      "categoria": "CENA"
+    },
+    {
+      "comedor_id": "4ed893ca-b59e-440c-ad9a-68f8cef67676",
+      "nombre_campo": "DESAYUNOS SISTEMA",
+      "categoria": "DESAYUNO"
+    },
+    {
+      "comedor_id": "4ed893ca-b59e-440c-ad9a-68f8cef67676",
+      "nombre_campo": "DESAYUNOS OTROS",
+      "categoria": "DESAYUNO"
+    },
+    {
+      "comedor_id": "4ed893ca-b59e-440c-ad9a-68f8cef67676",
+      "nombre_campo": "ALMUERZOS SISTEMA",
+      "categoria": "ALMUERZO"
+    },
+    {
+      "comedor_id": "4ed893ca-b59e-440c-ad9a-68f8cef67676",
+      "nombre_campo": "ALMUERZOS OTROS",
+      "categoria": "ALMUERZO"
+    },
+    {
+      "comedor_id": "4ed893ca-b59e-440c-ad9a-68f8cef67676",
+      "nombre_campo": "CENAS SISTEMA",
+      "categoria": "CENA"
+    },
+    {
+      "comedor_id": "4ed893ca-b59e-440c-ad9a-68f8cef67676",
+      "nombre_campo": "CENAS OTROS",
+      "categoria": "CENA"
+    },
+    {
+      "comedor_id": "4ed893ca-b59e-440c-ad9a-68f8cef67676",
+      "nombre_campo": "AMANECIDAS SISTEMA",
+      "categoria": "AMANECIDA"
+    },
+    {
+      "comedor_id": "4ed893ca-b59e-440c-ad9a-68f8cef67676",
+      "nombre_campo": "AMANECIDAS OTROS",
+      "categoria": "AMANECIDA"
+    },
+    {
+      "comedor_id": "5ad0e9a0-4c1e-4b4a-a42b-9d0232013f85",
+      "nombre_campo": "DESAYUNOS SISTEMA",
+      "categoria": "DESAYUNO"
+    },
+    {
+      "comedor_id": "5ad0e9a0-4c1e-4b4a-a42b-9d0232013f85",
+      "nombre_campo": "ALMUERZOS SISTEMA",
+      "categoria": "ALMUERZO"
+    },
+    {
+      "comedor_id": "5ad0e9a0-4c1e-4b4a-a42b-9d0232013f85",
+      "nombre_campo": "ALMUERZOS VIGILANTES",
+      "categoria": "ALMUERZO"
+    },
+    {
+      "comedor_id": "5ad0e9a0-4c1e-4b4a-a42b-9d0232013f85",
+      "nombre_campo": "ALMUERZOS ENFERMERAS",
+      "categoria": "ALMUERZO"
+    },
+    {
+      "comedor_id": "5ad0e9a0-4c1e-4b4a-a42b-9d0232013f85",
+      "nombre_campo": "ALMUERZOS OTROS",
+      "categoria": "ALMUERZO"
+    },
+    {
+      "comedor_id": "5ad0e9a0-4c1e-4b4a-a42b-9d0232013f85",
+      "nombre_campo": "CENAS",
+      "categoria": "CENA"
+    },
+    {
+      "comedor_id": "5ad0e9a0-4c1e-4b4a-a42b-9d0232013f85",
+      "nombre_campo": "CENAS OTROS",
+      "categoria": "CENA"
+    },
+    {
+      "comedor_id": "5ad0e9a0-4c1e-4b4a-a42b-9d0232013f85",
+      "nombre_campo": "LONCHES",
+      "categoria": "LONCHE"
+    },
+    {
+      "comedor_id": "7aa14f4e-b005-445e-a51f-b0f298c26d7a",
+      "nombre_campo": "ALMUERZOS SOLICITADOS",
+      "categoria": "ALMUERZO"
+    },
+    {
+      "comedor_id": "7aa14f4e-b005-445e-a51f-b0f298c26d7a",
+      "nombre_campo": "ALMUERZOS CONSUMIDOS",
+      "categoria": "ALMUERZO"
+    },
+    {
+      "comedor_id": "7aa14f4e-b005-445e-a51f-b0f298c26d7a",
+      "nombre_campo": "ALMUERZOS QUEBRADO",
+      "categoria": "ALMUERZO"
+    },
+    {
+      "comedor_id": "7aa14f4e-b005-445e-a51f-b0f298c26d7a",
+      "nombre_campo": "CENAS SOLICITADOS",
+      "categoria": "CENA"
+    },
+    {
+      "comedor_id": "7aa14f4e-b005-445e-a51f-b0f298c26d7a",
+      "nombre_campo": "CENAS CONSUMIDOS",
+      "categoria": "CENA"
+    },
+    {
+      "comedor_id": "7aa14f4e-b005-445e-a51f-b0f298c26d7a",
+      "nombre_campo": "CENAS QUEBRADO",
+      "categoria": "CENA"
+    },
+    {
+      "comedor_id": "12ad1853-0e56-4390-809f-027dd792f12c",
+      "nombre_campo": "ALMUERZOS TICKETS",
+      "categoria": "ALMUERZO"
+    },
+    {
+      "comedor_id": "12ad1853-0e56-4390-809f-027dd792f12c",
+      "nombre_campo": "ALMUERZOS SISTEMA",
+      "categoria": "ALMUERZO"
+    },
+    {
+      "comedor_id": "12ad1853-0e56-4390-809f-027dd792f12c",
+      "nombre_campo": "CENAS TICKETS",
+      "categoria": "CENA"
+    },
+    {
+      "comedor_id": "12ad1853-0e56-4390-809f-027dd792f12c",
+      "nombre_campo": "CENAS SISTEMA",
+      "categoria": "CENA"
+    },
+    {
+      "comedor_id": "3de8ac84-b448-41b0-9c2c-fe18494d4305",
+      "nombre_campo": "DESAYUNOS SISTEMA",
+      "categoria": "DESAYUNO"
+    },
+    {
+      "comedor_id": "3de8ac84-b448-41b0-9c2c-fe18494d4305",
+      "nombre_campo": "BEBIDAS",
+      "categoria": "BEBIDA"
+    },
+    {
+      "comedor_id": "3de8ac84-b448-41b0-9c2c-fe18494d4305",
+      "nombre_campo": "PAN",
+      "categoria": "PAN"
+    },
+    {
+      "comedor_id": "3de8ac84-b448-41b0-9c2c-fe18494d4305",
+      "nombre_campo": "ALMUERZOS SISTEMA",
+      "categoria": "ALMUERZO"
+    },
+    {
+      "comedor_id": "3de8ac84-b448-41b0-9c2c-fe18494d4305",
+      "nombre_campo": "ALMUERZOS VIGILANTE",
+      "categoria": "ALMUERZO"
+    },
+    {
+      "comedor_id": "3de8ac84-b448-41b0-9c2c-fe18494d4305",
+      "nombre_campo": "ALMUERZOS CONTADO",
+      "categoria": "ALMUERZO"
+    },
+    {
+      "comedor_id": "3de8ac84-b448-41b0-9c2c-fe18494d4305",
+      "nombre_campo": "ALMUERZOS YAPE",
+      "categoria": "ALMUERZO"
+    },
+    {
+      "comedor_id": "3de8ac84-b448-41b0-9c2c-fe18494d4305",
+      "nombre_campo": "ALMUERZOS INVITADOS",
+      "categoria": "ALMUERZO"
+    },
+    {
+      "comedor_id": "3de8ac84-b448-41b0-9c2c-fe18494d4305",
+      "nombre_campo": "CENA SISTEMA",
+      "categoria": "CENA"
+    },
+    {
+      "comedor_id": "3de8ac84-b448-41b0-9c2c-fe18494d4305",
+      "nombre_campo": "CENA INVITADO",
+      "categoria": "CENA"
+    },
+    {
+      "comedor_id": "3de8ac84-b448-41b0-9c2c-fe18494d4305",
+      "nombre_campo": "CENA DIETA",
+      "categoria": "CENA"
+    },
+    {
+      "comedor_id": "3de8ac84-b448-41b0-9c2c-fe18494d4305",
+      "nombre_campo": "CARTA 1",
+      "categoria": "EXTRA"
+    },
+    {
+      "comedor_id": "3de8ac84-b448-41b0-9c2c-fe18494d4305",
+      "nombre_campo": "CARTA 2",
+      "categoria": "EXTRA"
+    },
+    {
+      "comedor_id": "3de8ac84-b448-41b0-9c2c-fe18494d4305",
+      "nombre_campo": "CARTA 3",
+      "categoria": "EXTRA"
+    },
+    {
+      "comedor_id": "62c7d7a2-b999-41fb-b8a1-c1cc00d0a316",
+      "nombre_campo": "ALMUERZO SUBV",
+      "categoria": "ALMUERZO"
+    },
+    {
+      "comedor_id": "62c7d7a2-b999-41fb-b8a1-c1cc00d0a316",
+      "nombre_campo": "ALMUERZO NORMAL",
+      "categoria": "ALMUERZO"
+    },
+    {
+      "comedor_id": "62c7d7a2-b999-41fb-b8a1-c1cc00d0a316",
+      "nombre_campo": "ALMUERZO INVITADOS",
+      "categoria": "ALMUERZO"
+    },
+    {
+      "comedor_id": "62c7d7a2-b999-41fb-b8a1-c1cc00d0a316",
+      "nombre_campo": "ALM CONTADO/YAPE",
+      "categoria": "ALMUERZO"
+    },
+    {
+      "comedor_id": "62c7d7a2-b999-41fb-b8a1-c1cc00d0a316",
+      "nombre_campo": "ALM CUMPLEAÑERO",
+      "categoria": "ALMUERZO"
+    },
+    {
+      "comedor_id": "62c7d7a2-b999-41fb-b8a1-c1cc00d0a316",
+      "nombre_campo": "CENA",
+      "categoria": "CENA"
+    },
+    {
+      "comedor_id": "62c7d7a2-b999-41fb-b8a1-c1cc00d0a316",
+      "nombre_campo": "CENA INVITADO",
+      "categoria": "CENA"
+    },
+    {
+      "comedor_id": "62c7d7a2-b999-41fb-b8a1-c1cc00d0a316",
+      "nombre_campo": "CENA CUMPLEAÑERO",
+      "categoria": "CENA"
+    },
+    {
+      "comedor_id": "62c7d7a2-b999-41fb-b8a1-c1cc00d0a316",
+      "nombre_campo": "CAFÉ",
+      "categoria": "EXTRA"
+    },
+    {
+      "comedor_id": "62c7d7a2-b999-41fb-b8a1-c1cc00d0a316",
+      "nombre_campo": "CUPON HELADOS",
+      "categoria": "EXTRA"
+    },
+    {
+      "comedor_id": "62c7d7a2-b999-41fb-b8a1-c1cc00d0a316",
+      "nombre_campo": "DES. ESPECIAL",
+      "categoria": "DESAYUNO"
+    },
+    {
+      "comedor_id": "62c7d7a2-b999-41fb-b8a1-c1cc00d0a316",
+      "nombre_campo": "DESAYUNOS",
+      "categoria": "DESAYUNO"
+    },
+    {
+      "comedor_id": "d5adddd5-6323-4e19-97f3-ec7c2ab3a8c6",
+      "nombre_campo": "DESAYUNO ALMARK",
+      "categoria": "DESAYUNO"
+    },
+    {
+      "comedor_id": "d5adddd5-6323-4e19-97f3-ec7c2ab3a8c6",
+      "nombre_campo": "CENA ALMARK",
+      "categoria": "CENA"
+    },
+    {
+      "comedor_id": "d5adddd5-6323-4e19-97f3-ec7c2ab3a8c6",
+      "nombre_campo": "ALMUERZO ALMARK",
+      "categoria": "ALMUERZO"
+    },
+    {
+      "comedor_id": "d5adddd5-6323-4e19-97f3-ec7c2ab3a8c6",
+      "nombre_campo": "MERIENDAS DIA Y NOCHE ALMARK",
+      "categoria": "ALMUERZO"
+    },
+    {
+      "comedor_id": "d5adddd5-6323-4e19-97f3-ec7c2ab3a8c6",
+      "nombre_campo": "BEBIDAS + 2 PANES ALMARK",
+      "categoria": "ALMUERZO"
+    },
+    {
+      "comedor_id": "d5adddd5-6323-4e19-97f3-ec7c2ab3a8c6",
+      "nombre_campo": "SOLO 2 PANES ALMARK",
+      "categoria": "ALMUERZO"
+    },
+    {
+      "comedor_id": "d5adddd5-6323-4e19-97f3-ec7c2ab3a8c6",
+      "nombre_campo": "PANES TOTTUS",
+      "categoria": "EXTRA"
+    },
+    {
+      "comedor_id": "d5adddd5-6323-4e19-97f3-ec7c2ab3a8c6",
+      "nombre_campo": "BEBIDAS TOTTUS",
+      "categoria": "EXTRA"
+    },
+    {
+      "comedor_id": "d5adddd5-6323-4e19-97f3-ec7c2ab3a8c6",
+      "nombre_campo": "ALMUERZOS TOTTUS",
+      "categoria": "EXTRA"
+    },
+    {
+      "comedor_id": "d5adddd5-6323-4e19-97f3-ec7c2ab3a8c6",
+      "nombre_campo": "CENAS TOTTUS",
+      "categoria": "EXTRA"
+    },
+    {
+      "comedor_id": "4c3b1077-97b4-4eae-9c36-62268e36d928",
+      "nombre_campo": "DESAYUNO ALMARK",
+      "categoria": "DESAYUNO"
+    },
+    {
+      "comedor_id": "4c3b1077-97b4-4eae-9c36-62268e36d928",
+      "nombre_campo": "CENA ALMARK",
+      "categoria": "CENA"
+    },
+    {
+      "comedor_id": "4c3b1077-97b4-4eae-9c36-62268e36d928",
+      "nombre_campo": "ALMUERZO ALMARK",
+      "categoria": "ALMUERZO"
+    },
+    {
+      "comedor_id": "4c3b1077-97b4-4eae-9c36-62268e36d928",
+      "nombre_campo": "MERIENDAS DIA Y NOCHE ALMARK",
+      "categoria": "ALMUERZO"
+    },
+    {
+      "comedor_id": "4c3b1077-97b4-4eae-9c36-62268e36d928",
+      "nombre_campo": "BEBIDAS + 2 PANES ALMARK",
+      "categoria": "ALMUERZO"
+    },
+    {
+      "comedor_id": "4c3b1077-97b4-4eae-9c36-62268e36d928",
+      "nombre_campo": "SOLO 2 PANES ALMARK",
+      "categoria": "ALMUERZO"
+    },
+    {
+      "comedor_id": "4c3b1077-97b4-4eae-9c36-62268e36d928",
+      "nombre_campo": "PANES TOTTUS",
+      "categoria": "EXTRA"
+    },
+    {
+      "comedor_id": "4c3b1077-97b4-4eae-9c36-62268e36d928",
+      "nombre_campo": "BEBIDAS TOTTUS",
+      "categoria": "EXTRA"
+    },
+    {
+      "comedor_id": "4c3b1077-97b4-4eae-9c36-62268e36d928",
+      "nombre_campo": "ALMUERZOS TOTTUS",
+      "categoria": "EXTRA"
+    },
+    {
+      "comedor_id": "4c3b1077-97b4-4eae-9c36-62268e36d928",
+      "nombre_campo": "CENAS TOTTUS",
+      "categoria": "EXTRA"
+    },
+    {
+      "comedor_id": "e7da036f-2fb6-48f3-974c-b0029233c00c",
+      "nombre_campo": "DESAYUNO ALMARK",
+      "categoria": "DESAYUNO"
+    },
+    {
+      "comedor_id": "e7da036f-2fb6-48f3-974c-b0029233c00c",
+      "nombre_campo": "CENA ALMARK",
+      "categoria": "CENA"
+    },
+    {
+      "comedor_id": "e7da036f-2fb6-48f3-974c-b0029233c00c",
+      "nombre_campo": "ALMUERZO ALMARK",
+      "categoria": "ALMUERZO"
+    },
+    {
+      "comedor_id": "e7da036f-2fb6-48f3-974c-b0029233c00c",
+      "nombre_campo": "MERIENDAS DIA Y NOCHE ALMARK",
+      "categoria": "ALMUERZO"
+    },
+    {
+      "comedor_id": "ced94bb0-a566-41cb-a966-9c105c872a0c",
+      "nombre_campo": "BEBIDA",
+      "categoria": "BEBIDA"
+    },
+    {
+      "comedor_id": "ced94bb0-a566-41cb-a966-9c105c872a0c",
+      "nombre_campo": "PAN",
+      "categoria": "PAN"
+    },
+    {
+      "comedor_id": "3e7708a2-0de3-44e9-aadd-22c96f1aec9a",
+      "nombre_campo": "PAN 5",
+      "categoria": "PAN"
+    },
+    {
+      "comedor_id": "3e7708a2-0de3-44e9-aadd-22c96f1aec9a",
+      "nombre_campo": "COMBO 1",
+      "categoria": "OTRO"
+    },
+    {
+      "comedor_id": "3e7708a2-0de3-44e9-aadd-22c96f1aec9a",
+      "nombre_campo": "COMBO 2",
+      "categoria": "OTRO"
+    },
+    {
+      "comedor_id": "3e7708a2-0de3-44e9-aadd-22c96f1aec9a",
+      "nombre_campo": "ALMUERZO SISTEMA",
+      "categoria": "ALMUERZO"
+    },
+    {
+      "comedor_id": "2660489e-9a3d-473c-a860-fcd1f57a9dec",
+      "nombre_campo": "ALMUERZO SISTEMA",
+      "categoria": "ALMUERZO"
+    },
+    {
+      "comedor_id": "2660489e-9a3d-473c-a860-fcd1f57a9dec",
+      "nombre_campo": "ALM SEGURIDAD",
+      "categoria": "ALMUERZO"
+    },
+    {
+      "comedor_id": "2660489e-9a3d-473c-a860-fcd1f57a9dec",
+      "nombre_campo": "CENAS SISTEMA",
+      "categoria": "CENA"
+    },
+    {
+      "comedor_id": "0b83587b-aa1e-46cd-ad78-29a21b418286",
+      "nombre_campo": "ALMUERZOS FAUCETT",
+      "categoria": "ALMUERZO"
+    },
+    {
+      "comedor_id": "0b83587b-aa1e-46cd-ad78-29a21b418286",
+      "nombre_campo": "ALMUERZOS GAMBETTA",
+      "categoria": "ALMUERZO"
+    },
+    {
+      "comedor_id": "0b83587b-aa1e-46cd-ad78-29a21b418286",
+      "nombre_campo": "CENA GAMBETTA",
+      "categoria": "CENA"
+    },
+    {
+      "comedor_id": "0b83587b-aa1e-46cd-ad78-29a21b418286",
+      "nombre_campo": "CENA FAUCETT",
+      "categoria": "CENA"
+    },
+    {
+      "comedor_id": "e7da036f-2fb6-48f3-974c-b0029233c00c",
+      "nombre_campo": "BEBIDAS + 2 PANES ALMARK",
+      "categoria": "ALMUERZO"
+    },
+    {
+      "comedor_id": "e7da036f-2fb6-48f3-974c-b0029233c00c",
+      "nombre_campo": "SOLO 2 PANES ALMARK",
+      "categoria": "ALMUERZO"
+    },
+    {
+      "comedor_id": "e7da036f-2fb6-48f3-974c-b0029233c00c",
+      "nombre_campo": "PANES TOTTUS",
+      "categoria": "EXTRA"
+    },
+    {
+      "comedor_id": "e7da036f-2fb6-48f3-974c-b0029233c00c",
+      "nombre_campo": "BEBIDAS TOTTUS",
+      "categoria": "EXTRA"
+    },
+    {
+      "comedor_id": "e7da036f-2fb6-48f3-974c-b0029233c00c",
+      "nombre_campo": "ALMUERZOS TOTTUS",
+      "categoria": "EXTRA"
+    },
+    {
+      "comedor_id": "e7da036f-2fb6-48f3-974c-b0029233c00c",
+      "nombre_campo": "CENAS TOTTUS",
+      "categoria": "EXTRA"
+    },
+    {
+      "comedor_id": "0289e381-86ad-441c-a3ed-d2c0784ed0d0",
+      "nombre_campo": "DESAYUNOS SISTEMA",
+      "categoria": "DESAYUNO"
+    },
+    {
+      "comedor_id": "0289e381-86ad-441c-a3ed-d2c0784ed0d0",
+      "nombre_campo": "DESAYUNO TECSUR",
+      "categoria": "DESAYUNO"
+    },
+    {
+      "comedor_id": "0289e381-86ad-441c-a3ed-d2c0784ed0d0",
+      "nombre_campo": "DESAYUNO GCI",
+      "categoria": "DESAYUNO"
+    },
+    {
+      "comedor_id": "0289e381-86ad-441c-a3ed-d2c0784ed0d0",
+      "nombre_campo": "ALMUERZO SEGURIDAD",
+      "categoria": "ALMUERZO"
+    },
+    {
+      "comedor_id": "0289e381-86ad-441c-a3ed-d2c0784ed0d0",
+      "nombre_campo": "ALMUERZO SISTEMA",
+      "categoria": "ALMUERZO"
+    },
+    {
+      "comedor_id": "0289e381-86ad-441c-a3ed-d2c0784ed0d0",
+      "nombre_campo": "ALMUERZO ADICIONAL",
+      "categoria": "ALMUERZO"
+    },
+    {
+      "comedor_id": "0289e381-86ad-441c-a3ed-d2c0784ed0d0",
+      "nombre_campo": "ALM FAC TECSUR",
+      "categoria": "ALMUERZO"
+    },
+    {
+      "comedor_id": "0289e381-86ad-441c-a3ed-d2c0784ed0d0",
+      "nombre_campo": "PAN DEBIL",
+      "categoria": "PAN"
+    },
+    {
+      "comedor_id": "0289e381-86ad-441c-a3ed-d2c0784ed0d0",
+      "nombre_campo": "PAN FUERTE",
+      "categoria": "PAN"
+    },
+    {
+      "comedor_id": "0289e381-86ad-441c-a3ed-d2c0784ed0d0",
+      "nombre_campo": "TOTAL PACK DESC",
+      "categoria": "EXTRA"
+    },
+    {
+      "comedor_id": "0289e381-86ad-441c-a3ed-d2c0784ed0d0",
+      "nombre_campo": "TOTAL DESCARTABLES",
+      "categoria": "EXTRA"
+    },
+    {
+      "comedor_id": "0289e381-86ad-441c-a3ed-d2c0784ed0d0",
+      "nombre_campo": "CAFÉ",
+      "categoria": "EXTRA"
+    },
+    {
+      "comedor_id": "0289e381-86ad-441c-a3ed-d2c0784ed0d0",
+      "nombre_campo": "COMBO 1",
+      "categoria": "EXTRA"
+    },
+    {
+      "comedor_id": "0289e381-86ad-441c-a3ed-d2c0784ed0d0",
+      "nombre_campo": "COMBO 2",
+      "categoria": "EXTRA"
+    },
+    {
+      "comedor_id": "4c3b1077-97b4-4eae-9c36-62268e36d928",
+      "nombre_campo": "ALMUERZOS RGIS",
+      "categoria": "ALMUERZO"
+    },
+    {
+      "comedor_id": "4bf4fc94-6044-4db7-aff6-289a7b564ebd",
+      "nombre_campo": "DESAYUNO SISTEMA",
+      "categoria": "DESAYUNO"
+    },
+    {
+      "comedor_id": "4bf4fc94-6044-4db7-aff6-289a7b564ebd",
+      "nombre_campo": "ALMUERZO SISTEMA",
+      "categoria": "ALMUERZO"
+    },
+    {
+      "comedor_id": "4bf4fc94-6044-4db7-aff6-289a7b564ebd",
+      "nombre_campo": "ALMUERZO CONT. 13",
+      "categoria": "ALMUERZO"
+    },
+    {
+      "comedor_id": "4bf4fc94-6044-4db7-aff6-289a7b564ebd",
+      "nombre_campo": "ALMUERZO CONT. 12",
+      "categoria": "ALMUERZO"
+    },
+    {
+      "comedor_id": "4bf4fc94-6044-4db7-aff6-289a7b564ebd",
+      "nombre_campo": "SEGUNDO SOLO CONT 10",
+      "categoria": "ALMUERZO"
+    },
+    {
+      "comedor_id": "4bf4fc94-6044-4db7-aff6-289a7b564ebd",
+      "nombre_campo": "ALMUERZO ÝAPE. 13",
+      "categoria": "ALMUERZO"
+    },
+    {
+      "comedor_id": "4bf4fc94-6044-4db7-aff6-289a7b564ebd",
+      "nombre_campo": "ALMUERZO YAPE. 12",
+      "categoria": "ALMUERZO"
+    },
+    {
+      "comedor_id": "4bf4fc94-6044-4db7-aff6-289a7b564ebd",
+      "nombre_campo": "SEGUNDO SOLO YAPE 10",
+      "categoria": "ALMUERZO"
+    },
+    {
+      "comedor_id": "4bf4fc94-6044-4db7-aff6-289a7b564ebd",
+      "nombre_campo": "ALMUERZO TERCEROS",
+      "categoria": "ALMUERZO"
+    },
+    {
+      "comedor_id": "4bf4fc94-6044-4db7-aff6-289a7b564ebd",
+      "nombre_campo": "CENA ",
+      "categoria": "CENA"
+    },
+    {
+      "comedor_id": "4bf4fc94-6044-4db7-aff6-289a7b564ebd",
+      "nombre_campo": "AMANECIDA",
+      "categoria": "AMANECIDA"
+    },
+    {
+      "comedor_id": "3de8ac84-b448-41b0-9c2c-fe18494d4305",
+      "nombre_campo": "ALM DIETA",
+      "categoria": "ALMUERZO"
+    },
+    {
+      "comedor_id": "ced94bb0-a566-41cb-a966-9c105c872a0c",
+      "nombre_campo": "VALES DESAYUNO",
+      "categoria": "DESAYUNO"
+    },
+    {
+      "comedor_id": "ced94bb0-a566-41cb-a966-9c105c872a0c",
+      "nombre_campo": "ALM OTROS",
+      "categoria": "ALMUERZO"
+    },
+    {
+      "comedor_id": "ced94bb0-a566-41cb-a966-9c105c872a0c",
+      "nombre_campo": "ALM MANPOWER",
+      "categoria": "ALMUERZO"
+    },
+    {
+      "comedor_id": "ced94bb0-a566-41cb-a966-9c105c872a0c",
+      "nombre_campo": "ALM CONTADOS",
+      "categoria": "ALMUERZO"
+    },
+    {
+      "comedor_id": "ced94bb0-a566-41cb-a966-9c105c872a0c",
+      "nombre_campo": "ALM YAPES",
+      "categoria": "ALMUERZO"
+    },
+    {
+      "comedor_id": "ced94bb0-a566-41cb-a966-9c105c872a0c",
+      "nombre_campo": "CENA SISTEMA",
+      "categoria": "CENA"
+    },
+    {
+      "comedor_id": "ced94bb0-a566-41cb-a966-9c105c872a0c",
+      "nombre_campo": "CENA OTROS",
+      "categoria": "CENA"
+    },
+    {
+      "comedor_id": "3e7708a2-0de3-44e9-aadd-22c96f1aec9a",
+      "nombre_campo": "ALMUERZOS CLEAN",
+      "categoria": "ALMUERZO"
+    },
+    {
+      "comedor_id": "3e7708a2-0de3-44e9-aadd-22c96f1aec9a",
+      "nombre_campo": "ALMUERZOS CONTADOS",
+      "categoria": "ALMUERZO"
+    },
+    {
+      "comedor_id": "3e7708a2-0de3-44e9-aadd-22c96f1aec9a",
+      "nombre_campo": "ALMUERZOS 10",
+      "categoria": "ALMUERZO"
+    },
+    {
+      "comedor_id": "3e7708a2-0de3-44e9-aadd-22c96f1aec9a",
+      "nombre_campo": "ALMUERZOS CAPACITACIÓN",
+      "categoria": "ALMUERZO"
+    },
+    {
+      "comedor_id": "3e7708a2-0de3-44e9-aadd-22c96f1aec9a",
+      "nombre_campo": "PAN",
+      "categoria": "PAN"
+    },
+    {
+      "comedor_id": "3e7708a2-0de3-44e9-aadd-22c96f1aec9a",
+      "nombre_campo": "BEBIDA",
+      "categoria": "BEBIDA"
+    },
+    {
+      "comedor_id": "3e7708a2-0de3-44e9-aadd-22c96f1aec9a",
+      "nombre_campo": "JUGO",
+      "categoria": "BEBIDA"
+    },
+    {
+      "comedor_id": "3e7708a2-0de3-44e9-aadd-22c96f1aec9a",
+      "nombre_campo": "LONCHE DOBLE ",
+      "categoria": "LONCHE"
+    },
+    {
+      "comedor_id": "3e7708a2-0de3-44e9-aadd-22c96f1aec9a",
+      "nombre_campo": "REFRIGERIOS",
+      "categoria": "OTRO"
+    },
+    {
+      "comedor_id": "2660489e-9a3d-473c-a860-fcd1f57a9dec",
+      "nombre_campo": "DESAYUNO SISTEMA",
+      "categoria": "DESAYUNO"
+    },
+    {
+      "comedor_id": "2660489e-9a3d-473c-a860-fcd1f57a9dec",
+      "nombre_campo": "ALM. TERCEROS",
+      "categoria": "ALMUERZO"
+    },
+    {
+      "comedor_id": "0b83587b-aa1e-46cd-ad78-29a21b418286",
+      "nombre_campo": "AMANECIDA FAUCETT",
+      "categoria": "AMANECIDA"
+    },
+    {
+      "comedor_id": "0b83587b-aa1e-46cd-ad78-29a21b418286",
+      "nombre_campo": "AMANECIDA GAMBETTA",
+      "categoria": "AMANECIDA"
+    },
+    {
+      "comedor_id": "3e7708a2-0de3-44e9-aadd-22c96f1aec9a",
+      "nombre_campo": "PAN 2",
+      "categoria": "PAN"
+    },
+    {
+      "comedor_id": "3e7708a2-0de3-44e9-aadd-22c96f1aec9a",
+      "nombre_campo": "CARTA 18",
+      "categoria": "ALMUERZO"
+    },
+    {
+      "comedor_id": "3e7708a2-0de3-44e9-aadd-22c96f1aec9a",
+      "nombre_campo": "CARTA 20",
+      "categoria": "ALMUERZO"
+    },
+    {
+      "comedor_id": "3e7708a2-0de3-44e9-aadd-22c96f1aec9a",
+      "nombre_campo": "LONCHERA SIMPLE",
+      "categoria": "LONCHE"
+    },
+    {
+      "comedor_id": "3e7708a2-0de3-44e9-aadd-22c96f1aec9a",
+      "nombre_campo": "LONCHERA SIMPLE 2",
+      "categoria": "LONCHE"
+    },
+    {
+      "comedor_id": "3e7708a2-0de3-44e9-aadd-22c96f1aec9a",
+      "nombre_campo": "FRUTAS UN",
+      "categoria": "OTRO"
+    },
+    {
+      "comedor_id": "3e7708a2-0de3-44e9-aadd-22c96f1aec9a",
+      "nombre_campo": "CAFÉ ",
+      "categoria": "BEBIDA"
+    },
+    {
+      "comedor_id": "3e7708a2-0de3-44e9-aadd-22c96f1aec9a",
+      "nombre_campo": "POSTRE",
+      "categoria": "OTRO"
+    },
+    {
+      "comedor_id": "3e7708a2-0de3-44e9-aadd-22c96f1aec9a",
+      "nombre_campo": "TAPER DESCARTABLES",
+      "categoria": "OTRO"
+    }
+  ]
+}
