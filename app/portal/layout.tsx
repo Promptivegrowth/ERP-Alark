@@ -8,25 +8,18 @@ import { createClient } from '@/lib/supabase/client';
 import {
     Home,
     Calendar,
-    TableProperties,
-    Upload,
+    CalendarDays,
     History,
     User,
     LogOut,
     Menu,
-    ChevronDown,
-    Package,
-    Cake,
-    Wheat,
-    Receipt,
-    Coffee
 } from 'lucide-react';
 import { IncidenceModal } from '@/components/IncidenceModal';
 
 export default function PortalLayout({ children }: { children: React.ReactNode }) {
     const { user, comedorNombre, rol, loading } = useUser();
     const [collapsed, setCollapsed] = useState(false);
-    const [semanalOpen, setSemanalOpen] = useState(false);
+    // semanalOpen state hidden (generic items not shown in nav)
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const pathname = usePathname();
     const supabase = createClient();
@@ -42,14 +35,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
     const menuItems = [
         { name: 'Dashboard', href: '/portal/dashboard', icon: Home },
         { name: 'Reporte del día', href: '/portal/diario', icon: Calendar },
-    ];
-
-    const semanalItems = [
-        { name: 'Kardex Snacks', href: '/portal/semanal/kardex-snacks', icon: Package },
-        { name: 'Kardex Pasteles', href: '/portal/semanal/kardex-pasteles', icon: Cake },
-        { name: 'Pedido de Pan', href: '/portal/semanal/pedido-pan', icon: Wheat },
-        { name: 'Gastos', href: '/portal/semanal/gastos', icon: Receipt },
-        { name: 'Coffe & Otros', href: '/portal/semanal/coffe-otros', icon: Coffee },
+        { name: 'Reporte Semanal', href: '/portal/semanal/reporte', icon: CalendarDays },
     ];
 
     const NavContent = ({ mobile = false }: { mobile?: boolean }) => (
@@ -72,36 +58,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
                     );
                 })}
 
-                <li>
-                    <button
-                        onClick={() => setSemanalOpen(!semanalOpen)}
-                        className={`w-full flex items-center justify-between px-3 py-2 rounded-md transition-colors hover:bg-[#2D6A4F]/70`}
-                    >
-                        <div className="flex items-center gap-3">
-                            <TableProperties size={20} />
-                            {(!collapsed || mobile) && <span>Ingreso semanal</span>}
-                        </div>
-                        {(!collapsed || mobile) && <ChevronDown size={16} className={`transition-transform ${semanalOpen ? 'rotate-180' : ''}`} />}
-                    </button>
 
-                    {semanalOpen && (!collapsed || mobile) && (
-                        <ul className={`mt-1 space-y-1 ${mobile ? 'ml-6' : 'ml-6'}`}>
-                            {semanalItems.map((sub) => (
-                                <li key={sub.name}>
-                                    <Link
-                                        href={sub.href}
-                                        onClick={() => mobile && setIsMobileMenuOpen(false)}
-                                        className={`flex items-center gap-2 px-3 py-2 text-sm rounded-md transition-colors ${pathname === sub.href ? 'bg-[#2D6A4F]' : 'hover:bg-[#2D6A4F]/70'
-                                            }`}
-                                    >
-                                        <sub.icon size={16} />
-                                        <span>{sub.name}</span>
-                                    </Link>
-                                </li>
-                            ))}
-                        </ul>
-                    )}
-                </li>
 
                 <li>
                     <Link
