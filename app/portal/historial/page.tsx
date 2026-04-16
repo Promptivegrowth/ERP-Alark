@@ -18,11 +18,9 @@ export default function HistorialPage() {
     const [dataLoaded, setDataLoaded] = useState(false);
 
     const [liquidaciones, setLiquidaciones] = useState<any[]>([]);
-    const [snacks, setSnacks] = useState<any[]>([]);
-    const [pasteles, setPasteles] = useState<any[]>([]);
-    const [pan, setPan] = useState<any[]>([]);
-    const [gastos, setGastos] = useState<any[]>([]);
-    const [coffe, setCoffe] = useState<any[]>([]);
+    const [reportesSemanal, setReportesSemanal] = useState<any[]>([]);
+    const [camposByCampoId, setCamposByCampoId] = useState<Record<string, any>>({});
+    const [valoresBySemanal, setValoresBySemanal] = useState<Record<string, any[]>>({});
 
     const [selectedReporte, setSelectedReporte] = useState<any>(null);
     const [reporteDetalles, setReporteDetalles] = useState<any[]>([]);
@@ -33,7 +31,7 @@ export default function HistorialPage() {
         if (!comedorId) return;
 
         async function fetchData() {
-            // 1. Fetch Reporte Diario (new module)
+            // 1. Fetch Reporte Diario
             const { data: liqData } = await supabase
                 .from('reporte_diario')
                 .select('*')
@@ -42,50 +40,40 @@ export default function HistorialPage() {
                 .limit(100);
             if (liqData) setLiquidaciones(liqData);
 
-            // 2. Fetch Snacks
-            const { data: snackData } = await supabase
-                .from('kardex_snack_ventas')
-                .select(`*, semanas(fecha_inicio, fecha_fin), kardex_productos(nombre)`)
-                .eq('comedor_id', comedorId as any)
-                .order('created_at', { ascending: false })
-                .limit(100);
-            if (snackData) setSnacks(snackData);
+            // 2. Fetch Reportes Semanales (new module)
+            const { data: semData } = await (supabase as any)
+                .from('reporte_semanal')
+                .select('id, semana_inicio, semana_fin, estado, created_at')
+                .eq('comedor_id', comedorId)
+                .order('semana_inicio', { ascending: false })
+                .limit(50);
 
-            // 3. Fetch Pasteles
-            const { data: pastaData } = await supabase
-                .from('kardex_pasteles')
-                .select(`*, semanas(fecha_inicio, fecha_fin), kardex_productos(nombre)`)
-                .eq('comedor_id', comedorId as any)
-                .order('created_at', { ascending: false })
-                .limit(100);
-            if (pastaData) setPasteles(pastaData);
+            if (semData && semData.length > 0) {
+                setReportesSemanal(semData);
+                // Fetch campos for this comedor
+                const { data: camposData } = await (supabase as any)
+                    .from('reporte_semanal_campos')
+                    .select('id, nombre_campo, seccion, es_facturable, precio_ref')
+                    .eq('comedor_id', comedorId)
+                    .eq('activo', true);
+                const campos: Record<string, any> = {};
+                (camposData || []).forEach((c: any) => { campos[c.id] = c; });
+                setCamposByCampoId(campos);
 
-            // 4. Fetch Pan
-            const { data: panData } = await supabase
-                .from('pedido_pan')
-                .select(`*, semanas(fecha_inicio, fecha_fin)`)
-                .eq('comedor_id', comedorId as any)
-                .order('fecha', { ascending: false })
-                .limit(100);
-            if (panData) setPan(panData);
+                // Fetch valores for all semanas
+                const semIds = semData.map((s: any) => s.id);
+                const { data: valData } = await (supabase as any)
+                    .from('reporte_semanal_valores')
+                    .select('reporte_semanal_id, campo_id, dia_semana, cantidad, precio_unitario')
+                    .in('reporte_semanal_id', semIds);
 
-            // 5. Fetch Gastos
-            const { data: gasData } = await supabase
-                .from('gastos_operativos')
-                .select(`*, semanas(fecha_inicio, fecha_fin)`)
-                .eq('comedor_id', comedorId as any)
-                .order('fecha', { ascending: false })
-                .limit(100);
-            if (gasData) setGastos(gasData);
-
-            // 6. Fetch Coffe
-            const { data: coffeData } = await supabase
-                .from('coffe_otros')
-                .select(`*, semanas(fecha_inicio, fecha_fin)`)
-                .eq('comedor_id', comedorId as any)
-                .order('fecha', { ascending: false })
-                .limit(100);
-            if (coffeData) setCoffe(coffeData);
+                const valMap: Record<string, any[]> = {};
+                (valData || []).forEach((v: any) => {
+                    if (!valMap[v.reporte_semanal_id]) valMap[v.reporte_semanal_id] = [];
+                    valMap[v.reporte_semanal_id].push(v);
+                });
+                setValoresBySemanal(valMap);
+            }
 
             setDataLoaded(true);
         }
@@ -165,13 +153,9 @@ export default function HistorialPage() {
             </div>
 
             <Tabs defaultValue="diario" className="w-full">
-                <TabsList className="grid w-full grid-cols-6 mb-8">
-                    <TabsTrigger value="diario">Diario</TabsTrigger>
-                    <TabsTrigger value="snacks">Snacks</TabsTrigger>
-                    <TabsTrigger value="pasteles">Pasteles</TabsTrigger>
-                    <TabsTrigger value="pan">Pan</TabsTrigger>
-                    <TabsTrigger value="gastos">Gastos</TabsTrigger>
-                    <TabsTrigger value="coffe">Especiales</TabsTrigger>
+                <TabsList className="grid w-full grid-cols-2 mb-8">
+                    <TabsTrigger value="diario">Reporte Diario</TabsTrigger>
+                    <TabsTrigger value="semanal">Reporte Semanal</TabsTrigger>
                 </TabsList>
 
                 {/* TAB DIARIO */}
@@ -207,138 +191,65 @@ export default function HistorialPage() {
                     </div>
                 </TabsContent>
 
-                {/* TABS SEMANALES agrupadas por MES */}
-                <TabsContent value="snacks">
+                {/* TAB SEMANAL */}
+                <TabsContent value="semanal">
                     <div className="space-y-4">
-                        {groupByMonth(snacks).map(([monthKey, items]) => {
-                            const monthName = format(new Date(monthKey + '-02'), 'MMMM yyyy', { locale: es });
+                        {reportesSemanal.length === 0 ? (
+                            <div className="py-16 text-center text-zinc-400 italic">Aún no has enviado reportes semanales.</div>
+                        ) : reportesSemanal.map((rep: any) => {
+                            const inicio = new Date(rep.semana_inicio + 'T12:00:00');
+                            const fin = new Date(rep.semana_fin + 'T12:00:00');
+                            const label = `Semana ${format(inicio, 'dd MMM', { locale: es })} – ${format(fin, 'dd MMM yyyy', { locale: es })}`;
+                            const valores = valoresBySemanal[rep.id] || [];
+                            // Compute total
+                            const totalMonto = valores.reduce((acc: number, v: any) => {
+                                const campo = camposByCampoId[v.campo_id];
+                                if (!campo?.es_facturable) return acc;
+                                return acc + (v.cantidad * v.precio_unitario);
+                            }, 0);
+                            const totalQty = valores.reduce((acc: number, v: any) => {
+                                const campo = camposByCampoId[v.campo_id];
+                                if (!campo?.es_facturable) return acc;
+                                return acc + v.cantidad;
+                            }, 0);
                             return (
-                                <AccordionItem key={monthKey} title={monthName.toUpperCase()} count={items.length}>
+                                <AccordionItem key={rep.id} title={label} count={totalQty} icon={<CalendarIcon size={18} />}>
+                                    <div className="flex items-center justify-between mb-3 px-1">
+                                        <Badge className={rep.estado === 'cerrado'
+                                            ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                                            : 'bg-amber-100 text-amber-800 border-amber-300'}>
+                                            {rep.estado === 'cerrado' ? '✅ Enviado al admin' : '⏳ Borrador'}
+                                        </Badge>
+                                        <span className="font-black text-lg text-emerald-700">S/. {totalMonto.toFixed(2)}</span>
+                                    </div>
                                     <HistoryTable
-                                        headers={['Fecha Reg.', 'Producto', 'St. Inicial', 'Pedido', 'Ventas', 'St. Final', 'Merma']}
-                                        data={items}
-                                        renderRow={(s) => (
-                                            <TableRow key={s.id}>
-                                                <TableCell className="text-[10px] text-zinc-400">
-                                                    <div className="flex items-center gap-1"><Clock size={10} /> {format(new Date(s.created_at), 'dd/MM HH:mm')}</div>
-                                                </TableCell>
-                                                <TableCell className="font-bold text-[#1B4332]">{s.kardex_productos?.nombre}</TableCell>
-                                                <TableCell className="text-center font-medium bg-zinc-50/50">{s.stock_inicial_qty}</TableCell>
-                                                <TableCell className="text-center font-medium">{s.pedido_qty}</TableCell>
-                                                <TableCell className="text-center text-emerald-700 font-black text-base">{Number(s.venta_credito || 0) + Number(s.venta_contado_yape || 0)}</TableCell>
-                                                <TableCell className="text-center font-black bg-zinc-50 text-base">{s.stock_final_qty}</TableCell>
-                                                <TableCell className={`text-center font-black ${Number(s.merma || 0) > 0 ? 'text-rose-600 bg-rose-50' : 'text-zinc-300'}`}>{s.merma || 0}</TableCell>
-                                            </TableRow>
+                                        headers={['Sección', 'Producto / Servicio', 'Total Sem.', 'Precio', 'Monto']}
+                                        data={Object.values(camposByCampoId).filter((c: any) =>
+                                            valores.some((v: any) => v.campo_id === c.id && [0, 1, 2, 3, 4, 5, 6].some(d => {
+                                                const val = valores.find((vv: any) => vv.campo_id === c.id && vv.dia_semana === d);
+                                                return val && val.cantidad > 0;
+                                            }))
                                         )}
-                                    />
-                                </AccordionItem>
-                            );
-                        })}
-                    </div>
-                </TabsContent>
-
-                <TabsContent value="pasteles">
-                    <div className="space-y-4">
-                        {groupByMonth(pasteles).map(([monthKey, items]) => {
-                            const monthName = format(new Date(monthKey + '-02'), 'MMMM yyyy', { locale: es });
-                            return (
-                                <AccordionItem key={monthKey} title={monthName.toUpperCase()} count={items.length}>
-                                    <HistoryTable
-                                        headers={['Fecha Reg.', 'Producto', 'St. Inicial', 'Pedido', 'Ventas', 'St. Final', 'Merma']}
-                                        data={items}
-                                        renderRow={(p) => (
-                                            <TableRow key={p.id}>
-                                                <TableCell className="text-[10px] text-zinc-400">
-                                                    <div className="flex items-center gap-1"><Clock size={10} /> {format(new Date(p.created_at), 'dd/MM HH:mm')}</div>
-                                                </TableCell>
-                                                <TableCell className="font-bold text-[#1B4332]">{p.kardex_productos?.nombre}</TableCell>
-                                                <TableCell className="text-center font-medium opacity-60">{p.stock_inicial_qty}</TableCell>
-                                                <TableCell className="text-center font-medium">{p.pedido_qty}</TableCell>
-                                                <TableCell className="text-center text-emerald-700 font-black text-base">{Number(p.venta_credito_yapes || 0) + Number(p.venta_contado || 0)}</TableCell>
-                                                <TableCell className="text-center font-black bg-zinc-50 text-base">{p.stock_final_qty}</TableCell>
-                                                <TableCell className={`text-center font-black ${Number(p.merma || 0) > 0 ? 'text-rose-600 bg-rose-50' : 'text-zinc-300'}`}>{p.merma || 0}</TableCell>
-                                            </TableRow>
-                                        )}
-                                    />
-                                </AccordionItem>
-                            );
-                        })}
-                    </div>
-                </TabsContent>
-
-                <TabsContent value="pan">
-                    <div className="space-y-4">
-                        {groupByMonth(pan).map(([monthKey, items]) => {
-                            const monthName = format(new Date(monthKey + '-02'), 'MMMM yyyy', { locale: es });
-                            return (
-                                <AccordionItem key={monthKey} title={monthName.toUpperCase()} count={items.length}>
-                                    <HistoryTable
-                                        headers={['Fecha', 'Producto', 'Pedido', 'Vendida', 'Diferencia']}
-                                        data={items}
-                                        renderRow={(p) => (
-                                            <TableRow key={p.id}>
-                                                <TableCell className="font-bold">{formatDateStr(p.fecha)}</TableCell>
-                                                <TableCell className="font-medium text-emerald-900">{p.producto}</TableCell>
-                                                <TableCell className="text-center font-bold text-lg">{p.cantidad_pedido}</TableCell>
-                                                <TableCell className="text-center font-bold text-lg text-emerald-700">{p.cantidad_vendida}</TableCell>
-                                                <TableCell className="text-center font-black text-xl bg-zinc-50">{p.diferencia}</TableCell>
-                                            </TableRow>
-                                        )}
-                                    />
-                                </AccordionItem>
-                            );
-                        })}
-                    </div>
-                </TabsContent>
-
-                <TabsContent value="gastos">
-                    <div className="space-y-4">
-                        {groupByMonth(gastos).map(([monthKey, items]) => {
-                            const monthName = format(new Date(monthKey + '-02'), 'MMMM yyyy', { locale: es });
-                            return (
-                                <AccordionItem key={monthKey} title={monthName.toUpperCase()} count={items.length}>
-                                    <HistoryTable
-                                        headers={['Fecha', 'Categoría', 'Descripción', 'Monto', 'Autorizado']}
-                                        data={items}
-                                        renderRow={(g) => (
-                                            <TableRow key={g.id}>
-                                                <TableCell className="font-bold">{formatDateStr(g.fecha)}</TableCell>
-                                                <TableCell><Badge variant="secondary" className="uppercase text-[10px]">{g.categoria}</Badge></TableCell>
-                                                <TableCell className="text-xs">{g.descripcion}</TableCell>
-                                                <TableCell className="text-right font-black text-xl text-rose-600">S/ {g.monto.toFixed(2)}</TableCell>
-                                                <TableCell className="text-xs text-zinc-400 italic text-right">{g.autorizado_por || '-'}</TableCell>
-                                            </TableRow>
-                                        )}
-                                    />
-                                </AccordionItem>
-                            );
-                        })}
-                    </div>
-                </TabsContent>
-
-                <TabsContent value="coffe">
-                    <div className="space-y-4">
-                        {groupByMonth(coffe).map(([monthKey, items]) => {
-                            const monthName = format(new Date(monthKey + '-02'), 'MMMM yyyy', { locale: es });
-                            return (
-                                <AccordionItem key={monthKey} title={monthName.toUpperCase()} count={items.length}>
-                                    <HistoryTable
-                                        headers={['Fecha', 'Tipo / Solicitado', 'Detalle del Servicio', 'Total']}
-                                        data={items}
-                                        renderRow={(c) => (
-                                            <TableRow key={c.id}>
-                                                <TableCell className="font-bold">
-                                                    <div>{formatDateStr(c.fecha)}</div>
-                                                    <div className="text-[10px] text-zinc-400">{c.solicitado_por}</div>
-                                                </TableCell>
-                                                <TableCell><Badge className="bg-purple-100 text-purple-800 border-purple-200">{c.tipo}</Badge></TableCell>
-                                                <TableCell className="text-xs font-medium">
-                                                    {c.descripcion}
-                                                    <div className="text-[10px] text-zinc-500">{c.cantidad} unidades x S/ {c.valor_unit}</div>
-                                                </TableCell>
-                                                <TableCell className="text-right font-black text-xl text-purple-900">S/ {c.total.toFixed(2)}</TableCell>
-                                            </TableRow>
-                                        )}
+                                        renderRow={(campo: any) => {
+                                            const qty = [0, 1, 2, 3, 4, 5, 6].reduce((s: number, d: number) => {
+                                                const v = valores.find((vv: any) => vv.campo_id === campo.id && vv.dia_semana === d);
+                                                return s + (v?.cantidad || 0);
+                                            }, 0);
+                                            const precio = valores.find((vv: any) => vv.campo_id === campo.id)?.precio_unitario || 0;
+                                            const monto = campo.es_facturable ? qty * precio : 0;
+                                            return (
+                                                <TableRow key={campo.id}>
+                                                    <TableCell className="text-xs text-zinc-400">{campo.seccion}</TableCell>
+                                                    <TableCell className="font-medium text-zinc-700">
+                                                        {campo.nombre_campo}
+                                                        {!campo.es_facturable && <span className="ml-2 text-xs text-zinc-400 italic">(info)</span>}
+                                                    </TableCell>
+                                                    <TableCell className="text-center font-bold text-zinc-800">{qty || '—'}</TableCell>
+                                                    <TableCell className="text-center text-xs text-zinc-500">{campo.es_facturable ? `S/. ${precio.toFixed(2)}` : '—'}</TableCell>
+                                                    <TableCell className="text-right font-bold text-emerald-700">{monto > 0 ? `S/. ${monto.toFixed(2)}` : '—'}</TableCell>
+                                                </TableRow>
+                                            );
+                                        }}
                                     />
                                 </AccordionItem>
                             );
