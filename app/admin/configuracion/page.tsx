@@ -18,9 +18,20 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Settings, Plus, Store, Users, Key, LayoutList, GripVertical, ToggleLeft, ToggleRight } from 'lucide-react';
 
 export default function ConfiguracionPage() {
-    const { loading } = useUser();
+    const { loading, rol } = useUser();
     const supabase = createClient();
     const [dataLoaded, setDataLoaded] = useState(false);
+    const isReadOnly = rol === 'SUPERVISOR';
+    // El supervisor no debería entrar acá (no se muestra en el menú) pero por si navega directo.
+    if (isReadOnly) {
+        return (
+            <div className="p-12 text-center">
+                <p className="text-sm text-amber-700 font-semibold bg-amber-50 border border-amber-200 rounded-lg inline-block px-6 py-4">
+                    Modo supervisor: esta sección está disponible solo para administradores.
+                </p>
+            </div>
+        );
+    }
 
     const [comedores, setComedores] = useState<any[]>([]);
     const [usuarios, setUsuarios] = useState<any[]>([]);
@@ -327,6 +338,7 @@ export default function ConfiguracionPage() {
                                         </SelectTrigger>
                                         <SelectContent>
                                             <SelectItem value="COMEDOR">Encargado Comedor</SelectItem>
+                                            <SelectItem value="SUPERVISOR">Supervisor (solo lectura)</SelectItem>
                                             <SelectItem value="ADMIN">Administrador</SelectItem>
                                         </SelectContent>
                                     </Select>
@@ -374,7 +386,11 @@ export default function ConfiguracionPage() {
                                         <TableRow key={u.id}>
                                             <TableCell className="font-semibold">{u.email}</TableCell>
                                             <TableCell>
-                                                <Badge variant="outline" className={u.rol === 'ADMIN' ? 'bg-indigo-50 text-indigo-700 border-indigo-200' : 'bg-orange-50 text-orange-700 border-orange-200'}>
+                                                <Badge variant="outline" className={
+                                                    u.rol === 'ADMIN' ? 'bg-indigo-50 text-indigo-700 border-indigo-200' :
+                                                    u.rol === 'SUPERVISOR' ? 'bg-amber-50 text-amber-700 border-amber-200' :
+                                                    'bg-orange-50 text-orange-700 border-orange-200'
+                                                }>
                                                     {u.rol}
                                                 </Badge>
                                             </TableCell>

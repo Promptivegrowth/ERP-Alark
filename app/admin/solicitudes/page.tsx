@@ -24,6 +24,7 @@ import {
     UtensilsCrossed
 } from 'lucide-react';
 import { calcularCruceSemanal } from '@/lib/calculations/cruce-semanal';
+import { useUser } from '@/hooks/useAuth';
 
 interface Solicitud {
     id: string;
@@ -49,6 +50,8 @@ interface Incidencia {
 
 export default function SolicitudesPage() {
     const supabase = createClient();
+    const { rol } = useUser();
+    const isReadOnly = rol === 'SUPERVISOR';
     const [solicitudes, setSolicitudes] = useState<Solicitud[]>([]);
     const [incidencias, setIncidencias] = useState<Incidencia[]>([]);
     const [loading, setLoading] = useState(true);
@@ -318,34 +321,40 @@ export default function SolicitudesPage() {
                                             </div>
                                         </div>
 
-                                        <div className="flex flex-col gap-2">
-                                            <Textarea
-                                                placeholder="Comentario administrativo (opcional para aprobar, obligatorio para rechazar)..."
-                                                className="text-xs resize-none"
-                                                rows={2}
-                                                value={adminComment[sol.id] || ''}
-                                                onChange={e => setAdminComment(prev => ({ ...prev, [sol.id]: e.target.value }))}
-                                            />
-                                            <div className="flex gap-2">
-                                                <Button
-                                                    className="flex-1 bg-[#2D6A4F] hover:bg-[#1B4332] text-white font-black h-10 shadow-lg shadow-emerald-200 transition-all active:scale-95"
-                                                    disabled={processingId === sol.id}
-                                                    onClick={() => handleAprobar(sol)}
-                                                >
-                                                    <CheckCircle2 size={16} className="mr-2" />
-                                                    APROBAR
-                                                </Button>
-                                                <Button
-                                                    variant="destructive"
-                                                    className="flex-1 font-bold h-9"
-                                                    disabled={processingId === sol.id}
-                                                    onClick={() => handleRechazar(sol)}
-                                                >
-                                                    <XCircle size={16} className="mr-2" />
-                                                    RECHAZAR
-                                                </Button>
+                                        {isReadOnly ? (
+                                            <div className="flex items-center justify-center bg-amber-50 border border-amber-200 rounded-md text-amber-700 text-xs font-semibold py-3 px-4">
+                                                Modo supervisor: solo visualización
                                             </div>
-                                        </div>
+                                        ) : (
+                                            <div className="flex flex-col gap-2">
+                                                <Textarea
+                                                    placeholder="Comentario administrativo (opcional para aprobar, obligatorio para rechazar)..."
+                                                    className="text-xs resize-none"
+                                                    rows={2}
+                                                    value={adminComment[sol.id] || ''}
+                                                    onChange={e => setAdminComment(prev => ({ ...prev, [sol.id]: e.target.value }))}
+                                                />
+                                                <div className="flex gap-2">
+                                                    <Button
+                                                        className="flex-1 bg-[#2D6A4F] hover:bg-[#1B4332] text-white font-black h-10 shadow-lg shadow-emerald-200 transition-all active:scale-95"
+                                                        disabled={processingId === sol.id}
+                                                        onClick={() => handleAprobar(sol)}
+                                                    >
+                                                        <CheckCircle2 size={16} className="mr-2" />
+                                                        APROBAR
+                                                    </Button>
+                                                    <Button
+                                                        variant="destructive"
+                                                        className="flex-1 font-bold h-9"
+                                                        disabled={processingId === sol.id}
+                                                        onClick={() => handleRechazar(sol)}
+                                                    >
+                                                        <XCircle size={16} className="mr-2" />
+                                                        RECHAZAR
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 </CardContent>
                             </Card>
@@ -395,15 +404,21 @@ export default function SolicitudesPage() {
                                         </p>
                                     </div>
 
-                                    <Button
-                                        size="lg"
-                                        variant="outline"
-                                        className="w-full h-12 text-sm font-black border-amber-300 text-amber-800 hover:bg-amber-50 shadow-sm active:scale-95 transition-transform"
-                                        onClick={() => handleCerrarIncidencia(inc.id)}
-                                        disabled={processingId === inc.id}
-                                    >
-                                        {processingId === inc.id ? 'PROCESANDO...' : 'MARCAR COMO SOLUCIONADA ✓'}
-                                    </Button>
+                                    {isReadOnly ? (
+                                        <div className="w-full text-center text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-md py-2 font-semibold">
+                                            Modo supervisor: solo visualización
+                                        </div>
+                                    ) : (
+                                        <Button
+                                            size="lg"
+                                            variant="outline"
+                                            className="w-full h-12 text-sm font-black border-amber-300 text-amber-800 hover:bg-amber-50 shadow-sm active:scale-95 transition-transform"
+                                            onClick={() => handleCerrarIncidencia(inc.id)}
+                                            disabled={processingId === inc.id}
+                                        >
+                                            {processingId === inc.id ? 'PROCESANDO...' : 'MARCAR COMO SOLUCIONADA ✓'}
+                                        </Button>
+                                    )}
                                 </CardContent>
                             </Card>
                         ))}

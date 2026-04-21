@@ -18,6 +18,8 @@ import {
     CalendarDays,
     RefreshCw,
     UploadCloud,
+    Eye,
+    FileDown,
 } from 'lucide-react';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -28,7 +30,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     const supabase = createClient();
 
     if (loading) return <div className="flex h-screen items-center justify-center">Cargando...</div>;
-    if (rol !== 'ADMIN') return null;
+    if (rol !== 'ADMIN' && rol !== 'SUPERVISOR') return null;
+    const isSupervisor = rol === 'SUPERVISOR';
 
     async function handleLogout() {
         await supabase.auth.signOut();
@@ -44,9 +47,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         { name: 'Reportes', href: '/admin/reportes', icon: FileText },
         { name: '↳ Semanal', href: '/admin/reportes/semanal', icon: CalendarDays, sub: true },
         { name: '↳ Cruce Diario', href: '/admin/reportes/cruce', icon: RefreshCw, sub: true },
+        { name: '↳ Consolidado', href: '/admin/reportes/consolidado', icon: FileDown, sub: true },
         { name: '↳ Sistema Interno', href: '/admin/reportes/sistema', icon: UploadCloud, sub: true },
-        { name: 'Configuración', href: '/admin/configuracion', icon: Settings },
-    ];
+        { name: 'Configuración', href: '/admin/configuracion', icon: Settings, adminOnly: true },
+    ].filter(i => !(i as any).adminOnly || !isSupervisor);
 
     const NavContent = ({ mobile = false }: { mobile?: boolean }) => (
         <nav className="flex-1 overflow-y-auto py-6">
@@ -123,9 +127,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                         <h1 className="text-xl font-black text-zinc-800 tracking-tight truncate max-w-[150px] sm:max-w-none">
                             PLATAFORMA ERP
                         </h1>
-                        <span className="px-3 py-1 text-[10px] font-black bg-emerald-100 text-[#1B4332] rounded-full uppercase tracking-widest hidden xs:inline">
-                            Panel Control
-                        </span>
+                        {isSupervisor ? (
+                            <span className="px-3 py-1 text-[10px] font-black bg-amber-100 text-amber-800 rounded-full uppercase tracking-widest hidden xs:inline-flex items-center gap-1">
+                                <Eye size={12} /> Modo supervisor (solo lectura)
+                            </span>
+                        ) : (
+                            <span className="px-3 py-1 text-[10px] font-black bg-emerald-100 text-[#1B4332] rounded-full uppercase tracking-widest hidden xs:inline">
+                                Panel Control
+                            </span>
+                        )}
                     </div>
 
                     <div className="flex items-center gap-4">
