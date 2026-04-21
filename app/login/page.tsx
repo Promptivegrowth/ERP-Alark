@@ -64,7 +64,8 @@ export default function LoginPage() {
 
             toast.success('Acceso exitoso');
 
-            if ((userData as any).rol === 'ADMIN') {
+            const userRol = (userData as any).rol;
+            if (userRol === 'ADMIN' || userRol === 'SUPERVISOR') {
                 router.push('/admin/dashboard');
             } else {
                 router.push('/portal/dashboard');

@@ -52,8 +52,10 @@ export async function updateSession(request: NextRequest) {
 
         const role = userData?.rol;
 
+        const isAdminSide = role === 'ADMIN' || role === 'SUPERVISOR';
+
         if (isLogin || isRoot) {
-            url.pathname = role === 'ADMIN' ? '/admin/dashboard' : '/portal/dashboard';
+            url.pathname = isAdminSide ? '/admin/dashboard' : '/portal/dashboard';
             return NextResponse.redirect(url);
         }
 
@@ -62,7 +64,7 @@ export async function updateSession(request: NextRequest) {
             return NextResponse.redirect(url);
         }
 
-        if (isAdmin && role !== 'ADMIN') {
+        if (isAdmin && !isAdminSide) {
             url.pathname = '/portal/dashboard';
             return NextResponse.redirect(url);
         }

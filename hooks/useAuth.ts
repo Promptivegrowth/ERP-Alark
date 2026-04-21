@@ -52,8 +52,12 @@ export function useRequireRole(requiredRole: string) {
     const router = useRouter();
 
     useEffect(() => {
-        if (!loading && rol !== requiredRole) {
-            if (rol === 'ADMIN') router.push('/admin/dashboard');
+        if (loading) return;
+        // ADMIN accepts both ADMIN and SUPERVISOR (supervisor tiene acceso al admin en modo lectura)
+        const matches = rol === requiredRole ||
+            (requiredRole === 'ADMIN' && rol === 'SUPERVISOR');
+        if (!matches) {
+            if (rol === 'ADMIN' || rol === 'SUPERVISOR') router.push('/admin/dashboard');
             else if (rol === 'COMEDOR') router.push('/portal/dashboard');
             else router.push('/login');
         }
