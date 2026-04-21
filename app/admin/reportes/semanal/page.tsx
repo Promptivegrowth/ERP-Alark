@@ -8,10 +8,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { CalendarDays, Eye, CheckCircle2, Clock } from 'lucide-react';
+import { campoSumaEnTotal } from '@/lib/utils/comedor-total-rules';
 
 interface Comedor { id: string; nombre: string; }
 interface ReporteSemanal { id: string; semana_inicio: string; semana_fin: string; estado: string; }
-interface Campo { id: string; nombre_campo: string; seccion: string; es_facturable: boolean; precio_ref: number | null; orden: number; }
+interface Campo { id: string; nombre_campo: string; seccion: string; es_facturable: boolean; precio_ref: number | null; orden: number; categoria_cruce?: string | null; }
 interface Valor { campo_id: string; dia_semana: number; cantidad: number; precio_unitario: number; }
 
 const DIAS = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
@@ -69,7 +70,7 @@ export default function AdminSemanalViewerPage() {
         const [camposRes, valRes] = await Promise.all([
             (supabase as any)
                 .from('reporte_semanal_campos')
-                .select('id, nombre_campo, seccion, es_facturable, precio_ref, orden')
+                .select('id, nombre_campo, seccion, es_facturable, precio_ref, orden, categoria_cruce')
                 .eq('comedor_id', comedorId)
                 .eq('activo', true)
                 .order('orden'),
@@ -87,13 +88,20 @@ export default function AdminSemanalViewerPage() {
         valores.find(v => v.campo_id === campoId && v.dia_semana === dia)?.cantidad ?? 0;
     const getPrecio = (campoId: string) =>
         valores.find(v => v.campo_id === campoId)?.precio_unitario ?? 0;
-    const totalCampo = (campoId: string, facturable: boolean) => {
-        if (!facturable) return { qty: 0, monto: 0 };
+    const totalCampoRaw = (campoId: string) => {
         const qty = [0, 1, 2, 3, 4, 5, 6].reduce((s, d) => s + getQty(campoId, d), 0);
         return { qty, monto: qty * getPrecio(campoId) };
     };
-    const grandTotal = campos.filter(c => c.es_facturable).reduce((acc, c) => {
-        const t = totalCampo(c.id, true);
+    const campoCuentaEnTotal = (c: Campo) => {
+        if (!c.es_facturable) return false;
+        return campoSumaEnTotal(selectedComedorId, c.categoria_cruce || '', c.nombre_campo);
+    };
+    const totalCampo = (c: Campo) => {
+        if (!campoCuentaEnTotal(c)) return { qty: 0, monto: 0 };
+        return totalCampoRaw(c.id);
+    };
+    const grandTotal = campos.filter(campoCuentaEnTotal).reduce((acc, c) => {
+        const t = totalCampoRaw(c.id);
         return { qty: acc.qty + t.qty, monto: acc.monto + t.monto };
     }, { qty: 0, monto: 0 });
 
@@ -203,12 +211,13 @@ export default function AdminSemanalViewerPage() {
                                             </thead>
                                             <tbody>
                                                 {camposSec.map(campo => {
-                                                    const { qty, monto } = totalCampo(campo.id, campo.es_facturable);
+                                                    const { qty, monto } = totalCampoRaw(campo.id);
+                                                    const cuenta = campoCuentaEnTotal(campo);
                                                     return (
-                                                        <tr key={campo.id} className={`border-b ${!campo.es_facturable ? 'opacity-60 bg-zinc-50/50' : ''}`}>
+                                                        <tr key={campo.id} className={`border-b ${!cuenta ? 'opacity-60 bg-zinc-50/50' : ''}`}>
                                                             <td className="p-3 font-medium text-zinc-800 text-sm">
                                                                 {campo.nombre_campo}
-                                                                {!campo.es_facturable && <span className="ml-2 text-xs text-zinc-400 italic">(informativo)</span>}
+                                                                {!cuenta && <span className="ml-2 text-xs text-zinc-400 italic">(informativo)</span>}
                                                             </td>
                                                             {[0, 1, 2, 3, 4, 5, 6].map(dia => (
                                                                 <td key={dia} className="p-2 text-center">
@@ -218,14 +227,14 @@ export default function AdminSemanalViewerPage() {
                                                                 </td>
                                                             ))}
                                                             <td className="p-3 text-center font-bold text-emerald-700">
-                                                                {campo.es_facturable && qty > 0 ? qty : <span className="text-zinc-400 font-normal text-xs">—</span>}
+                                                                {qty > 0 ? <span className={cuenta ? '' : 'text-zinc-400 font-normal'}>{qty}</span> : <span className="text-zinc-400 font-normal text-xs">—</span>}
                                                             </td>
                                                             <td className="p-3 text-center text-xs text-zinc-500">
-                                                                {campo.es_facturable ? `S/. ${getPrecio(campo.id).toFixed(2)}` : '—'}
+                                                                {getPrecio(campo.id) > 0 ? `S/. ${getPrecio(campo.id).toFixed(2)}` : '—'}
                                                             </td>
                                                             <td className="p-3 text-right font-semibold">
-                                                                {campo.es_facturable && monto > 0
-                                                                    ? <span className="text-emerald-700">S/. {monto.toFixed(2)}</span>
+                                                                {monto > 0
+                                                                    ? <span className={cuenta ? 'text-emerald-700' : 'text-zinc-400'}>S/. {monto.toFixed(2)}</span>
                                                                     : <span className="text-zinc-200">—</span>}
                                                             </td>
                                                         </tr>

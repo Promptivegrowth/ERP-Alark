@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { CalendarDays, ChevronLeft, ChevronRight, Save, CheckCircle, AlertCircle, Lock } from 'lucide-react';
+import { campoSumaEnTotal } from '@/lib/utils/comedor-total-rules';
 
 interface CampoSemanal {
     id: string;
@@ -144,15 +145,33 @@ export default function ReporteSemanalPortalPage() {
         });
     };
 
-    const totalCampo = (campoId: string, facturable: boolean) => {
-        if (!facturable) return { qty: 0, monto: 0 };
+    // Monto/cantidad por campo ignorando la marca es_facturable (para poder
+    // enviar cantidad y precio de TODOS los productos en el detalle).
+    const totalCampoRaw = (campoId: string) => {
         const precio = precios[campoId] ?? 0;
         const qty = Array.from({ length: 7 }, (_, i) => i).reduce((s, d) => s + getQty(campoId, d), 0);
         return { qty, monto: qty * precio };
     };
 
-    const grandTotal = () => campos.filter(c => c.es_facturable).reduce((acc, c) => {
-        const t = totalCampo(c.id, true);
+    // La lógica de qué entra al GRAN TOTAL respeta reglas por comedor
+    // (Machu Picchu = CONSUMIDO, Medlog = TICKETS) sobre es_facturable.
+    const campoCuentaEnTotal = (c: CampoSemanal) => {
+        if (!c.es_facturable) return false;
+        const cruce = c.categoria_cruce || '';
+        return campoSumaEnTotal(comedorId as string, cruce, c.nombre_campo);
+    };
+
+    // Para mostrar en la fila: solo los que cuentan en el total muestran monto.
+    // Los que solo se envían como información muestran un "—".
+    const totalCampo = (campoId: string, campo?: CampoSemanal) => {
+        const c = campo || campos.find(x => x.id === campoId);
+        if (!c) return { qty: 0, monto: 0 };
+        if (!campoCuentaEnTotal(c)) return { qty: 0, monto: 0 };
+        return totalCampoRaw(campoId);
+    };
+
+    const grandTotal = () => campos.filter(c => campoCuentaEnTotal(c)).reduce((acc, c) => {
+        const t = totalCampoRaw(c.id);
         return { qty: acc.qty + t.qty, monto: acc.monto + t.monto };
     }, { qty: 0, monto: 0 });
 
@@ -292,9 +311,13 @@ export default function ReporteSemanalPortalPage() {
                                             </thead>
                                             <tbody>
                                                 {camposSec.map(campo => {
-                                                    const { qty, monto } = totalCampo(campo.id, campo.es_facturable);
+                                                    // Siempre mostrar cantidad y monto por fila (independiente del total)
+                                                    const { qty, monto } = totalCampoRaw(campo.id);
+                                                    const cuentaEnTotal = campoCuentaEnTotal(campo);
                                                     const isReadOnly = estado === 'cerrado';
-                                                    const isInfoOnly = !campo.es_facturable;
+                                                    // isInfoOnly = no entra al gran total (Machu/Medlog: solicitado/sistema).
+                                                    // Se sigue mostrando y se sigue permitiendo ingresar precio.
+                                                    const isInfoOnly = !cuentaEnTotal;
                                                     return (
                                                         <tr key={campo.id} className={`border-b transition-colors ${isInfoOnly ? 'bg-zinc-50/60 opacity-75' : 'hover:bg-emerald-50/20'}`}>
                                                             <td className="p-3 font-medium text-zinc-800 text-sm">
@@ -315,10 +338,10 @@ export default function ReporteSemanalPortalPage() {
                                                                 </td>
                                                             ))}
                                                             <td className="p-3 text-center font-bold text-emerald-700">
-                                                                {campo.es_facturable && qty > 0 ? qty : (
-                                                                    <span className="text-zinc-400 font-normal">
-                                                                        {Array.from({ length: 7 }, (_, i) => i).reduce((s, d) => s + getQty(campo.id, d), 0) || '—'}
-                                                                    </span>
+                                                                {qty > 0 ? (
+                                                                    <span className={cuentaEnTotal ? '' : 'text-zinc-400 font-normal'}>{qty}</span>
+                                                                ) : (
+                                                                    <span className="text-zinc-400 font-normal">—</span>
                                                                 )}
                                                             </td>
                                                             <td className="p-2">
@@ -329,7 +352,7 @@ export default function ReporteSemanalPortalPage() {
                                                                         step="0.10"
                                                                         value={precios[campo.id] || ''}
                                                                         onChange={e => setPrecio(campo.id, Number(e.target.value) || 0)}
-                                                                        disabled={isReadOnly || isInfoOnly}
+                                                                        disabled={isReadOnly}
                                                                         placeholder={String(campo.precio_ref ?? '0.00')}
                                                                         className="h-8 text-center text-xs w-full px-1"
                                                                     />
@@ -340,8 +363,8 @@ export default function ReporteSemanalPortalPage() {
                                                                 )}
                                                             </td>
                                                             <td className="p-3 text-right font-semibold">
-                                                                {campo.es_facturable && monto > 0 ? (
-                                                                    <span className="text-emerald-700">S/. {monto.toFixed(2)}</span>
+                                                                {monto > 0 ? (
+                                                                    <span className={cuentaEnTotal ? 'text-emerald-700' : 'text-zinc-400'}>S/. {monto.toFixed(2)}</span>
                                                                 ) : <span className="text-zinc-300">—</span>}
                                                             </td>
                                                         </tr>
