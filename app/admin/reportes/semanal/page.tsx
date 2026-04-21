@@ -8,7 +8,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { CalendarDays, Eye, CheckCircle2, Clock } from 'lucide-react';
-import { campoSumaEnTotal } from '@/lib/utils/comedor-total-rules';
 
 interface Comedor { id: string; nombre: string; }
 interface ReporteSemanal { id: string; semana_inicio: string; semana_fin: string; estado: string; }
@@ -92,14 +91,7 @@ export default function AdminSemanalViewerPage() {
         const qty = [0, 1, 2, 3, 4, 5, 6].reduce((s, d) => s + getQty(campoId, d), 0);
         return { qty, monto: qty * getPrecio(campoId) };
     };
-    const campoCuentaEnTotal = (c: Campo) => {
-        if (!c.es_facturable) return false;
-        return campoSumaEnTotal(selectedComedorId, c.categoria_cruce || '', c.nombre_campo);
-    };
-    const totalCampo = (c: Campo) => {
-        if (!campoCuentaEnTotal(c)) return { qty: 0, monto: 0 };
-        return totalCampoRaw(c.id);
-    };
+    const campoCuentaEnTotal = (c: Campo) => c.es_facturable;
     const grandTotal = campos.filter(campoCuentaEnTotal).reduce((acc, c) => {
         const t = totalCampoRaw(c.id);
         return { qty: acc.qty + t.qty, monto: acc.monto + t.monto };

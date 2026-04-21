@@ -11,7 +11,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { CalendarDays, ChevronLeft, ChevronRight, Save, CheckCircle, AlertCircle, Lock } from 'lucide-react';
-import { campoSumaEnTotal } from '@/lib/utils/comedor-total-rules';
 
 interface CampoSemanal {
     id: string;
@@ -145,30 +144,18 @@ export default function ReporteSemanalPortalPage() {
         });
     };
 
-    // Monto/cantidad por campo ignorando la marca es_facturable (para poder
-    // enviar cantidad y precio de TODOS los productos en el detalle).
+    // Cantidad + monto de un campo, independiente de si suma al total o no
+    // (para poder mostrar siempre el detalle de los informativos).
     const totalCampoRaw = (campoId: string) => {
         const precio = precios[campoId] ?? 0;
         const qty = Array.from({ length: 7 }, (_, i) => i).reduce((s, d) => s + getQty(campoId, d), 0);
         return { qty, monto: qty * precio };
     };
 
-    // La lógica de qué entra al GRAN TOTAL respeta reglas por comedor
-    // (Machu Picchu = CONSUMIDO, Medlog = TICKETS) sobre es_facturable.
-    const campoCuentaEnTotal = (c: CampoSemanal) => {
-        if (!c.es_facturable) return false;
-        const cruce = c.categoria_cruce || '';
-        return campoSumaEnTotal(comedorId as string, cruce, c.nombre_campo);
-    };
-
-    // Para mostrar en la fila: solo los que cuentan en el total muestran monto.
-    // Los que solo se envían como información muestran un "—".
-    const totalCampo = (campoId: string, campo?: CampoSemanal) => {
-        const c = campo || campos.find(x => x.id === campoId);
-        if (!c) return { qty: 0, monto: 0 };
-        if (!campoCuentaEnTotal(c)) return { qty: 0, monto: 0 };
-        return totalCampoRaw(campoId);
-    };
+    // Un campo entra al gran total solo si la DB lo marca como facturable.
+    // (Para Machu Picchu y Medlog la migración flip-ea los flags de CONSUMIDO
+    // y TICKETS respectivamente, así que este chequeo es suficiente.)
+    const campoCuentaEnTotal = (c: CampoSemanal) => c.es_facturable;
 
     const grandTotal = () => campos.filter(c => campoCuentaEnTotal(c)).reduce((acc, c) => {
         const t = totalCampoRaw(c.id);
