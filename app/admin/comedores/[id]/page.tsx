@@ -10,7 +10,7 @@ import { es } from 'date-fns/locale';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { MapPin, User as UserIcon, Building, Phone, Calendar, AlertTriangle, TrendingUp, CheckCircle2, AlertCircle, HelpCircle, Eye, Info, FileSpreadsheet, Download } from 'lucide-react';
+import { MapPin, User as UserIcon, Building, Phone, Calendar, AlertTriangle, Eye, Info, FileSpreadsheet, Download } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -27,11 +27,6 @@ export default function ComedorDetallePage() {
 
     const [comedor, setComedor] = useState<any>(null);
     const [liquidaciones, setLiquidaciones] = useState<any[]>([]);
-    const [kardex, setKardex] = useState<any[]>([]);
-    const [pedidosPan, setPedidosPan] = useState<any[]>([]);
-    const [gastos, setGastos] = useState<any[]>([]);
-    const [especiales, setEspeciales] = useState<any[]>([]);
-    const [cruceData, setCruceData] = useState<any[]>([]);
     const [selectedReporte, setSelectedReporte] = useState<any>(null);
     const [reporteDetalles, setReporteDetalles] = useState<any[]>([]);
     const [loadingDetalle, setLoadingDetalle] = useState(false);
@@ -48,29 +43,13 @@ export default function ComedorDetallePage() {
             const { data: cData } = await supabase.from('comedores').select('*').eq('id', id).single();
             if (cData) setComedor(cData);
 
-            const [liqRes, snackRes, pastRes, panRes, gasRes, espRes, cruceRes] = await Promise.all([
-                supabase.from('reporte_diario').select('*').eq('comedor_id', id).order('fecha', { ascending: false }).limit(50),
-                supabase.from('kardex_snack_ventas').select('*, kardex_productos(nombre)').eq('comedor_id', id).order('created_at', { ascending: false }).limit(20),
-                supabase.from('kardex_pasteles').select('*, kardex_productos(nombre)').eq('comedor_id', id).order('created_at', { ascending: false }).limit(20),
-                supabase.from('pedido_pan').select('*').eq('comedor_id', id).order('fecha', { ascending: false }).limit(50),
-                supabase.from('gastos_operativos').select('*').eq('comedor_id', id).order('fecha', { ascending: false }).limit(50),
-                supabase.from('coffe_otros').select('*').eq('comedor_id', id).order('fecha', { ascending: false }).limit(50),
-                supabase.from('reporte_cruce_semanal').select('*').eq('comedor_id', id).order('updated_at', { ascending: false }).limit(30)
-            ]);
-
-            if (liqRes.data) setLiquidaciones(liqRes.data);
-
-            // Merge snacks and pasteles for the Kardex tab
-            const mergedKardex = [
-                ...((snackRes.data || []) as any[]).map(k => ({ ...k, tipo: 'SNACK' })),
-                ...((pastRes.data || []) as any[]).map(k => ({ ...k, tipo: 'PASTEL' }))
-            ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-
-            setKardex(mergedKardex);
-            if (panRes.data) setPedidosPan(panRes.data);
-            if (gasRes.data) setGastos(gasRes.data);
-            if (espRes.data) setEspeciales(espRes.data);
-            if (cruceRes.data) setCruceData(cruceRes.data);
+            const { data: liqData } = await supabase
+                .from('reporte_diario')
+                .select('*')
+                .eq('comedor_id', id)
+                .order('fecha', { ascending: false })
+                .limit(50);
+            if (liqData) setLiquidaciones(liqData);
 
             setDataLoaded(true);
         }
@@ -218,16 +197,8 @@ export default function ComedorDetallePage() {
             </div>
 
             <Tabs defaultValue="diario" className="w-full">
-                <TabsList className="grid grid-cols-2 md:grid-cols-6 h-auto md:h-12 bg-zinc-100">
+                <TabsList className="grid grid-cols-1 h-auto md:h-12 bg-zinc-100">
                     <TabsTrigger value="diario" className="data-[state=active]:bg-[#2D6A4F] data-[state=active]:text-white">Reportes Diarios</TabsTrigger>
-                    <TabsTrigger value="cruce" className="data-[state=active]:bg-[#2D6A4F] data-[state=active]:text-white">
-                        Cruce Diario/Sem.
-                        {cruceData.some(c => c.tiene_discrepancia) && <span className="ml-1.5 w-2 h-2 rounded-full bg-red-500 inline-block" />}
-                    </TabsTrigger>
-                    <TabsTrigger value="kardex" className="data-[state=active]:bg-[#2D6A4F] data-[state=active]:text-white">Kardex</TabsTrigger>
-                    <TabsTrigger value="pan" className="data-[state=active]:bg-[#2D6A4F] data-[state=active]:text-white">Pedidos Pan</TabsTrigger>
-                    <TabsTrigger value="gastos" className="data-[state=active]:bg-[#2D6A4F] data-[state=active]:text-white">Gastos</TabsTrigger>
-                    <TabsTrigger value="especiales" className="data-[state=active]:bg-[#2D6A4F] data-[state=active]:text-white">Serv. Especiales</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="diario" className="mt-6">
@@ -266,210 +237,6 @@ export default function ComedorDetallePage() {
                                                         <Eye size={16} className="text-[#2D6A4F]" />
                                                     </Button>
                                                 </TableCell>
-                                            </TableRow>
-                                        ))}
-                                </TableBody>
-                            </Table>
-                        </CardContent>
-                    </Card>
-                </TabsContent>
-
-                <TabsContent value="cruce" className="mt-6">
-                    <Card className="border-2 border-[#2D6A4F]/20">
-                        <CardHeader className="bg-[#1B4332]/5 border-b">
-                            <div className="flex items-center gap-2">
-                                <TrendingUp size={16} className="text-[#2D6A4F]" />
-                                <CardTitle className="text-base text-[#1B4332]">Cruce Diario vs Semanal</CardTitle>
-                            </div>
-                            <CardDescription>Diferencias detectadas entre los reportes diarios acumulados y los reportes semanales.</CardDescription>
-                        </CardHeader>
-                        <CardContent className="p-0">
-                            {cruceData.length === 0 ? (
-                                <div className="text-center py-12 text-zinc-500">Sin datos de cruce aún. Se generan automáticamente al guardar reportes.</div>
-                            ) : (
-                                <div className="overflow-x-auto">
-                                    <table className="w-full text-sm">
-                                        <thead>
-                                            <tr className="bg-zinc-50 border-b">
-                                                <th className="text-left px-4 py-2 font-semibold text-zinc-600">Categoría</th>
-                                                <th className="text-right px-4 py-2 font-semibold text-zinc-600">Acumulado Diario</th>
-                                                <th className="text-right px-4 py-2 font-semibold text-zinc-600">Total Semanal</th>
-                                                <th className="text-right px-4 py-2 font-semibold text-zinc-600">Diferencia</th>
-                                                <th className="text-center px-4 py-2 font-semibold text-zinc-600">Estado</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="divide-y">
-                                            {cruceData.map((row: any) => {
-                                                const dif = Number(row.diferencia || 0);
-                                                const pct = Number(row.diferencia_pct || 0);
-                                                const estado = row.tiene_discrepancia ? (pct > 15 ? 'CRITICO' : 'ALERTA') : 'OK';
-                                                return (
-                                                    <TableRow key={row.id}>
-                                                        <TableCell className="font-medium">{row.categoria}</TableCell>
-                                                        <TableCell className="text-right">S/ {Number(row.total_diario_acumulado).toFixed(2)}</TableCell>
-                                                        <TableCell className="text-right">S/ {Number(row.total_semanal).toFixed(2)}</TableCell>
-                                                        <TableCell className={`text-right font-bold ${dif < 0 ? 'text-red-600' : dif > 0 ? 'text-amber-600' : 'text-emerald-600'}`}>
-                                                            {dif > 0 ? '+' : ''}{dif.toFixed(2)} ({pct.toFixed(1)}%)
-                                                        </TableCell>
-                                                        <TableCell className="text-center">
-                                                            <Badge className={estado === 'CRITICO' ? 'bg-red-100 text-red-800' : estado === 'ALERTA' ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'}>
-                                                                {estado === 'CRITICO' ? '⚠ Crítico' : estado === 'ALERTA' ? '⚡ Alerta' : '✓ OK'}
-                                                            </Badge>
-                                                        </TableCell>
-                                                    </TableRow>
-                                                );
-                                            })}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            )}
-                        </CardContent>
-                    </Card>
-                </TabsContent>
-
-                <TabsContent value="kardex" className="mt-6">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Diferencias de Inventario (Kardex)</CardTitle>
-                            <CardDescription>Monitorea las pérdidas o sobresobrantes de stock.</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead>Semana</TableHead>
-                                        <TableHead>Producto</TableHead>
-                                        <TableHead className="text-right">Ingreso</TableHead>
-                                        <TableHead className="text-right">Total Ventas</TableHead>
-                                        <TableHead className="text-right">Stock Físico</TableHead>
-                                        <TableHead className="text-right">Diferencia</TableHead>
-                                        <TableHead>Observación</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {kardex.length === 0 ? <TableRow><TableCell colSpan={7} className="text-center py-6 text-zinc-500">Sin datos</TableCell></TableRow> :
-                                        kardex.map((k, idx) => (
-                                            <TableRow key={idx}>
-                                                <TableCell className="font-medium text-xs">
-                                                    {k.semana_id ? 'Semanal' : format(new Date(k.created_at), 'dd MMM yyyy')}
-                                                </TableCell>
-                                                <TableCell>
-                                                    <div className="flex flex-col">
-                                                        <span className="font-medium">{k.kardex_productos?.nombre || 'Producto'}</span>
-                                                        <span className="text-[10px] text-zinc-400">{k.tipo}</span>
-                                                    </div>
-                                                </TableCell>
-                                                <TableCell className="text-right">{k.pedido_qty || 0}</TableCell>
-                                                <TableCell className="text-right text-blue-600">{Number(k.venta_credito || k.venta_credito_yapes || 0) + Number(k.venta_contado || k.venta_contado_yape || 0)}</TableCell>
-                                                <TableCell className="text-right font-bold">{k.stock_final_qty || 0}</TableCell>
-                                                <TableCell className="text-right">
-                                                    <span className={`px-2 py-1 rounded font-semibold text-xs ${Number(k.merma || 0) > 0 ? 'bg-amber-100 text-amber-700' : 'bg-green-100 text-emerald-700'}`}>
-                                                        {k.merma || 0}
-                                                    </span>
-                                                </TableCell>
-                                                <TableCell className="text-zinc-500 text-xs italic">{k.observacion || '-'}</TableCell>
-                                            </TableRow>
-                                        ))}
-                                </TableBody>
-                            </Table>
-                        </CardContent>
-                    </Card>
-                </TabsContent>
-
-                <TabsContent value="pan" className="mt-6">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Histórico de Pedido de Pan</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead>Semana Inicio</TableHead>
-                                        <TableHead className="text-right">L</TableHead>
-                                        <TableHead className="text-right">M</TableHead>
-                                        <TableHead className="text-right">M</TableHead>
-                                        <TableHead className="text-right">J</TableHead>
-                                        <TableHead className="text-right">V</TableHead>
-                                        <TableHead className="text-right">S</TableHead>
-                                        <TableHead className="text-right">D</TableHead>
-                                        <TableHead className="text-right">Total Semana</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {pedidosPan.length === 0 ? <TableRow><TableCell colSpan={9} className="text-center py-6 text-zinc-500">Sin datos</TableCell></TableRow> :
-                                        pedidosPan.map((p) => (
-                                            <TableRow key={p.id}>
-                                                <TableCell className="font-medium">{format(new Date(p.fecha), 'dd MMM yyyy')}</TableCell>
-                                                <TableCell className="text-right">{p.producto}</TableCell>
-                                                <TableCell className="text-right font-bold text-amber-600">{p.cantidad_pedido}</TableCell>
-                                                <TableCell className="text-right" colSpan={6}></TableCell>
-                                            </TableRow>
-                                        ))}
-                                </TableBody>
-                            </Table>
-                        </CardContent>
-                    </Card>
-                </TabsContent>
-
-                <TabsContent value="gastos" className="mt-6">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Gastos de Caja Chica</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead>Fecha</TableHead>
-                                        <TableHead>Doc / Ticket</TableHead>
-                                        <TableHead>Proveedor / Concepto</TableHead>
-                                        <TableHead className="text-right">Monto (S/.)</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {gastos.length === 0 ? <TableRow><TableCell colSpan={4} className="text-center py-6 text-zinc-500">Sin datos</TableCell></TableRow> :
-                                        gastos.map((g) => (
-                                            <TableRow key={g.id}>
-                                                <TableCell className="font-medium">{format(new Date(g.fecha), 'dd MMM yyyy')}</TableCell>
-                                                <TableCell><Badge variant="outline">{g.categoria}</Badge></TableCell>
-                                                <TableCell>{g.descripcion} {g.autorizado_por && <span className="text-zinc-400 text-xs ml-2">({g.autorizado_por})</span>}</TableCell>
-                                                <TableCell className="text-right font-bold text-red-600">- S/. {(g.monto || 0).toFixed(2)}</TableCell>
-                                            </TableRow>
-                                        ))}
-                                </TableBody>
-                            </Table>
-                        </CardContent>
-                    </Card>
-                </TabsContent>
-
-                <TabsContent value="especiales" className="mt-6">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Servicios Especiales (Coffe / Staff)</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead>Fecha</TableHead>
-                                        <TableHead>Tipo</TableHead>
-                                        <TableHead>Solicitante</TableHead>
-                                        <TableHead>Descripción</TableHead>
-                                        <TableHead className="text-right">Cant.</TableHead>
-                                        <TableHead className="text-right">Total (S/.)</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {especiales.length === 0 ? <TableRow><TableCell colSpan={6} className="text-center py-6 text-zinc-500">Sin datos</TableCell></TableRow> :
-                                        especiales.map((e) => (
-                                            <TableRow key={e.id}>
-                                                <TableCell className="font-medium">{format(new Date(e.fecha), 'dd MMM yyyy')}</TableCell>
-                                                <TableCell><Badge variant="outline">{e.tipo}</Badge></TableCell>
-                                                <TableCell>{e.solicitante}</TableCell>
-                                                <TableCell>{e.descripcion}</TableCell>
-                                                <TableCell className="text-right">{e.cantidad}</TableCell>
-                                                <TableCell className="text-right font-bold text-indigo-600">S/. {(e.total || (e.cantidad * e.valor_unit) || 0).toFixed(2)}</TableCell>
                                             </TableRow>
                                         ))}
                                 </TableBody>

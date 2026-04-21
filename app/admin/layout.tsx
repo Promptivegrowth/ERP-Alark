@@ -48,7 +48,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         { name: '↳ Semanal', href: '/admin/reportes/semanal', icon: CalendarDays, sub: true },
         { name: '↳ Cruce Diario', href: '/admin/reportes/cruce', icon: RefreshCw, sub: true },
         { name: '↳ Consolidado', href: '/admin/reportes/consolidado', icon: FileDown, sub: true },
-        { name: '↳ Sistema Interno', href: '/admin/reportes/sistema', icon: UploadCloud, sub: true },
+        { name: '↳ Sistema Interno', href: '/admin/reportes/sistema', icon: UploadCloud, sub: true, adminOnly: true },
         { name: 'Configuración', href: '/admin/configuracion', icon: Settings, adminOnly: true },
     ].filter(i => !(i as any).adminOnly || !isSupervisor);
 
