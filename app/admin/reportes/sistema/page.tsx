@@ -88,15 +88,8 @@ export default function SistemaPage() {
 
     if (loading) return <div className="p-8 text-center text-zinc-500">Cargando...</div>;
 
-    if (rol && rol !== 'ADMIN') {
-        return (
-            <div className="p-12 text-center">
-                <p className="text-sm text-amber-700 font-semibold bg-amber-50 border border-amber-200 rounded-lg inline-block px-6 py-4">
-                    Esta sección es exclusiva de administradores.
-                </p>
-            </div>
-        );
-    }
+    // SUPERVISOR puede ver todo y descargar CSV, pero no carga Excel ni borra lotes.
+    const isReadOnly = rol === 'SUPERVISOR';
 
     async function loadLotes(comedorId?: string) {
         let q = (supabase as any)
@@ -289,13 +282,15 @@ export default function SistemaPage() {
             </div>
 
             <Tabs defaultValue="ver" className="w-full">
-                <TabsList className="grid grid-cols-3 h-12 bg-zinc-100">
+                <TabsList className={`grid ${isReadOnly ? 'grid-cols-2' : 'grid-cols-3'} h-12 bg-zinc-100`}>
                     <TabsTrigger value="ver" className="data-[state=active]:bg-[#2D6A4F] data-[state=active]:text-white">
                         <CalendarRange className="h-4 w-4 mr-2" /> Ver datos
                     </TabsTrigger>
-                    <TabsTrigger value="cargar" className="data-[state=active]:bg-[#2D6A4F] data-[state=active]:text-white">
-                        <Upload className="h-4 w-4 mr-2" /> Cargar Excel
-                    </TabsTrigger>
+                    {!isReadOnly && (
+                        <TabsTrigger value="cargar" className="data-[state=active]:bg-[#2D6A4F] data-[state=active]:text-white">
+                            <Upload className="h-4 w-4 mr-2" /> Cargar Excel
+                        </TabsTrigger>
+                    )}
                     <TabsTrigger value="historial" className="data-[state=active]:bg-[#2D6A4F] data-[state=active]:text-white">
                         <History className="h-4 w-4 mr-2" /> Historial
                     </TabsTrigger>
@@ -475,7 +470,8 @@ export default function SistemaPage() {
                     )}
                 </TabsContent>
 
-                {/* ---- CARGAR ---- */}
+                {/* ---- CARGAR ---- (sólo ADMIN) */}
+                {!isReadOnly && (
                 <TabsContent value="cargar" className="mt-6 space-y-4">
                     <Card>
                         <CardHeader className="border-b">
@@ -575,13 +571,18 @@ export default function SistemaPage() {
                         </Card>
                     )}
                 </TabsContent>
+                )}
 
                 {/* ---- HISTORIAL ---- */}
                 <TabsContent value="historial" className="mt-6">
                     <Card>
                         <CardHeader className="border-b">
                             <CardTitle className="text-base">Historial de cargas</CardTitle>
-                            <CardDescription>Últimos 50 lotes subidos al sistema. Puedes eliminar un lote y todas sus filas.</CardDescription>
+                            <CardDescription>
+                                {isReadOnly
+                                    ? 'Últimos 50 lotes subidos al sistema.'
+                                    : 'Últimos 50 lotes subidos al sistema. Puedes eliminar un lote y todas sus filas.'}
+                            </CardDescription>
                         </CardHeader>
                         <CardContent className="p-0">
                             <Table>
@@ -592,12 +593,12 @@ export default function SistemaPage() {
                                         <TableHead>Archivo</TableHead>
                                         <TableHead className="text-center">Filas</TableHead>
                                         <TableHead>Subido</TableHead>
-                                        <TableHead className="text-right">Acciones</TableHead>
+                                        {!isReadOnly && <TableHead className="text-right">Acciones</TableHead>}
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
                                     {lotes.length === 0 ? (
-                                        <TableRow><TableCell colSpan={6} className="text-center py-12 text-zinc-400">Sin cargas registradas.</TableCell></TableRow>
+                                        <TableRow><TableCell colSpan={isReadOnly ? 5 : 6} className="text-center py-12 text-zinc-400">Sin cargas registradas.</TableCell></TableRow>
                                     ) : lotes.map(l => (
                                         <TableRow key={l.id}>
                                             <TableCell className="font-semibold">{l.comedores?.nombre || '—'}</TableCell>
@@ -608,11 +609,13 @@ export default function SistemaPage() {
                                             </TableCell>
                                             <TableCell className="text-center font-mono text-xs">{l.total_filas.toLocaleString()}</TableCell>
                                             <TableCell className="text-xs text-zinc-500">{format(new Date(l.created_at), 'dd MMM yyyy HH:mm', { locale: es })}</TableCell>
-                                            <TableCell className="text-right">
-                                                <Button variant="ghost" size="sm" onClick={() => deleteLote(l)} className="text-red-600 hover:text-red-800 hover:bg-red-50">
-                                                    <Trash2 className="h-4 w-4" />
-                                                </Button>
-                                            </TableCell>
+                                            {!isReadOnly && (
+                                                <TableCell className="text-right">
+                                                    <Button variant="ghost" size="sm" onClick={() => deleteLote(l)} className="text-red-600 hover:text-red-800 hover:bg-red-50">
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </Button>
+                                                </TableCell>
+                                            )}
                                         </TableRow>
                                     ))}
                                 </TableBody>
