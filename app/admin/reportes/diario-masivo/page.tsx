@@ -10,6 +10,7 @@ import { es } from 'date-fns/locale';
 import { Download, FileSpreadsheet, Loader2, Calendar as CalendarIcon, Printer } from 'lucide-react';
 import { toast } from 'sonner';
 import ExcelJS from 'exceljs';
+import { campoSumaEnTotal } from '@/lib/utils/comedor-total-rules';
 
 interface Comedor {
     id: string;
@@ -252,10 +253,14 @@ export default function DiarioMasivoPage() {
                 sheet.getCell(rowIdx, startCol + 3).fill = headerFill;
                 sheet.getCell(rowIdx, startCol + 3).border = border;
 
+                // Aplicar regla de Machu Picchu (solo CONSUMIDO) y Medlog (solo TICKETS)
+                // para que los TOTAL por categoría coincidan con lo que ve el encargado.
                 const totalsCant: Record<string, number> = {};
                 const totalsMonto: Record<string, number> = {};
                 sortedValores.forEach(v => {
                     const cat = v.comedor_campos_reporte?.categoria || 'OTROS';
+                    const nombre = v.comedor_campos_reporte?.nombre_campo || '';
+                    if (!campoSumaEnTotal(comedor.id, cat, nombre)) return;
                     totalsCant[cat] = (totalsCant[cat] || 0) + (v.cantidad || 0);
                     totalsMonto[cat] = (totalsMonto[cat] || 0) + (v.monto || 0);
                 });
@@ -415,9 +420,12 @@ export default function DiarioMasivoPage() {
                             const totals: Record<string, number> = { TOTAL_CASH: 0, TOTAL_PAX: 0 };
                             displayCats.forEach(c => totals[c] = 0);
 
-                            Object.values(reporteData.data).forEach((comRow: any) => {
+                            Object.entries(reporteData.data).forEach(([comedorId, comRow]: [string, any]) => {
                                 comRow.valores.forEach((v: any) => {
                                     const c = v.comedor_campos_reporte?.categoria;
+                                    const nombre = v.comedor_campos_reporte?.nombre_campo || '';
+                                    // Regla Machu/Medlog: sólo sumar lo que efectivamente cuenta.
+                                    if (!campoSumaEnTotal(comedorId, c || '', nombre)) return;
                                     const q = v.cantidad || 0;
                                     if (c && totals.hasOwnProperty(c)) totals[c] += q;
                                     totals.TOTAL_PAX += q;
@@ -475,6 +483,8 @@ export default function DiarioMasivoPage() {
                             if (hasData) {
                                 comRow.valores.forEach((v: any) => {
                                     const cat = v.comedor_campos_reporte?.categoria || 'OTROS';
+                                    const nombre = v.comedor_campos_reporte?.nombre_campo || '';
+                                    if (!campoSumaEnTotal(c.id, cat, nombre)) return;
                                     catTotals[cat] = (catTotals[cat] || 0) + (v.cantidad || 0);
                                 });
                             }

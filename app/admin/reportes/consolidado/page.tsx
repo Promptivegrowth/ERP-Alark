@@ -299,6 +299,8 @@ export default function ConsolidadoReportePage() {
             const totalsPorDia = dias.map(d => {
                 let s = 0;
                 campos.filter((c: any) => c.categoria === cat).forEach((c: any) => {
+                    // Regla Machu/Medlog: solo se cuentan los campos que efectivamente facturan.
+                    if (!campoSumaEnTotal(row.comedor.id, c.categoria, c.nombre_campo)) return;
                     s += row.qty[c.id]?.[d] || 0;
                 });
                 return s;

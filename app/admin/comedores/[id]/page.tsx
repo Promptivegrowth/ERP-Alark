@@ -17,6 +17,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Separator } from '@/components/ui/separator';
 import { exportResumenExcel } from '@/lib/utils/export-resumen-excel';
 import { toast } from 'sonner';
+import { campoSumaEnTotal } from '@/lib/utils/comedor-total-rules';
 
 export default function ComedorDetallePage() {
     const params = useParams();
@@ -325,8 +326,11 @@ export default function ComedorDetallePage() {
                                                         ))}
                                                     </tbody>
                                                     {(() => {
-                                                        const totalCant = items.reduce((acc, curr) => acc + (curr.cantidad || 0), 0);
-                                                        const totalMonto = items.reduce((acc, curr) => acc + (Number(curr.monto) || 0), 0);
+                                                        // Respeta la regla Machu/Medlog: solo cuentan los campos que
+                                                        // efectivamente facturan (ver lib/utils/comedor-total-rules).
+                                                        const facturables = items.filter((it: any) => campoSumaEnTotal(id, it.comedor_campos_reporte?.categoria || '', it.comedor_campos_reporte?.nombre_campo || ''));
+                                                        const totalCant = facturables.reduce((acc, curr) => acc + (curr.cantidad || 0), 0);
+                                                        const totalMonto = facturables.reduce((acc, curr) => acc + (Number(curr.monto) || 0), 0);
                                                         return (
                                                             <tfoot className="bg-emerald-50/30 border-t-2 border-emerald-100">
                                                                 <tr>
@@ -354,7 +358,12 @@ export default function ComedorDetallePage() {
                                 <div className="flex flex-col md:flex-row items-center gap-4 md:gap-8">
                                     <div className="flex flex-col items-end">
                                         <span className="text-[10px] font-black opacity-60 uppercase">Total Pax</span>
-                                        <span className="text-3xl font-black">{reporteDetalles.reduce((acc, curr) => acc + (curr.cantidad || 0), 0)}</span>
+                                        <span className="text-3xl font-black">{
+                                            reporteDetalles.reduce((acc, curr) => {
+                                                if (!campoSumaEnTotal(id, curr.comedor_campos_reporte?.categoria || '', curr.comedor_campos_reporte?.nombre_campo || '')) return acc;
+                                                return acc + (curr.cantidad || 0);
+                                            }, 0)
+                                        }</span>
                                     </div>
                                     <div className="hidden md:block h-10 w-px bg-white/20" />
                                     <div className="flex flex-col items-end">

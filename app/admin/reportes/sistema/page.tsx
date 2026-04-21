@@ -71,7 +71,8 @@ export default function SistemaPage() {
 
     // --- Tab Ver datos ---
     const [viewComedor, setViewComedor] = useState('');
-    const [viewFechaInicio, setViewFechaInicio] = useState(() => format(subDays(new Date(), 7), 'yyyy-MM-dd'));
+    // Default amplio (últimos 30 días) para atrapar el último reporte semanal subido.
+    const [viewFechaInicio, setViewFechaInicio] = useState(() => format(subDays(new Date(), 30), 'yyyy-MM-dd'));
     const [viewFechaFin, setViewFechaFin] = useState(() => format(new Date(), 'yyyy-MM-dd'));
     const [viewServicio, setViewServicio] = useState<string>('all');
     const [viewRows, setViewRows] = useState<VistaRow[]>([]);
@@ -100,6 +101,33 @@ export default function SistemaPage() {
         if (comedorId) q = q.eq('comedor_id', comedorId);
         const { data } = await q;
         setLotes(data || []);
+    }
+
+    // Cuando el admin elige un comedor, auto-ajusta el rango a las fechas
+    // mín/máx que tenga cargadas ese comedor — evita el caso "0 registros"
+    // por elegir un rango erróneo.
+    async function autoAdjustDateRange(comedorId: string) {
+        if (!comedorId) return;
+        const [{ data: minR }, { data: maxR }] = await Promise.all([
+            (supabase as any)
+                .from('system_report_uploads')
+                .select('fecha')
+                .eq('comedor_id', comedorId)
+                .not('fecha', 'is', null)
+                .order('fecha', { ascending: true })
+                .limit(1),
+            (supabase as any)
+                .from('system_report_uploads')
+                .select('fecha')
+                .eq('comedor_id', comedorId)
+                .not('fecha', 'is', null)
+                .order('fecha', { ascending: false })
+                .limit(1),
+        ]);
+        const min = minR?.[0]?.fecha;
+        const max = maxR?.[0]?.fecha;
+        if (min) setViewFechaInicio(min.substring(0, 10));
+        if (max) setViewFechaFin(max.substring(0, 10));
     }
 
     async function loadViewData() {
@@ -307,12 +335,13 @@ export default function SistemaPage() {
                             <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
                                 <div className="space-y-1 md:col-span-2">
                                     <label className="text-sm font-medium">Comedor</label>
-                                    <Select value={viewComedor} onValueChange={setViewComedor}>
+                                    <Select value={viewComedor} onValueChange={(v) => { setViewComedor(v); autoAdjustDateRange(v); }}>
                                         <SelectTrigger><SelectValue placeholder="Seleccionar..." /></SelectTrigger>
                                         <SelectContent>
                                             {comedores.map(c => <SelectItem key={c.id} value={c.id}>{c.nombre}</SelectItem>)}
                                         </SelectContent>
                                     </Select>
+                                    <p className="text-[10px] text-zinc-400">Al elegir un comedor, el rango se ajusta a sus fechas cargadas.</p>
                                 </div>
                                 <div className="space-y-1">
                                     <label className="text-sm font-medium">Desde</label>
