@@ -104,16 +104,29 @@ export default function ConsolidadoReportePage() {
             };
         });
 
-        // Construir preview por comedor
+        // Construir preview por comedor.
+        //
+        // Regla universal para ESTE reporte: ocultamos los campos que no tienen
+        // actividad en el rango seleccionado (suma de cantidad = 0 en todos los
+        // días). Esto vale para TODOS los comedores — limpia el Excel de filas
+        // vacías y de campos bloqueados / sin uso. Los campos con al menos un
+        // valor > 0 se mantienen.
         const result = comedores.map(c => {
-            const campos = (camposPorComedor.get(c.id) || []).sort((a, b) => a.orden - b.orden);
-            const hasData = campos.some(campo => {
-                for (const d of dias) {
-                    if ((qty[c.id]?.[campo.id]?.[d] || 0) > 0) return true;
-                }
-                return false;
-            }) || dias.some(d => coffe[c.id]?.[d]?.tiene);
-            return { comedor: c, dias, campos, qty: qty[c.id] || {}, monto: monto[c.id] || {}, coffe: coffe[c.id] || {}, hasData };
+            const camposTodos = (camposPorComedor.get(c.id) || []).sort((a, b) => a.orden - b.orden);
+            const camposConUso = camposTodos.filter(campo => {
+                return dias.some(d => (qty[c.id]?.[campo.id]?.[d] || 0) > 0);
+            });
+            const hayCoffe = dias.some(d => coffe[c.id]?.[d]?.tiene);
+            const hasData = camposConUso.length > 0 || hayCoffe;
+            return {
+                comedor: c,
+                dias,
+                campos: camposConUso,   // sólo los campos con movimiento
+                qty: qty[c.id] || {},
+                monto: monto[c.id] || {},
+                coffe: coffe[c.id] || {},
+                hasData,
+            };
         });
 
         return result;
