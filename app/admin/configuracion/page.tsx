@@ -266,7 +266,10 @@ export default function ConfiguracionPage() {
             return;
         }
         setIsSubmittingCampoSem(true);
-        const { error } = await (supabase.from('reporte_semanal_campos') as any).insert({
+        // upsert por (comedor_id, nombre_campo): si ya existe un campo con ese
+        // nombre (aunque esté inactivo de una config anterior), se reactiva y
+        // se actualiza con los valores nuevos, en vez de fallar por la UNIQUE.
+        const { error } = await (supabase.from('reporte_semanal_campos') as any).upsert({
             comedor_id: selectedComedorSemId,
             nombre_campo: newCampoSem.nombre_campo.toUpperCase().trim(),
             seccion: (newCampoSem.seccion || 'GENERAL').toUpperCase().trim(),
@@ -276,12 +279,12 @@ export default function ConfiguracionPage() {
             categoria_cruce: newCampoSem.categoria_cruce === '__none__' ? null : newCampoSem.categoria_cruce,
             orden: newCampoSem.orden || (camposSemanales.length + 1),
             activo: true,
-        });
+        }, { onConflict: 'comedor_id,nombre_campo' });
         if (error) {
-            console.error('Error insert semanal:', error);
-            toast.error('Error al agregar campo semanal (¿nombre duplicado?)');
+            console.error('Error upsert semanal:', error);
+            toast.error('Error al agregar campo semanal: ' + (error.message || ''));
         } else {
-            toast.success('Campo semanal agregado');
+            toast.success('Campo semanal guardado');
             setNewCampoSem({ nombre_campo: '', seccion: 'GENERAL', precio_ref: 0, precio_editable: true, es_facturable: true, categoria_cruce: '__none__', orden: 0 });
             loadCamposSemanales(selectedComedorSemId);
         }
