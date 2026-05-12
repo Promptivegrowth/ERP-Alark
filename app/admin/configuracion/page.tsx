@@ -15,23 +15,17 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Settings, Plus, Store, Users, Key, LayoutList, GripVertical, ToggleLeft, ToggleRight } from 'lucide-react';
+import { Settings, Plus, Store, Users, Key, LayoutList, ToggleLeft, ToggleRight, CalendarDays, Trash2, X, Check } from 'lucide-react';
+
+const CATEGORIAS_DIARIAS = ['DESAYUNO', 'ALMUERZO', 'CENA', 'AMANECIDA', 'LONCHE', 'PAN', 'BEBIDA', 'EXTRA', 'OTRO'];
+// Categorías válidas para el cruce de un campo semanal (debe coincidir con la categoría del diario)
+const CATEGORIAS_CRUCE = ['__none__', 'DESAYUNO', 'ALMUERZO', 'CENA', 'AMANECIDA', 'LONCHE', 'PAN', 'BEBIDA'];
 
 export default function ConfiguracionPage() {
     const { loading, rol } = useUser();
     const supabase = createClient();
     const [dataLoaded, setDataLoaded] = useState(false);
     const isReadOnly = rol === 'SUPERVISOR';
-    // El supervisor no debería entrar acá (no se muestra en el menú) pero por si navega directo.
-    if (isReadOnly) {
-        return (
-            <div className="p-12 text-center">
-                <p className="text-sm text-amber-700 font-semibold bg-amber-50 border border-amber-200 rounded-lg inline-block px-6 py-4">
-                    Modo supervisor: esta sección está disponible solo para administradores.
-                </p>
-            </div>
-        );
-    }
 
     const [comedores, setComedores] = useState<any[]>([]);
     const [usuarios, setUsuarios] = useState<any[]>([]);
@@ -44,7 +38,7 @@ export default function ConfiguracionPage() {
     const [newUser, setNewUser] = useState({ email: '', rol: 'COMEDOR', comedor_id: 'none' });
     const [isSubmittingU, setIsSubmittingU] = useState(false);
 
-    // Campo config
+    // Campo config (DIARIO)
     const [selectedComedorId, setSelectedComedorId] = useState('');
     const [camposComedor, setCamposComedor] = useState<any[]>([]);
     const [loadingCampos, setLoadingCampos] = useState(false);
@@ -54,6 +48,15 @@ export default function ConfiguracionPage() {
     const [editingPrecio, setEditingPrecio] = useState<number>(0);
     const [editingNombre, setEditingNombre] = useState<string>('');
     const [editingCategoria, setEditingCategoria] = useState<string>('ALMUERZO');
+
+    // Campo config (SEMANAL)
+    const [selectedComedorSemId, setSelectedComedorSemId] = useState('');
+    const [camposSemanales, setCamposSemanales] = useState<any[]>([]);
+    const [loadingCamposSem, setLoadingCamposSem] = useState(false);
+    const [newCampoSem, setNewCampoSem] = useState({ nombre_campo: '', seccion: 'GENERAL', precio_ref: 0, precio_editable: true, es_facturable: true, categoria_cruce: '__none__', orden: 0 });
+    const [isSubmittingCampoSem, setIsSubmittingCampoSem] = useState(false);
+    const [editingSemId, setEditingSemId] = useState<string | null>(null);
+    const [editSem, setEditSem] = useState<{ nombre_campo: string; seccion: string; precio_ref: number; precio_editable: boolean; es_facturable: boolean; categoria_cruce: string }>({ nombre_campo: '', seccion: 'GENERAL', precio_ref: 0, precio_editable: true, es_facturable: true, categoria_cruce: '__none__' });
 
     // Password Reset
     const [resetUser, setResetUser] = useState<any>(null);
@@ -238,7 +241,112 @@ export default function ConfiguracionPage() {
         }
     }
 
+    // ─── CAMPOS SEMANALES ──────────────────────────────────────────────────
+    async function loadCamposSemanales(comedorId: string) {
+        setLoadingCamposSem(true);
+        const { data } = await supabase
+            .from('reporte_semanal_campos')
+            .select('*')
+            .eq('comedor_id', comedorId)
+            .order('orden');
+        if (data) setCamposSemanales(data);
+        setLoadingCamposSem(false);
+    }
+
+    async function toggleSemanalActivo(id: string, activo: boolean) {
+        await (supabase.from('reporte_semanal_campos') as any).update({ activo: !activo }).eq('id', id);
+        setCamposSemanales(prev => prev.map(c => c.id === id ? { ...c, activo: !activo } : c));
+        toast.success('Campo semanal actualizado');
+    }
+
+    async function agregarCampoSem(e: React.FormEvent) {
+        e.preventDefault();
+        if (!selectedComedorSemId || !newCampoSem.nombre_campo.trim()) {
+            toast.error('Selecciona un comedor y escribe el nombre del campo');
+            return;
+        }
+        setIsSubmittingCampoSem(true);
+        const { error } = await (supabase.from('reporte_semanal_campos') as any).insert({
+            comedor_id: selectedComedorSemId,
+            nombre_campo: newCampoSem.nombre_campo.toUpperCase().trim(),
+            seccion: (newCampoSem.seccion || 'GENERAL').toUpperCase().trim(),
+            precio_ref: newCampoSem.precio_ref || null,
+            precio_editable: newCampoSem.precio_editable,
+            es_facturable: newCampoSem.es_facturable,
+            categoria_cruce: newCampoSem.categoria_cruce === '__none__' ? null : newCampoSem.categoria_cruce,
+            orden: newCampoSem.orden || (camposSemanales.length + 1),
+            activo: true,
+        });
+        if (error) {
+            console.error('Error insert semanal:', error);
+            toast.error('Error al agregar campo semanal (¿nombre duplicado?)');
+        } else {
+            toast.success('Campo semanal agregado');
+            setNewCampoSem({ nombre_campo: '', seccion: 'GENERAL', precio_ref: 0, precio_editable: true, es_facturable: true, categoria_cruce: '__none__', orden: 0 });
+            loadCamposSemanales(selectedComedorSemId);
+        }
+        setIsSubmittingCampoSem(false);
+    }
+
+    function startEditSem(c: any) {
+        setEditingSemId(c.id);
+        setEditSem({
+            nombre_campo: c.nombre_campo,
+            seccion: c.seccion || 'GENERAL',
+            precio_ref: c.precio_ref || 0,
+            precio_editable: !!c.precio_editable,
+            es_facturable: !!c.es_facturable,
+            categoria_cruce: c.categoria_cruce || '__none__',
+        });
+    }
+
+    async function guardarEdicionSem(id: string) {
+        if (!editSem.nombre_campo.trim()) {
+            toast.error('Nombre no puede estar vacío');
+            return;
+        }
+        const { error } = await (supabase.from('reporte_semanal_campos') as any).update({
+            nombre_campo: editSem.nombre_campo.toUpperCase().trim(),
+            seccion: (editSem.seccion || 'GENERAL').toUpperCase().trim(),
+            precio_ref: editSem.precio_ref || null,
+            precio_editable: editSem.precio_editable,
+            es_facturable: editSem.es_facturable,
+            categoria_cruce: editSem.categoria_cruce === '__none__' ? null : editSem.categoria_cruce,
+        }).eq('id', id);
+        if (error) {
+            console.error('Error update semanal:', error);
+            toast.error('Error al actualizar campo semanal');
+        } else {
+            toast.success('Campo semanal actualizado');
+            setEditingSemId(null);
+            loadCamposSemanales(selectedComedorSemId);
+        }
+    }
+
+    async function eliminarCampoSem(c: any) {
+        if (!confirm(`¿Eliminar el campo semanal "${c.nombre_campo}"?\n\nSi tiene valores históricos, mejor desactívalo en vez de borrarlo.`)) return;
+        const { error } = await supabase.from('reporte_semanal_campos').delete().eq('id', c.id);
+        if (error) {
+            // Probablemente tiene valores asociados (FK). Sugerir desactivar.
+            toast.error('No se pudo borrar (tiene valores históricos). Desactívalo con el interruptor.');
+        } else {
+            toast.success('Campo semanal eliminado');
+            loadCamposSemanales(selectedComedorSemId);
+        }
+    }
+
     if (loading || !dataLoaded) return <div className="p-8 text-center text-zinc-500">Cargando configuración...</div>;
+
+    // El supervisor no debería entrar acá (no se muestra en el menú) pero por si navega directo.
+    if (isReadOnly) {
+        return (
+            <div className="p-12 text-center">
+                <p className="text-sm text-amber-700 font-semibold bg-amber-50 border border-amber-200 rounded-lg inline-block px-6 py-4">
+                    Modo supervisor: esta sección está disponible solo para administradores.
+                </p>
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-6 pb-24">
@@ -252,10 +360,11 @@ export default function ConfiguracionPage() {
             </div>
 
             <Tabs defaultValue="comedores" className="w-full">
-                <TabsList className="grid grid-cols-3 md:w-[600px] bg-zinc-100">
+                <TabsList className="grid grid-cols-2 md:grid-cols-4 md:w-[820px] bg-zinc-100">
                     <TabsTrigger value="comedores" className="flex gap-2 data-[state=active]:bg-[#2D6A4F] data-[state=active]:text-white"><Store size={16} /> Comedores</TabsTrigger>
                     <TabsTrigger value="usuarios" className="flex gap-2 data-[state=active]:bg-[#2D6A4F] data-[state=active]:text-white"><Users size={16} /> Accesos</TabsTrigger>
-                    <TabsTrigger value="campos" className="flex gap-2 data-[state=active]:bg-[#2D6A4F] data-[state=active]:text-white"><LayoutList size={16} /> Campos por Comedor</TabsTrigger>
+                    <TabsTrigger value="campos" className="flex gap-2 data-[state=active]:bg-[#2D6A4F] data-[state=active]:text-white"><LayoutList size={16} /> Campos Diarios</TabsTrigger>
+                    <TabsTrigger value="campos_sem" className="flex gap-2 data-[state=active]:bg-[#2D6A4F] data-[state=active]:text-white"><CalendarDays size={16} /> Campos Semanales</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="comedores" className="mt-6 space-y-6">
@@ -478,7 +587,7 @@ export default function ConfiguracionPage() {
                                             <Select value={newCampo.categoria} onValueChange={v => setNewCampo({ ...newCampo, categoria: v || 'ALMUERZO' })}>
                                                 <SelectTrigger><SelectValue /></SelectTrigger>
                                                 <SelectContent>
-                                                    {['DESAYUNO', 'ALMUERZO', 'CENA', 'AMANECIDA', 'LONCHE', 'PAN', 'BEBIDA', 'EXTRA', 'OTRO'].map(cat => (
+                                                    {CATEGORIAS_DIARIAS.map(cat => (
                                                         <SelectItem key={cat} value={cat}>{cat}</SelectItem>
                                                     ))}
                                                 </SelectContent>
@@ -544,7 +653,7 @@ export default function ConfiguracionPage() {
                                                                 <Select value={editingCategoria} onValueChange={v => setEditingCategoria(v || 'ALMUERZO')}>
                                                                     <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
                                                                     <SelectContent>
-                                                                        {['DESAYUNO', 'ALMUERZO', 'CENA', 'AMANECIDA', 'LONCHE', 'PAN', 'BEBIDA', 'EXTRA', 'OTRO'].map(cat => (
+                                                                        {CATEGORIAS_DIARIAS.map(cat => (
                                                                             <SelectItem key={cat} value={cat}>{cat}</SelectItem>
                                                                         ))}
                                                                     </SelectContent>
@@ -595,6 +704,177 @@ export default function ConfiguracionPage() {
                                                 ))}
                                             </TableBody>
                                         </Table>
+                                    )}
+                                </>
+                            )}
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+
+                {/* ─── CAMPOS SEMANALES ─── */}
+                <TabsContent value="campos_sem" className="mt-6 space-y-6">
+                    <Card>
+                        <CardHeader className="bg-zinc-50 border-b pb-4">
+                            <CardTitle className="text-lg flex items-center gap-2"><CalendarDays size={16} /> Configurar Campos Semanales por Comedor</CardTitle>
+                            <CardDescription>
+                                Estos son los campos que aparecen en el reporte semanal del comedor. Para que el cruce diario/semanal funcione, el campo de la columna &ldquo;Cruza con&rdquo; debe coincidir con la categoría que usa el reporte diario (Almuerzo, Cena, etc.). Los extras (pan, bebidas, postres…) van sin cruce.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="pt-6">
+                            <div className="flex gap-4 items-end mb-6">
+                                <div className="space-y-2 w-full md:w-1/2">
+                                    <label className="text-sm font-medium">Seleccionar Comedor</label>
+                                    <Select value={selectedComedorSemId} onValueChange={v => { setSelectedComedorSemId(v || ''); setEditingSemId(null); loadCamposSemanales(v || ''); }}>
+                                        <SelectTrigger><SelectValue placeholder="-- Selecciona un comedor --" /></SelectTrigger>
+                                        <SelectContent>
+                                            {comedores.map(c => <SelectItem key={c.id} value={c.id}>{c.nombre}</SelectItem>)}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            </div>
+
+                            {selectedComedorSemId && (
+                                <>
+                                    {/* Add new weekly campo */}
+                                    <form onSubmit={agregarCampoSem} className="flex flex-wrap gap-3 items-end mb-6 p-4 bg-[#1B4332]/5 rounded-lg border border-[#2D6A4F]/20">
+                                        <div className="space-y-1 flex-1 min-w-[150px]">
+                                            <label className="text-xs font-medium text-zinc-600">Nombre del Campo</label>
+                                            <Input placeholder="Ej. ALMUERZOS SISTEMA" value={newCampoSem.nombre_campo} onChange={e => setNewCampoSem({ ...newCampoSem, nombre_campo: e.target.value })} required />
+                                        </div>
+                                        <div className="space-y-1 w-36">
+                                            <label className="text-xs font-medium text-zinc-600">Sección</label>
+                                            <Input placeholder="Ej. CREDITO ICH" value={newCampoSem.seccion} onChange={e => setNewCampoSem({ ...newCampoSem, seccion: e.target.value })} />
+                                        </div>
+                                        <div className="space-y-1 w-40">
+                                            <label className="text-xs font-medium text-zinc-600">Cruza con</label>
+                                            <Select value={newCampoSem.categoria_cruce} onValueChange={v => setNewCampoSem({ ...newCampoSem, categoria_cruce: v || '__none__' })}>
+                                                <SelectTrigger><SelectValue /></SelectTrigger>
+                                                <SelectContent>
+                                                    {CATEGORIAS_CRUCE.map(c => <SelectItem key={c} value={c}>{c === '__none__' ? '— Sin cruce —' : c}</SelectItem>)}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                        <div className="space-y-1 w-24">
+                                            <label className="text-xs font-medium text-zinc-600">Precio S/</label>
+                                            <Input type="number" step="0.01" placeholder="0.00" value={newCampoSem.precio_ref || ''} onChange={e => setNewCampoSem({ ...newCampoSem, precio_ref: parseFloat(e.target.value) || 0 })} />
+                                        </div>
+                                        <div className="space-y-1 w-20">
+                                            <label className="text-xs font-medium text-zinc-600">Orden</label>
+                                            <Input type="number" min={0} placeholder="0" value={newCampoSem.orden || ''} onChange={e => setNewCampoSem({ ...newCampoSem, orden: Number(e.target.value) })} />
+                                        </div>
+                                        <div className="flex items-center gap-1.5">
+                                            <button type="button" onClick={() => setNewCampoSem({ ...newCampoSem, es_facturable: !newCampoSem.es_facturable })} title="¿Suma al total facturable?" className="flex flex-col items-center">
+                                                {newCampoSem.es_facturable ? <ToggleRight size={22} className="text-[#2D6A4F]" /> : <ToggleLeft size={22} className="text-zinc-400" />}
+                                                <span className="text-[9px] text-zinc-500">Factura</span>
+                                            </button>
+                                            <button type="button" onClick={() => setNewCampoSem({ ...newCampoSem, precio_editable: !newCampoSem.precio_editable })} title="¿El encargado puede cambiar el precio?" className="flex flex-col items-center">
+                                                {newCampoSem.precio_editable ? <ToggleRight size={22} className="text-[#2D6A4F]" /> : <ToggleLeft size={22} className="text-zinc-400" />}
+                                                <span className="text-[9px] text-zinc-500">Precio edit.</span>
+                                            </button>
+                                        </div>
+                                        <Button type="submit" disabled={isSubmittingCampoSem} className="bg-[#2D6A4F] hover:bg-[#1B4332]">
+                                            <Plus size={16} className="mr-1.5" />{isSubmittingCampoSem ? 'Agregando...' : 'Agregar'}
+                                        </Button>
+                                    </form>
+
+                                    {loadingCamposSem ? (
+                                        <p className="text-center text-zinc-400 py-4">Cargando campos...</p>
+                                    ) : camposSemanales.length === 0 ? (
+                                        <p className="text-center text-zinc-400 py-6">Este comedor aún no tiene campos semanales. Agrega el primero arriba.</p>
+                                    ) : (
+                                        <div className="overflow-x-auto">
+                                            <Table>
+                                                <TableHeader>
+                                                    <TableRow>
+                                                        <TableHead className="w-8">#</TableHead>
+                                                        <TableHead>Nombre del Campo</TableHead>
+                                                        <TableHead>Sección</TableHead>
+                                                        <TableHead>Cruza con</TableHead>
+                                                        <TableHead className="text-right">Precio Ref.</TableHead>
+                                                        <TableHead className="text-center">Factura</TableHead>
+                                                        <TableHead className="text-center">Precio edit.</TableHead>
+                                                        <TableHead className="text-center">Activo</TableHead>
+                                                        <TableHead className="text-center">Acciones</TableHead>
+                                                    </TableRow>
+                                                </TableHeader>
+                                                <TableBody>
+                                                    {camposSemanales.map(campo => {
+                                                        const editing = editingSemId === campo.id;
+                                                        return (
+                                                            <TableRow key={campo.id} className={!campo.activo ? 'opacity-50' : ''}>
+                                                                <TableCell className="text-zinc-400 text-xs">{campo.orden}</TableCell>
+                                                                <TableCell className="font-medium">
+                                                                    {editing ? (
+                                                                        <Input className="h-8 text-xs font-bold uppercase" value={editSem.nombre_campo} onChange={e => setEditSem({ ...editSem, nombre_campo: e.target.value })} />
+                                                                    ) : (
+                                                                        <button onClick={() => startEditSem(campo)} className="hover:underline text-left cursor-text">{campo.nombre_campo}</button>
+                                                                    )}
+                                                                </TableCell>
+                                                                <TableCell className="text-xs">
+                                                                    {editing ? (
+                                                                        <Input className="h-8 text-xs w-32" value={editSem.seccion} onChange={e => setEditSem({ ...editSem, seccion: e.target.value })} />
+                                                                    ) : (campo.seccion || 'GENERAL')}
+                                                                </TableCell>
+                                                                <TableCell>
+                                                                    {editing ? (
+                                                                        <Select value={editSem.categoria_cruce} onValueChange={v => setEditSem({ ...editSem, categoria_cruce: v || '__none__' })}>
+                                                                            <SelectTrigger className="h-8 text-xs w-36"><SelectValue /></SelectTrigger>
+                                                                            <SelectContent>
+                                                                                {CATEGORIAS_CRUCE.map(c => <SelectItem key={c} value={c}>{c === '__none__' ? '— Sin cruce —' : c}</SelectItem>)}
+                                                                            </SelectContent>
+                                                                        </Select>
+                                                                    ) : (
+                                                                        campo.categoria_cruce
+                                                                            ? <Badge variant="outline" className="text-xs">{campo.categoria_cruce}</Badge>
+                                                                            : <span className="text-zinc-300 text-xs">—</span>
+                                                                    )}
+                                                                </TableCell>
+                                                                <TableCell className="text-right">
+                                                                    {editing ? (
+                                                                        <Input type="number" step="0.01" className="w-20 h-8 text-right text-xs ml-auto" value={editSem.precio_ref} onChange={e => setEditSem({ ...editSem, precio_ref: parseFloat(e.target.value) || 0 })} />
+                                                                    ) : (
+                                                                        <span className="font-bold text-zinc-600">{campo.precio_ref != null ? `S/. ${Number(campo.precio_ref).toFixed(2)}` : '—'}</span>
+                                                                    )}
+                                                                </TableCell>
+                                                                <TableCell className="text-center">
+                                                                    {editing ? (
+                                                                        <button onClick={() => setEditSem({ ...editSem, es_facturable: !editSem.es_facturable })}>
+                                                                            {editSem.es_facturable ? <ToggleRight size={20} className="text-[#2D6A4F]" /> : <ToggleLeft size={20} className="text-zinc-400" />}
+                                                                        </button>
+                                                                    ) : (
+                                                                        campo.es_facturable ? <Check size={16} className="text-[#2D6A4F] mx-auto" /> : <X size={16} className="text-zinc-300 mx-auto" />
+                                                                    )}
+                                                                </TableCell>
+                                                                <TableCell className="text-center">
+                                                                    {editing ? (
+                                                                        <button onClick={() => setEditSem({ ...editSem, precio_editable: !editSem.precio_editable })}>
+                                                                            {editSem.precio_editable ? <ToggleRight size={20} className="text-[#2D6A4F]" /> : <ToggleLeft size={20} className="text-zinc-400" />}
+                                                                        </button>
+                                                                    ) : (
+                                                                        campo.precio_editable ? <Check size={16} className="text-[#2D6A4F] mx-auto" /> : <X size={16} className="text-zinc-300 mx-auto" />
+                                                                    )}
+                                                                </TableCell>
+                                                                <TableCell className="text-center">
+                                                                    <button onClick={() => toggleSemanalActivo(campo.id, campo.activo)} title={campo.activo ? 'Desactivar' : 'Activar'}>
+                                                                        {campo.activo ? <ToggleRight size={22} className="text-[#2D6A4F]" /> : <ToggleLeft size={22} className="text-zinc-400" />}
+                                                                    </button>
+                                                                </TableCell>
+                                                                <TableCell className="text-center">
+                                                                    {editing ? (
+                                                                        <div className="flex items-center justify-center gap-1">
+                                                                            <Button size="icon" className="h-7 w-7 bg-emerald-600" onClick={() => guardarEdicionSem(campo.id)} title="Guardar"><Check size={13} /></Button>
+                                                                            <Button size="icon" variant="outline" className="h-7 w-7 text-zinc-400" onClick={() => setEditingSemId(null)} title="Cancelar"><X size={13} /></Button>
+                                                                        </div>
+                                                                    ) : (
+                                                                        <Button size="icon" variant="ghost" className="h-7 w-7 text-red-500 hover:text-red-700 hover:bg-red-50" onClick={() => eliminarCampoSem(campo)} title="Eliminar"><Trash2 size={14} /></Button>
+                                                                    )}
+                                                                </TableCell>
+                                                            </TableRow>
+                                                        );
+                                                    })}
+                                                </TableBody>
+                                            </Table>
+                                        </div>
                                     )}
                                 </>
                             )}
