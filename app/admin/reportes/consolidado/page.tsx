@@ -48,29 +48,53 @@ export default function ConsolidadoReportePage() {
         });
     }, [supabase]);
 
+    // Trae TODAS las filas de una query paginando con .range() — necesario porque
+    // Supabase/PostgREST corta en 1000 filas por defecto y un consolidado puede
+    // tener más de 1000 valores (17 comedores x 14 días x ~15 campos).
+    async function fetchAll(buildQuery: () => any): Promise<any[]> {
+        const PAGE = 1000;
+        const all: any[] = [];
+        let from = 0;
+        for (;;) {
+            const { data, error } = await buildQuery().range(from, from + PAGE - 1);
+            if (error) throw error;
+            const batch = data || [];
+            all.push(...batch);
+            if (batch.length < PAGE) break;
+            from += PAGE;
+        }
+        return all;
+    }
+
     async function cargarDatos() {
         const dias: string[] = Array.from({ length: diasTotal }, (_, i) => format(addDays(parseISO(fechaInicio), i), 'yyyy-MM-dd'));
 
-        const { data: camposAll } = await (supabase as any)
+        const camposAll = await fetchAll(() => (supabase as any)
             .from('comedor_campos_reporte')
             .select('id, nombre_campo, categoria, orden, comedor_id, activo')
             .eq('activo', true)
-            .order('orden');
+            .order('orden'));
 
-        const { data: reportes } = await (supabase as any)
+        const reportes = await fetchAll(() => (supabase as any)
             .from('reporte_diario')
             .select('id, fecha, comedor_id, tiene_coffe_break, monto_coffe, descripcion_coffe')
             .gte('fecha', dias[0])
-            .lte('fecha', dias[dias.length - 1]);
+            .lte('fecha', dias[dias.length - 1]));
 
         const reporteIds = ((reportes as ReporteRow[]) || []).map(r => r.id);
         let valores: ValorRow[] = [];
         if (reporteIds.length > 0) {
-            const { data: v } = await (supabase as any)
-                .from('reporte_diario_valores')
-                .select('campo_id, cantidad, monto, reporte_id')
-                .in('reporte_id', reporteIds);
-            valores = (v as ValorRow[]) || [];
+            // Si hay muchos reportes, troceamos el .in() en bloques para no
+            // armar URLs gigantes, y dentro de cada bloque paginamos.
+            const CHUNK = 100;
+            for (let i = 0; i < reporteIds.length; i += CHUNK) {
+                const ids = reporteIds.slice(i, i + CHUNK);
+                const chunkRows = await fetchAll(() => (supabase as any)
+                    .from('reporte_diario_valores')
+                    .select('campo_id, cantidad, monto, reporte_id')
+                    .in('reporte_id', ids));
+                valores.push(...(chunkRows as ValorRow[]));
+            }
         }
 
         // Indexar
